@@ -119,7 +119,33 @@ export default function App() {
     setChangingSymbol(false);
   };
 
-  if (configured === null) return null;
+  const [backendTimeout, setBackendTimeout] = useState(false);
+  useEffect(() => {
+    if (configured !== null) return;
+    const t = setTimeout(() => setBackendTimeout(true), 15_000);
+    return () => clearTimeout(t);
+  }, [configured]);
+
+  if (configured === null) return (
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#060611', color:'#a0a8c8', fontFamily:"'Aptos','Segoe UI',sans-serif", gap:16, padding:'0 32px', textAlign:'center' }}>
+      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+      {!backendTimeout ? (
+        <>
+          <div style={{ width:36, height:36, border:'3px solid #1a1a30', borderTopColor:'#818cf8', borderRadius:'50%', animation:'spin .8s linear infinite' }} />
+          <span style={{ fontSize:12 }}>Starting backend…</span>
+        </>
+      ) : (
+        <>
+          <div style={{ fontSize:28, marginBottom:4 }}>⚠️</div>
+          <div style={{ fontSize:14, fontWeight:700, color:'#e8ecf8', marginBottom:4 }}>Backend not responding</div>
+          <div style={{ fontSize:12, color:'#6b7299', lineHeight:1.7, maxWidth:380 }}>
+            The Python backend failed to start. This is usually caused by antivirus software blocking it.<br/><br/>
+            Open <strong style={{color:'#a0a8c8'}}>Windows Security → Virus &amp; threat protection → Protection history</strong> and check if <code style={{color:'#818cf8'}}>smc-bot-backend.exe</code> was blocked, then add an exclusion for the app folder.
+          </div>
+        </>
+      )}
+    </div>
+  );
   if (!configured) return <Setup onComplete={() => setConfigured(true)} />;
 
   const activeSymbol = symbol;

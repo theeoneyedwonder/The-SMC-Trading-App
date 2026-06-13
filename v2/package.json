@@ -1,63 +1,73 @@
 {
   "name": "the-smc-trading-app",
   "version": "1.0.0-beta.1",
-  "description": "The SMC Trading App — Smart Money Concepts Dashboard",
+  "description": "The SMC Trading App - Smart Money Concepts Dashboard",
   "private": true,
   "type": "module",
   "author": "theeoneyedwonder",
   "main": "electron/main.js",
   "scripts": {
-    "dev":     "vite",
-    "build":   "vite build",
-    "electron":"electron .",
+    "dev": "vite",
+    "build": "vite build",
+    "electron": "electron .",
     "dev:all": "concurrently -k --names VITE,ELECTRON --prefix-colors cyan,yellow \"vite\" \"wait-on http://localhost:5175 && electron .\"",
-    "dist":    "vite build && electron-builder --win"
+    "dist": "vite build && electron-builder --win"
   },
   "build": {
-    "appId":       "com.theeoneyedwonder.smctrading",
+    "appId": "com.theeoneyedwonder.smctrading",
     "productName": "The SMC Trading App",
-    "copyright":   "Copyright © 2026 theeoneyedwonder",
-    "directories": { "output": "../release" },
-    "files": ["dist/**/*", "electron/**/*", "package.json"],
+    "copyright": "Copyright (c) 2026 theeoneyedwonder",
+    "directories": {
+      "output": "../release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "package.json"
+    ],
     "extraResources": [
       {
-        "from":   "../backend/dist/smc-bot-backend",
-        "to":     "backend",
-        "filter": ["**/*"]
+        "from": "../backend/dist/smc-bot-backend",
+        "to": "backend",
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }],
-      "publisherName": "theeoneyedwonder"
+      "target": [
+        { "target": "nsis",     "arch": ["x64"] },
+        { "target": "portable", "arch": ["x64"] }
+      ]
     },
     "nsis": {
-      "oneClick":                           false,
+      "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut":              true,
-      "createStartMenuShortcut":            true,
-      "shortcutName":                       "The SMC Trading App",
-      "uninstallDisplayName":               "The SMC Trading App",
-      "deleteAppDataOnUninstall":           false,
-      "include":                            "build/installer.nsh"
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "The SMC Trading App",
+      "uninstallDisplayName": "The SMC Trading App",
+      "deleteAppDataOnUninstall": false,
+      "include": "build/installer.nsh"
     },
     "publish": {
       "provider": "github",
-      "owner":    "theeoneyedwonder",
-      "repo":     "The-SMC-Trading-App"
+      "owner": "theeoneyedwonder",
+      "repo": "The-SMC-Trading-App"
     }
   },
   "dependencies": {
-    "electron-updater":   "^6.3.9",
+    "electron-updater": "^6.3.9",
     "lightweight-charts": "^5.2.0",
-    "react":              "^19.2.6",
-    "react-dom":          "^19.2.6"
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^6.0.1",
-    "concurrently":         "^9.1.0",
-    "electron":             "^42.4.0",
-    "electron-builder":     "^26.15.3",
-    "vite":                 "^8.0.12",
-    "wait-on":              "^8.0.1"
+    "concurrently": "^9.1.0",
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.3",
+    "vite": "^8.0.12",
+    "wait-on": "^8.0.1"
   }
 }

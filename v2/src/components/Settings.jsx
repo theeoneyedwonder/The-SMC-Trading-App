@@ -191,10 +191,11 @@ function DrawingsTab() {
 function AITab({ apiKey, setApiKey, hasKey, showKey, setShowKey, saving, saved, saveKey }) {
   return (
     <div className="settings-section">
-      <div className="settings-group-label">Anthropic API Key</div>
+      <div className="settings-group-label">Groq API Key</div>
       <p className="settings-desc">
-        The AI companion uses Claude to analyse your chart and answer questions about market structure,
-        order blocks, and your positions. Your key is stored locally on this machine only.
+        The AI companion uses Groq (Llama 3.3) to analyse your chart and answer questions about market
+        structure, order blocks, and your positions. Groq is free to use. Your key is stored locally on
+        this machine only.
       </p>
 
       {hasKey && (
@@ -210,7 +211,7 @@ function AITab({ apiKey, setApiKey, hasKey, showKey, setShowKey, saving, saved, 
           <input
             type="password"
             className="setup-input"
-            placeholder="sk-ant-api03-..."
+            placeholder="gsk_..."
             value={apiKey}
             onChange={e => setApiKey(e.target.value)}
             onKeyDown={e => e.key === 'Enter' && saveKey()}
@@ -225,7 +226,7 @@ function AITab({ apiKey, setApiKey, hasKey, showKey, setShowKey, saving, saved, 
       )}
 
       <p className="settings-micro" style={{ marginTop: 12 }}>
-        Get your API key at <strong style={{ color: 'var(--text2)' }}>console.anthropic.com</strong>
+        Get your free API key at <strong style={{ color: 'var(--text2)' }}>console.groq.com</strong>
       </p>
     </div>
   );

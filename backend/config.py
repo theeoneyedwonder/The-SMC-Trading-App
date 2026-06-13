@@ -122,7 +122,11 @@ CANDLE_LIMIT   = 500
 SWING_LOOKBACK = 10
 EMA_PERIOD     = 200
 
-DATABASE_URL = f"sqlite:///{_BASE / 'bot_state.db'}"
+# In production the DB lives next to settings.json in AppData (writable).
+# In dev it falls back to the source folder.
+_DB_DIR = Path(CONFIG_PATH).parent if CONFIG_PATH else _BASE
+_DB_DIR.mkdir(parents=True, exist_ok=True)
+DATABASE_URL = f"sqlite:///{_DB_DIR / 'bot_state.db'}"
 
 HOST = "127.0.0.1"
 PORT = 8000

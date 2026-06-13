@@ -359,6 +359,7 @@ class AIAnalyzeRequest(BaseModel):
 @app.post("/ai/chat")
 async def ai_chat(req: AIChatRequest):
     from config import get_ai_api_key
+    import httpx
     api_key = get_ai_api_key()
     if not api_key:
         raise HTTPException(status_code=400, detail="No AI API key configured. Add it in Settings > AI Companion.")
@@ -385,23 +386,30 @@ async def ai_chat(req: AIChatRequest):
             system += f"  - {t.get('symbol')} {t.get('direction')} {t.get('lots')} lots @ {t.get('entry')} | P&L: {t.get('profit')}\n"
 
     try:
-        import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
-            system=system,
-            messages=[{"role": "user", "content": req.message}],
-        )
-        return {"reply": response.content[0].text}
-    except ImportError:
-        raise HTTPException(status_code=500, detail="anthropic package not installed. Run: pip install anthropic")
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": req.message},
+                    ],
+                    "max_tokens": 1024,
+                },
+            )
+            resp.raise_for_status()
+            return {"reply": resp.json()["choices"][0]["message"]["content"]}
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=502, detail=f"Groq API error: {e.response.text}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/ai/analyze")
 async def ai_analyze(req: AIAnalyzeRequest):
     from config import get_ai_api_key
+    import httpx, json as _json
     api_key = get_ai_api_key()
     if not api_key:
         raise HTTPException(status_code=400, detail="No AI API key configured. Add it in Settings > AI Companion.")
@@ -412,7 +420,6 @@ async def ai_analyze(req: AIAnalyzeRequest):
     trades   = ctx.get("trades", [])
     patterns = ctx.get("patterns", {})
 
-    # Summarise detected patterns across timeframes
     pat_lines = []
     for tf, tf_data in (patterns or {}).items():
         obs  = tf_data.get("order_blocks", [])
@@ -462,24 +469,29 @@ async def ai_analyze(req: AIAnalyzeRequest):
     )
 
     try:
-        import anthropic
-        import json as _json
-        client = anthropic.Anthropic(api_key=api_key)
-        response = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
-            system=system,
-            messages=[{"role": "user", "content": user_msg}],
-        )
-        text = response.content[0].text.strip()
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            resp = await client.post(
+                "https://api.groq.com/openai/v1/chat/completions",
+                headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                json={
+                    "model": "llama-3.3-70b-versatile",
+                    "messages": [
+                        {"role": "system", "content": system},
+                        {"role": "user", "content": user_msg},
+                    ],
+                    "max_tokens": 1024,
+                },
+            )
+            resp.raise_for_status()
+            text = resp.json()["choices"][0]["message"]["content"].strip()
         if text.startswith("```"):
             parts = text.split("```")
             text = parts[1]
             if text.startswith("json"):
                 text = text[4:].strip()
         return _json.loads(text)
-    except ImportError:
-        raise HTTPException(status_code=500, detail="anthropic package not installed. Run: pip install anthropic")
+    except httpx.HTTPStatusError as e:
+        raise HTTPException(status_code=502, detail=f"Groq API error: {e.response.text}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -538,5 +550,8 @@ async def websocket_endpoint(ws: WebSocket):
 
 # ─── Entry point ──────────────────────────────────────────────
 if __name__ == "__main__":
+    import multiprocessing
+    multiprocessing.freeze_support()   # required for PyInstaller on Windows
+
     import uvicorn
-    uvicorn.run("main:app", host=HOST, port=PORT, reload=False)
+    uvicorn.run(app, host=HOST, port=PORT, reload=False)
