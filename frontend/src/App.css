@@ -1,0 +1,571 @@
+/* ─── Design tokens ───────────────────────────────────────── */
+:root {
+  --bg:      #09090f;
+  --surface: #0f0f1a;
+  --surf2:   #14141f;
+  --surf3:   #1a1a28;
+  --border:  #1e1e30;
+  --text:    #e2e8f0;
+  --muted:   #475569;
+  --green:   #22c55e;
+  --red:     #ef4444;
+  --gold:    #f59e0b;
+  --blue:    #3b82f6;
+  --purple:  #8b5cf6;
+
+  font-size: 13px;
+}
+
+/* ─── App shell ───────────────────────────────────────────── */
+.app {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+  background: var(--bg);
+  color: var(--text);
+}
+
+/* ─── Header ──────────────────────────────────────────────── */
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 46px;
+  padding: 0 16px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 10;
+}
+
+.header-left  { display: flex; align-items: center; gap: 14px; }
+.header-right { display: flex; align-items: center; gap: 8px;  }
+
+.logo {
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  color: var(--gold);
+  text-transform: uppercase;
+}
+
+.symbol-select {
+  background: var(--surf3);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 4px 10px;
+  border-radius: 4px;
+  font-size: 13px;
+  cursor: pointer;
+  outline: none;
+}
+.symbol-select:focus { border-color: var(--gold); }
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.status-dot.connected    { background: var(--green); box-shadow: 0 0 6px var(--green); }
+.status-dot.disconnected { background: var(--red); }
+
+.status-text { font-size: 12px; color: var(--muted); }
+
+.settings-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  width: 28px;
+  height: 28px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 6px;
+  transition: color 0.12s, border-color 0.12s;
+}
+.settings-btn:hover { color: var(--text); border-color: var(--muted); }
+
+/* ─── Main layout ─────────────────────────────────────────── */
+.main {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.chart-col {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-right: 1px solid var(--border);
+}
+
+.sidebar {
+  width: 310px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  background: var(--surface);
+}
+
+/* ─── Chart ───────────────────────────────────────────────── */
+.chart-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.chart-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 5px 10px;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+
+.tf-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--muted);
+  padding: 3px 9px;
+  border-radius: 3px;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s, border-color 0.12s;
+}
+.tf-btn:hover  { color: var(--text); background: var(--surf3); }
+.tf-btn.active {
+  color: var(--gold);
+  border-color: rgba(245,158,11,0.45);
+  background: rgba(245,158,11,0.07);
+}
+
+.chart-loading {
+  font-size: 11px;
+  color: var(--muted);
+  margin-left: 6px;
+  font-style: italic;
+}
+
+.chart-legend {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  font-size: 10px;
+}
+.legend-ob-bull  { color: #22c55e; }
+.legend-ob-bear  { color: #ef4444; }
+.legend-fvg-bull { color: #3b82f6; }
+.legend-fvg-bear { color: #8b5cf6; }
+.legend-bos      { color: var(--muted); }
+
+.chart-container {
+  flex: 1;
+  min-height: 0;
+}
+
+/* ─── Shared panel styles ─────────────────────────────────── */
+.panel {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+}
+
+.panel-title {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 10px;
+}
+
+.no-data {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: italic;
+}
+
+.muted { color: var(--muted); }
+.green { color: var(--green); }
+.red   { color: var(--red);   }
+
+.badge {
+  display: inline-block;
+  background: var(--surf3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 1px 7px;
+  font-size: 10px;
+  color: var(--muted);
+  margin-left: 6px;
+  vertical-align: middle;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+/* ─── Account panel ───────────────────────────────────────── */
+.account-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: var(--surf3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 8px 10px;
+}
+
+.stat-label {
+  font-size: 9px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--muted);
+}
+
+.stat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+.stat-value.green { color: var(--green); }
+.stat-value.red   { color: var(--red);   }
+
+/* ─── Trade panel ─────────────────────────────────────────── */
+.trades-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.trade-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surf3);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 7px 9px;
+}
+
+.dir-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 3px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+.dir-badge.buy  { background: rgba(34,197,94,0.13); color: var(--green); }
+.dir-badge.sell { background: rgba(239,68,68,0.13); color: var(--red);   }
+
+.trade-info {
+  flex: 1;
+  color: var(--muted);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+}
+
+.trade-pnl {
+  font-size: 12px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.trade-pnl.green { color: var(--green); }
+.trade-pnl.red   { color: var(--red);   }
+
+/* ─── Structure panel ─────────────────────────────────────── */
+.structure-panel { flex: 1; }
+
+.structure-list {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.structure-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 6px;
+  border-radius: 3px;
+}
+.structure-row:nth-child(odd) { background: var(--surf3); }
+
+.tf-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  width: 34px;
+  flex-shrink: 0;
+}
+
+.bias-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 3px;
+  letter-spacing: 0.4px;
+}
+.bias-badge.bullish { background: rgba(34,197,94,0.12); color: var(--green); }
+.bias-badge.bearish { background: rgba(239,68,68,0.12); color: var(--red);   }
+.bias-badge.neutral { background: rgba(71,85,105,0.18); color: var(--muted); }
+
+.trend-text {
+  font-size: 11px;
+  color: var(--muted);
+}
+.trend-text.bullish      { color: rgba(34,197,94,0.75);  }
+.trend-text.bearish      { color: rgba(239,68,68,0.75);  }
+.trend-text.ranging      { color: rgba(245,158,11,0.75); }
+.trend-text.undetermined { color: var(--muted);           }
+
+/* ─── Setup wizard ────────────────────────────────────────── */
+.setup-bg {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
+
+.setup-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 40px 44px;
+  width: 460px;
+  max-width: 92vw;
+  box-shadow: 0 24px 60px rgba(0,0,0,0.6);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.setup-logo {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: 3px;
+  color: var(--gold);
+  text-align: center;
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.setup-logo-mark { font-size: 20px; opacity: 0.8; }
+
+.setup-body {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.setup-centered {
+  align-items: center;
+  text-align: center;
+}
+
+.setup-heading {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--text);
+  text-align: center;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.setup-subheading {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+  margin: 0 0 4px;
+}
+
+.setup-desc {
+  font-size: 13px;
+  color: var(--muted);
+  text-align: center;
+  line-height: 1.65;
+}
+
+.setup-features {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--surf3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 12px 14px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.setup-sub   { font-size: 13px; color: var(--muted); }
+.setup-micro { font-size: 11px; color: #334155; font-style: italic; }
+
+/* Form */
+.setup-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+.setup-field label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--muted);
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+.setup-hint {
+  font-size: 10px;
+  font-weight: 400;
+  text-transform: none;
+  letter-spacing: 0;
+  color: #2d3748;
+  font-style: italic;
+}
+.setup-input {
+  background: var(--surf3);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--text);
+  padding: 10px 12px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  transition: border-color 0.15s;
+}
+.setup-input:focus { border-color: var(--gold); }
+.setup-input::placeholder { color: #2d3748; }
+input[type=number].setup-input { -moz-appearance: textfield; }
+input[type=number].setup-input::-webkit-inner-spin-button,
+input[type=number].setup-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+
+/* Buttons */
+.setup-row-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+.setup-btn {
+  border: none;
+  border-radius: 5px;
+  padding: 10px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: opacity 0.15s, transform 0.1s;
+}
+.setup-btn:hover   { opacity: 0.85; }
+.setup-btn:active  { transform: scale(0.98); }
+.setup-btn:disabled{ opacity: 0.35; cursor: not-allowed; }
+.setup-btn.primary { background: var(--gold); color: #09090f; }
+.setup-btn.ghost   { background: transparent; color: var(--muted); border: 1px solid var(--border); }
+
+/* Status icons */
+.setup-icon-circle {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+.setup-icon-circle.ok   { background: rgba(34,197,94,0.12);  color: var(--green); }
+.setup-icon-circle.err  { background: rgba(239,68,68,0.12);  color: var(--red);   }
+.setup-icon-circle.warn { background: rgba(245,158,11,0.12); color: var(--gold);  }
+
+.setup-mt5-actions {
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+/* Account summary table */
+.setup-account-table {
+  width: 100%;
+  background: var(--surf3);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  overflow: hidden;
+}
+.setup-acct-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 14px;
+  font-size: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.setup-acct-row:last-child { border-bottom: none; }
+.setup-acct-label { color: var(--muted); }
+.setup-acct-value { color: var(--text); font-weight: 500; }
+.setup-acct-value.green { color: var(--green); }
+
+.setup-error-text {
+  font-size: 12px;
+  color: var(--red);
+  max-width: 320px;
+  line-height: 1.5;
+}
+
+/* Loading dots */
+.setup-dots {
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+.setup-dots span {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--gold);
+  display: block;
+  animation: sdot 1.2s ease-in-out infinite;
+}
+.setup-dots span:nth-child(2) { animation-delay: 0.2s; }
+.setup-dots span:nth-child(3) { animation-delay: 0.4s; }
+@keyframes sdot {
+  0%,80%,100% { opacity:.2; transform:scale(.8); }
+  40%         { opacity:1;  transform:scale(1);  }
+}
+
+/* Spinner */
+.setup-spinner {
+  width: 40px; height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--gold);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin-bottom: 12px;
+}
+@keyframes spin { to { transform: rotate(360deg); } }

@@ -1,0 +1,43 @@
+# Python
+backend/__pycache__/
+backend/*.pyc
+backend/*.pyo
+backend/dist/
+backend/build/
+backend/bot_state.db
+
+# Node
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+v2/node_modules/
+v2/dist/
+v2/.vite/
+
+# Build output
+release/
+
+# Environment / secrets
+backend/.env
+backend/settings.json
+backend/*.db
+*.env
+*.log
+
+# Python venv
+.venv/
+venv/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor
+.vscode/
+.idea/
+*.suo
+*.user
+
+# Claude Code session data
+.claude/
