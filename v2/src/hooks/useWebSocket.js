@@ -25,7 +25,16 @@ export function useWebSocket() {
       ws.onerror = () => ws.close();
       ws.onmessage = ({ data: raw }) => {
         if (!mountedRef.current) return;
-        try { setData(JSON.parse(raw)); } catch {}
+        try {
+          const msg = JSON.parse(raw);
+          // Preserve previous patterns/indicators when phase-1 sends null,
+          // so the chart overlay doesn't flash away while analysis runs.
+          setData(prev => ({
+            ...msg,
+            patterns:   msg.patterns   ?? prev?.patterns,
+            indicators: msg.indicators ?? prev?.indicators,
+          }));
+        } catch {}
       };
     }
 

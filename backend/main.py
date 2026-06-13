@@ -55,10 +55,10 @@ _wake_loop: asyncio.Event | None = None  # set by lifespan, triggered after setu
 async def bot_loop():
     prev_tickets: set = set()
     was_connected     = False
+    loop              = asyncio.get_event_loop()
 
     while True:
         try:
-            # Wait for the user to finish setup before doing anything
             if not is_configured():
                 await asyncio.sleep(5)
                 continue
@@ -69,7 +69,7 @@ async def bot_loop():
                 if was_connected:
                     alert_connection_lost()
                 print("[BOT] Reconnecting...")
-                connected = connect()
+                connected = await loop.run_in_executor(None, connect)
                 if connected:
                     alert_reconnected()
 
@@ -79,12 +79,12 @@ async def bot_loop():
                 await asyncio.sleep(10)
                 continue
 
-            symbol     = get_active_symbol()
-            tf_data    = get_all_timeframes(symbol=symbol)
-            indicators = analyse_all_timeframes(tf_data)
-            patterns   = analyse_patterns(tf_data)
-            account    = get_account_info()
-            raw_trades = get_open_trades(symbol=symbol)
+            symbol = get_active_symbol()
+
+            # ── Phase 1: fast data (account + trades) ─────────────
+            # Run blocking MT5 calls in a thread so FastAPI stays responsive.
+            account    = await loop.run_in_executor(None, get_account_info)
+            raw_trades = await loop.run_in_executor(None, lambda: get_open_trades(symbol=symbol))
 
             current_tickets = {t.ticket for t in raw_trades}
             for t in raw_trades:
@@ -110,6 +110,20 @@ async def bot_loop():
                 }
                 for t in raw_trades
             ]
+
+            # UI gets account/trades immediately — null patterns preserves previous overlay
+            await manager.broadcast({
+                "symbol"     : symbol,
+                "account"    : account,
+                "trades"     : trades,
+                "indicators" : None,
+                "patterns"   : None,
+            })
+
+            # ── Phase 2: slow analysis (7 timeframes + patterns) ──
+            tf_data    = await loop.run_in_executor(None, lambda: get_all_timeframes(symbol=symbol))
+            indicators = await loop.run_in_executor(None, lambda: analyse_all_timeframes(tf_data))
+            patterns   = await loop.run_in_executor(None, lambda: analyse_patterns(tf_data))
 
             await manager.broadcast({
                 "symbol"     : symbol,

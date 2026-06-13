@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import './App.css';
 import { useWebSocket }   from './hooks/useWebSocket';
 import { useTheme }       from './contexts/ThemeContext';
@@ -65,12 +65,16 @@ export default function App() {
   const [configured, setConfigured] = useState(null);
   const [page, setPage]             = useState('home');
   const [symbol, setSymbol]         = useState('XAUUSDm');
+  const symbolRef                   = useRef('XAUUSDm');
   const [symbols, setSymbols]       = useState(FALLBACK_SYMBOLS);
   const [changingSymbol, setChangingSymbol] = useState(false);
   const [settingsOpen, setSettingsOpen]     = useState(false);
   const [aiOpen, setAiOpen]                 = useState(false);
   const [aiLevels, setAiLevels]             = useState([]);
   const { data, connected }                 = useWebSocket();
+
+  // Keep ref in sync so the symbol load effect can read current value without a closure stale
+  useEffect(() => { symbolRef.current = symbol; }, [symbol]);
 
   // ── Poll setup status ─────────────────────────────────────────
   useEffect(() => {
@@ -94,15 +98,19 @@ export default function App() {
         const r = await fetch(`${API}/symbols/available`);
         if (!r.ok) return;
         const d = await r.json();
-        if (d.symbols?.length) {
-          setSymbols(d.symbols);
-          setSymbol(prev => {
-          if (d.symbols.includes(prev)) return prev;
-          // Try stripping trailing 'm' (e.g. XAUUSDm → XAUUSD)
-          const stripped = prev.replace(/m$/, '');
-          if (d.symbols.includes(stripped)) return stripped;
-          return d.symbols[0];
-        });
+        if (!d.symbols?.length) return;
+        setSymbols(d.symbols);
+        // Resolve best symbol from the MT5 list
+        const current = symbolRef.current;
+        let next = current;
+        if (!d.symbols.includes(current)) {
+          const stripped = current.replace(/m$/, '');
+          next = d.symbols.includes(stripped) ? stripped : d.symbols[0];
+        }
+        setSymbol(next);
+        // Tell the backend which symbol to analyse — critical so patterns match the chart
+        if (next !== current) {
+          fetch(`${API}/symbol/${next}`, { method: 'POST' }).catch(() => {});
         }
       } catch {}
     };

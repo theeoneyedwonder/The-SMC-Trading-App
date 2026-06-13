@@ -26,6 +26,12 @@ def get_candles(symbol: str | None = None, timeframe_minutes: int = 60, limit: i
         return pd.DataFrame()
 
     rates = mt5.copy_rates_from_pos(symbol, tf, 0, limit)
+    if (rates is None or len(rates) == 0) and symbol.endswith('m'):
+        # Broker may not carry the 'm' variant — try without it
+        fallback = symbol[:-1]
+        print(f"[DATA] {symbol} returned no data, trying {fallback}")
+        mt5.symbol_select(fallback, True)
+        rates = mt5.copy_rates_from_pos(fallback, tf, 0, limit)
     if rates is None or len(rates) == 0:
         print(f"[DATA] No candles returned for {symbol} {timeframe_minutes}m")
         return pd.DataFrame()

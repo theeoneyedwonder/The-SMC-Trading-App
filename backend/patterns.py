@@ -43,7 +43,7 @@ def detect_order_blocks(df: pd.DataFrame) -> list:
                     "valid"     : True,
                 })
 
-    return obs[-10:]  # return last 10 only
+    return obs[-5:]  # keep only 5 most recent
 
 
 def detect_fvg(df: pd.DataFrame) -> list:
@@ -60,8 +60,11 @@ def detect_fvg(df: pd.DataFrame) -> list:
         curr = df.iloc[i]
         nxt  = df.iloc[i + 1]
 
-        # Bullish FVG
-        if prev["high"] < nxt["low"]:
+        mid_price = float(curr["close"])
+
+        # Bullish FVG — require gap > 0.05% of price to filter micro-gaps
+        bull_gap = nxt["low"] - prev["high"]
+        if bull_gap > 0 and (mid_price == 0 or bull_gap / mid_price > 0.0005):
             fvgs.append({
                 "kind"      : "FVG",
                 "direction" : "BULLISH",
@@ -72,8 +75,9 @@ def detect_fvg(df: pd.DataFrame) -> list:
                 "valid"     : True,
             })
 
-        # Bearish FVG
-        if prev["low"] > nxt["high"]:
+        # Bearish FVG — require gap > 0.05% of price
+        bear_gap = prev["low"] - nxt["high"]
+        if bear_gap > 0 and (mid_price == 0 or bear_gap / mid_price > 0.0005):
             fvgs.append({
                 "kind"      : "FVG",
                 "direction" : "BEARISH",
@@ -84,7 +88,7 @@ def detect_fvg(df: pd.DataFrame) -> list:
                 "valid"     : True,
             })
 
-    return fvgs[-10:]  # return last 10 only
+    return fvgs[-5:]  # keep only 5 most recent
 
 
 def detect_bos_mss(df: pd.DataFrame) -> list:
@@ -129,7 +133,15 @@ def detect_bos_mss(df: pd.DataFrame) -> list:
                 "bar_index" : int(breaks.index[0]),
             })
 
-    return events[-10:]  # return last 10 only
+    # Deduplicate: keep one BOS per direction+level (round to 2dp)
+    seen = set()
+    deduped = []
+    for e in reversed(events):
+        key = (e['direction'], round(e['level'], 2))
+        if key not in seen:
+            seen.add(key)
+            deduped.append(e)
+    return list(reversed(deduped))[:5]  # max 5, most recent
 
 
 def analyse_patterns(tf_data: dict) -> dict:

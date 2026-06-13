@@ -190,11 +190,13 @@ export default function Chart({ symbol, patterns, aiLevels }) {
   const zoneRef       = useRef(null);
   const overlayRef    = useRef(null);
   const priceLinesRef = useRef([]);
+  const lastPriceRef  = useRef(null);
   const { vars } = useTheme();
 
   const [tf, setTf]           = useState('H1');
   const [loading, setLoading] = useState(false);
   const [tool, setTool]       = useState('cursor');
+  const [lastPrice, setLastPrice] = useState(null);
 
   const [drawings, setDrawings] = useState(() => {
     try { return JSON.parse(localStorage.getItem(`drawings_${symbol}`) || '[]'); } catch { return []; }
@@ -316,6 +318,8 @@ export default function Chart({ symbol, patterns, aiLevels }) {
       const data = await res.json();
       if (Array.isArray(data) && data.length && seriesRef.current) {
         seriesRef.current.setData(data);
+        lastPriceRef.current = data[data.length - 1].close;
+        setLastPrice(data[data.length - 1].close);
         chartRef.current?.timeScale().fitContent();
         syncOverlayRef.current?.();
       }
@@ -332,9 +336,13 @@ export default function Chart({ symbol, patterns, aiLevels }) {
   // ── Patterns (OB / FVG / BOS) ────────────────────────────────
   useEffect(() => {
     if (!seriesRef.current || !zoneRef.current) return;
-    const tfData = patterns?.[tf];
-    priceLinesRef.current.forEach(pl => { try { seriesRef.current.removePriceLine(pl); } catch {} });
+
+    // Clear ref FIRST so it's always clean even if removePriceLine throws
+    const toRemove = priceLinesRef.current;
     priceLinesRef.current = [];
+    toRemove.forEach(pl => { try { seriesRef.current.removePriceLine(pl); } catch {} });
+
+    const tfData = patterns?.[tf];
     if (!tfData) { zoneRef.current.setZones([]); return; }
 
     const zones = [];
@@ -353,6 +361,9 @@ export default function Chart({ symbol, patterns, aiLevels }) {
     zoneRef.current.setZones(zones);
 
     (tfData.bos_mss||[]).forEach(bos => {
+      if (!isFinite(bos.level) || bos.level <= 0) return;
+      // Skip levels wildly mismatched to the current instrument's price scale
+      if (lastPrice && lastPrice > 10 && bos.level < lastPrice * 0.1) return;
       const pl = seriesRef.current.createPriceLine({
         price: bos.level, lineWidth:1, lineStyle:LineStyle.Dashed,
         color: bos.direction==='BULLISH'?'#34d399':'#fb7185',
@@ -360,8 +371,7 @@ export default function Chart({ symbol, patterns, aiLevels }) {
       });
       priceLinesRef.current.push(pl);
     });
-    chartRef.current?.applyOptions({});
-  }, [patterns, tf]);
+  }, [patterns, tf, lastPrice]);
 
   // ── Mouse events for drawing ──────────────────────────────────
   const getChartCoords = useCallback((clientX, clientY) => {

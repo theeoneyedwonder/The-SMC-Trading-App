@@ -118,8 +118,8 @@ TIMEFRAMES = {
     "D1"  : 1440,
 }
 
-CANDLE_LIMIT   = 500
-SWING_LOOKBACK = 10
+CANDLE_LIMIT   = 200
+SWING_LOOKBACK = 5
 EMA_PERIOD     = 200
 
 # In production the DB lives next to settings.json in AppData (writable).
