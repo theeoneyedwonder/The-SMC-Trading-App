@@ -50,10 +50,10 @@ Write-Host ''
 Write-Host '============================================' -ForegroundColor Green
 Write-Host '  DONE' -ForegroundColor Green
 Write-Host ''
-Write-Host '  Dev/testing  ->  release\The SMC Trading App 1.0.0-beta.1.exe' -ForegroundColor Yellow
+Write-Host '  Dev/testing  ->  release\The SMC Trading App 0.1.0-beta.1.exe' -ForegroundColor Yellow
 Write-Host '                   (portable - just run it, no install needed)' -ForegroundColor DarkYellow
 Write-Host ''
-Write-Host '  Distribution ->  release\The SMC Trading App Setup 1.0.0-beta.1.exe' -ForegroundColor Cyan
+Write-Host '  Distribution ->  release\The SMC Trading App Setup 0.1.0-beta.1.exe' -ForegroundColor Cyan
 Write-Host '                   (NSIS installer for end users)' -ForegroundColor DarkCyan
 Write-Host '============================================' -ForegroundColor Green
 Write-Host ''
