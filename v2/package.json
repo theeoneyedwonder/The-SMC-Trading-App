@@ -1,6 +1,6 @@
 {
   "name": "the-smc-trading-app",
-  "version": "2.0.0",
+  "version": "1.0.0-beta.1",
   "description": "The SMC Trading App — Smart Money Concepts Dashboard",
   "private": true,
   "type": "module",
@@ -16,7 +16,7 @@
   "build": {
     "appId":       "com.theeoneyedwonder.smctrading",
     "productName": "The SMC Trading App",
-    "copyright":   "Copyright © 2025 theeoneyedwonder",
+    "copyright":   "Copyright © 2026 theeoneyedwonder",
     "directories": { "output": "../release" },
     "files": ["dist/**/*", "electron/**/*", "package.json"],
     "extraResources": [
@@ -27,16 +27,18 @@
       }
     ],
     "win": {
-      "target": [{ "target": "nsis", "arch": ["x64"] }]
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "publisherName": "theeoneyedwonder"
     },
     "nsis": {
-      "oneClick":                        false,
+      "oneClick":                           false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut":           true,
-      "createStartMenuShortcut":         true,
-      "shortcutName":                    "The SMC Trading App",
-      "uninstallDisplayName":            "The SMC Trading App",
-      "deleteAppDataOnUninstall":        false
+      "createDesktopShortcut":              true,
+      "createStartMenuShortcut":            true,
+      "shortcutName":                       "The SMC Trading App",
+      "uninstallDisplayName":               "The SMC Trading App",
+      "deleteAppDataOnUninstall":           false,
+      "include":                            "build/installer.nsh"
     },
     "publish": {
       "provider": "github",

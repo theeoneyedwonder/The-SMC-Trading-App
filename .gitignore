@@ -38,6 +38,3 @@ desktop.ini
 .idea/
 *.suo
 *.user
-
-# Claude Code session data
-.claude/

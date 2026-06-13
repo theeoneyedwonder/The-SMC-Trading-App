@@ -12,10 +12,15 @@ a = Analysis(
     ['main.py'],
     pathex=['.'],
     binaries=mt5_binaries,
-    datas=mt5_datas + [
-        ('.env', '.'),          # include .env next to the exe
-    ],
+    datas=mt5_datas,
     hiddenimports=mt5_hidden + [
+        # Anthropic SDK
+        'anthropic',
+        'httpx',
+        'httpx._transports.default',
+        'httpcore',
+        'httpcore._async.interfaces',
+        'httpcore._sync.interfaces',
         # uvicorn doesn't auto-discover all its sub-modules
         'uvicorn.logging',
         'uvicorn.loops',

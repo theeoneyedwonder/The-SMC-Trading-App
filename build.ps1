@@ -16,7 +16,8 @@ if ($env:PYTHON -and (Test-Path $env:PYTHON)) {
         "$env:LOCALAPPDATA\Programs\Python\Python311\python.exe",
         "C:\Python313\python.exe","C:\Python312\python.exe","C:\Python311\python.exe"
     )
-    $py = (Get-Command python -ErrorAction SilentlyContinue)?.Source
+    $cmd = Get-Command python -ErrorAction SilentlyContinue
+    if ($cmd) { $py = $cmd.Source }
     if (-not $py) { foreach ($c in $candidates) { if (Test-Path $c) { $py = $c; break } } }
 }
 if (-not $py) { Write-Error "Python not found. Set `$env:PYTHON = 'C:\path\to\python.exe'"; exit 1 }
@@ -50,5 +51,5 @@ Pop-Location
 
 Write-Host "`n============================================" -ForegroundColor Green
 Write-Host "  BUILD COMPLETE" -ForegroundColor Green
-Write-Host "  release\The SMC Trading App Setup 2.0.0.exe" -ForegroundColor Green
+Write-Host "  release\The SMC Trading App Setup 1.0.0-beta.1.exe" -ForegroundColor Green
 Write-Host "============================================" -ForegroundColor Green

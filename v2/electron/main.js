@@ -3,6 +3,7 @@ import { spawn }         from 'node:child_process';
 import path              from 'node:path';
 import fs                from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import { reportCrash }   from './crash-reporter.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname  = path.dirname(__filename);
@@ -13,9 +14,11 @@ const isDev       = !app.isPackaged;
 const userDataDir = app.getPath('userData');
 const configPath  = path.join(userDataDir, 'settings.json');
 
-let backend = null;
-let mainWin  = null;
-let splash   = null;
+let backend     = null;
+let mainWin     = null;
+let splash      = null;
+let crashWin    = null;
+let pendingCrash = null;
 
 // ── Theme helpers ─────────────────────────────────────────────
 const LIGHT_PRESETS = ['Light Classic', 'Light Warm'];
@@ -144,11 +147,47 @@ function createMain() {
     splash?.close(); splash = null;
     mainWin.show(); mainWin.focus();
   });
+  mainWin.webContents.on('render-process-gone', (_event, details) => {
+    if (details.reason !== 'clean-exit') {
+      createCrashWindow(new Error(`Renderer crashed: ${details.reason}`));
+    }
+  });
   mainWin.on('closed', () => { mainWin = null; });
 }
 
+// ── Crash window ─────────────────────────────────────────────
+function createCrashWindow(error) {
+  if (crashWin) return;
+  pendingCrash = {
+    name:     error?.name    ?? 'Error',
+    message:  error?.message ?? 'An unexpected error occurred',
+    stack:    error?.stack   ?? '',
+    version:  app.getVersion(),
+    platform: process.platform,
+  };
+  crashWin = new BrowserWindow({
+    width: 520, height: 400,
+    resizable: false, center: true,
+    title: 'The SMC Trading App — Error Report',
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration:  false,
+      preload: path.join(__dirname, 'crash-preload.cjs'),
+    },
+  });
+  crashWin.setMenu(null);
+  crashWin.loadFile(path.join(__dirname, 'crash-report.html'));
+  crashWin.on('closed', () => { crashWin = null; });
+}
+
 // ── IPC ───────────────────────────────────────────────────────
-ipcMain.handle('open-external', (_, url) => shell.openExternal(url));
+ipcMain.handle('open-external',   (_, url)  => shell.openExternal(url));
+ipcMain.handle('crash:get-data',  ()        => pendingCrash);
+ipcMain.handle('crash:dismiss',   ()        => crashWin?.close());
+ipcMain.handle('crash:submit',    async (_, description) => {
+  if (!pendingCrash) return { ok: false };
+  return reportCrash({ ...pendingCrash, description });
+});
 
 // ── Auto-updater ──────────────────────────────────────────────
 async function initUpdater() {
@@ -172,6 +211,19 @@ async function initUpdater() {
   } catch (e) {
     console.log('[Updater] Not available:', e.message);
   }
+}
+
+// ── Global error handlers (production only) ───────────────────
+if (!isDev) {
+  process.on('uncaughtException', (error) => {
+    console.error('[App] Uncaught exception:', error);
+    createCrashWindow(error);
+  });
+  process.on('unhandledRejection', (reason) => {
+    console.error('[App] Unhandled rejection:', reason);
+    const error = reason instanceof Error ? reason : new Error(String(reason));
+    createCrashWindow(error);
+  });
 }
 
 // ── Lifecycle ─────────────────────────────────────────────────
