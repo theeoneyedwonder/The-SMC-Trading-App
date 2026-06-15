@@ -1,9 +1,9 @@
 import pandas as pd
 import MetaTrader5 as mt5
-from mt5_client import ensure_connected
+from mt5_client import ensure_connected, _mt5_lock
 from config import CANDLE_LIMIT, TIMEFRAMES, get_active_symbol
 
-def get_candles(symbol: str | None = None, timeframe_minutes: int = 60, limit: int = CANDLE_LIMIT) -> pd.DataFrame:
+def get_candles(symbol: str | None = None, timeframe_minutes: int = 60, limit: int = CANDLE_LIMIT, offset: int = 0) -> pd.DataFrame:
     if symbol is None:
         symbol = get_active_symbol()
 
@@ -25,13 +25,16 @@ def get_candles(symbol: str | None = None, timeframe_minutes: int = 60, limit: i
         print(f"[DATA] Unknown timeframe: {timeframe_minutes}")
         return pd.DataFrame()
 
-    rates = mt5.copy_rates_from_pos(symbol, tf, 0, limit)
-    if (rates is None or len(rates) == 0) and symbol.endswith('m'):
-        # Broker may not carry the 'm' variant — try without it
-        fallback = symbol[:-1]
-        print(f"[DATA] {symbol} returned no data, trying {fallback}")
-        mt5.symbol_select(fallback, True)
-        rates = mt5.copy_rates_from_pos(fallback, tf, 0, limit)
+    # Hold the IPC lock only around the atomic MT5 reads (serialized with
+    # the live tick/account loops). Released the moment the data is copied.
+    with _mt5_lock:
+        rates = mt5.copy_rates_from_pos(symbol, tf, offset, limit)
+        if (rates is None or len(rates) == 0) and symbol.endswith('m'):
+            # Broker may not carry the 'm' variant — try without it
+            fallback = symbol[:-1]
+            print(f"[DATA] {symbol} returned no data, trying {fallback}")
+            mt5.symbol_select(fallback, True)
+            rates = mt5.copy_rates_from_pos(fallback, tf, offset, limit)
     if rates is None or len(rates) == 0:
         print(f"[DATA] No candles returned for {symbol} {timeframe_minutes}m")
         return pd.DataFrame()

@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
 import './App.css';
 import { useWebSocket }   from './hooks/useWebSocket';
 import { useTheme }       from './contexts/ThemeContext';
 import Setup              from './components/Setup';
 import Settings           from './components/Settings';
-import AIPanel            from './components/AIPanel';
-import NavBar             from './components/NavBar';
+import MarketPanel        from './components/MarketPanel';
+import SageBubble         from './components/SageBubble';
+import Sidebar            from './components/Sidebar';
 import Home               from './components/Home';
 import Trades             from './components/Trades';
 import History            from './components/History';
@@ -14,6 +16,10 @@ import Performance        from './components/Performance';
 
 const API              = 'http://127.0.0.1:8000';
 const FALLBACK_SYMBOLS = ['XAUUSDm','XAGUSDm','EURUSDm','GBPUSDm','USDJPYm','BTCUSDm','NAS100m','US30m'];
+
+// Apply persisted font scale immediately (module level — no hook, no lifecycle delay)
+const _savedScale = localStorage.getItem('ui_font_scale');
+if (_savedScale) document.documentElement.style.setProperty('--font-scale', _savedScale);
 
 function GearIcon() {
   return (
@@ -24,13 +30,12 @@ function GearIcon() {
   );
 }
 
-function AIIcon() {
+function PanelIcon() {
   return (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-      <circle cx="9" cy="10" r="1" fill="currentColor"/>
-      <circle cx="12" cy="10" r="1" fill="currentColor"/>
-      <circle cx="15" cy="10" r="1" fill="currentColor"/>
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <line x1="15" y1="3" x2="15" y2="21"/>
+      <line x1="18" y1="8" x2="21" y2="8" opacity="0"/>
     </svg>
   );
 }
@@ -64,12 +69,13 @@ export default function App() {
 
   const [configured, setConfigured] = useState(null);
   const [page, setPage]             = useState('home');
+  const [sidebarOpen, setSidebarOpen]       = useState(false);
   const [symbol, setSymbol]         = useState('XAUUSDm');
   const symbolRef                   = useRef('XAUUSDm');
   const [symbols, setSymbols]       = useState(FALLBACK_SYMBOLS);
   const [changingSymbol, setChangingSymbol] = useState(false);
   const [settingsOpen, setSettingsOpen]     = useState(false);
-  const [aiOpen, setAiOpen]                 = useState(false);
+  const [panelOpen, setPanelOpen]           = useState(true);
   const [aiLevels, setAiLevels]             = useState([]);
   const { data, connected }                 = useWebSocket();
 
@@ -119,11 +125,13 @@ export default function App() {
     return () => clearTimeout(t);
   }, [configured]);
 
-  const handleSymbolChange = async (e) => {
-    const sym = e.target.value;
+  const selectSymbol = async (sym) => {
+    if (!sym || sym === symbol) return;
     setChangingSymbol(true);
     try { await fetch(`${API}/symbol/${sym}`, { method: 'POST' }); } catch {}
     setSymbol(sym);
+    // Make sure a symbol picked from the watchlist also shows in the topbar dropdown
+    setSymbols(prev => (prev.includes(sym) ? prev : [sym, ...prev]));
     setChangingSymbol(false);
   };
 
@@ -158,87 +166,123 @@ export default function App() {
 
   const activeSymbol = symbol;
 
+  const topbarInitials = data?.account?.name
+    ? data.account.name.slice(0, 2).toUpperCase()
+    : data?.account?.login
+    ? String(data.account.login).slice(-2)
+    : null;
+
   return (
     <div className="app">
+      {/* ── Animated Sidebar Drawer ── */}
+      <Sidebar
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+        page={page}
+        setPage={setPage}
+        account={data?.account}
+        connected={connected}
+        onSettingsClick={() => setSettingsOpen(true)}
+        onLogout={async () => {
+          try { await fetch(`${API}/setup/logout`, { method: 'POST' }); } catch {}
+          window.location.reload();
+        }}
+      />
+
       {/* ── Top Bar ── */}
       <header className="topbar">
         <div className="topbar-left">
-          <div className="app-logo">
-            <div className="logo-mark">S</div>
-            <div>
-              <div className="logo-text">The SMC Trading App</div>
-              <div className="logo-sub">Smart Money Concepts</div>
-            </div>
-          </div>
+          <motion.button
+            className="hamburger-btn"
+            onClick={() => setSidebarOpen(true)}
+            title="Menu"
+            whileHover={{ scale: 1.06 }}
+            whileTap={{ scale: 0.86, transition: { type: 'spring', stiffness: 600, damping: 10 } }}
+          >
+            <span /><span /><span />
+          </motion.button>
+
         </div>
 
         <div className="topbar-right">
-          <select
-            value={activeSymbol}
-            onChange={handleSymbolChange}
-            disabled={changingSymbol}
-            className="symbol-select"
+          <motion.button
+            className={`icon-btn${panelOpen ? ' active' : ''}`}
+            onClick={() => setPanelOpen(o => !o)}
+            title="Watchlist"
+            whileHover={{ scale: 1.08 }}
+            whileTap={{ scale: 0.88, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
           >
-            {symbols.map(s => <option key={s} value={s}>{s}</option>)}
-          </select>
+            <PanelIcon />
+          </motion.button>
 
-          <div className="status-pill">
-            <span className={`status-dot ${connected ? 'live' : 'offline'}`}/>
-            <span className={`status-label ${connected ? 'live' : ''}`}>
-              {connected ? 'Live' : 'Offline'}
-            </span>
-          </div>
-
-          <button
-            className="icon-btn"
-            onClick={toggleMode}
-            title={mode === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {mode === 'dark' ? <SunIcon /> : <MoonIcon />}
-          </button>
-
-          <button
-            className={`icon-btn${aiOpen ? ' active' : ''}`}
-            onClick={() => setAiOpen(o => !o)}
-            title="AI Companion"
-          >
-            <AIIcon />
-          </button>
-
-          <button
-            className="icon-btn"
-            onClick={() => setSettingsOpen(true)}
-            title="Settings"
-          >
-            <GearIcon />
-          </button>
+          {topbarInitials && (
+            <motion.div
+              className="topbar-avatar"
+              title={data.account.name || `#${data.account.login}`}
+              onClick={() => setSidebarOpen(true)}
+              style={{ cursor: 'pointer' }}
+              whileHover={{ scale: 1.08 }}
+              whileTap={{ scale: 0.92 }}
+            >
+              {topbarInitials}
+            </motion.div>
+          )}
         </div>
       </header>
 
       {/* ── Body ── */}
       <div className="app-body">
-        <NavBar page={page} setPage={setPage} />
-
         <main className="content">
-          {page === 'home'        && <Home        symbol={activeSymbol} data={data} aiLevels={aiLevels} />}
-          {page === 'trades'      && <Trades      trades={data?.trades ?? []} />}
-          {page === 'history'     && <History />}
-          {page === 'account'     && <AccountMetrics account={data?.account} />}
-          {page === 'performance' && <Performance />}
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={page}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.14, ease: 'easeOut' }}
+              style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}
+            >
+              {page === 'home'        && <Home        symbol={activeSymbol} data={data} aiLevels={aiLevels} />}
+              {page === 'trades'      && <Trades      trades={data?.trades ?? []} />}
+              {page === 'history'     && <History />}
+              {page === 'account'     && <AccountMetrics account={data?.account} />}
+              {page === 'performance' && <Performance />}
+            </motion.div>
+          </AnimatePresence>
         </main>
 
-        {aiOpen && (
-          <AIPanel
-            data={data}
-            onClose={() => setAiOpen(false)}
-            onAIAnalysis={levels => setAiLevels(levels)}
-          />
-        )}
+        <AnimatePresence>
+          {panelOpen && (
+            <motion.div
+              initial={{ width: 0, opacity: 0 }}
+              animate={{ width: 360, opacity: 1 }}
+              exit={{ width: 0, opacity: 0 }}
+              transition={{ type: 'spring', damping: 26, stiffness: 260 }}
+              style={{ flexShrink: 0, overflow: 'hidden' }}
+            >
+              <div style={{ width: 360, height: '100%' }}>
+                <MarketPanel
+                  symbol={activeSymbol}
+                  onSelectSymbol={selectSymbol}
+                  onClose={() => setPanelOpen(false)}
+                />
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
-      {settingsOpen && (
-        <Settings onClose={() => setSettingsOpen(false)} />
-      )}
+      <AnimatePresence>
+        {settingsOpen && (
+          <Settings
+            onClose={() => setSettingsOpen(false)}
+            account={data?.account}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* ── Floating Sage companion (bottom-right) ── */}
+      <SageBubble data={data} onAIAnalysis={levels => setAiLevels(levels)} />
     </div>
   );
 }

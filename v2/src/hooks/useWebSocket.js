@@ -27,13 +27,21 @@ export function useWebSocket() {
         if (!mountedRef.current) return;
         try {
           const msg = JSON.parse(raw);
-          // Preserve previous patterns/indicators when phase-1 sends null,
-          // so the chart overlay doesn't flash away while analysis runs.
-          setData(prev => ({
-            ...msg,
-            patterns:   msg.patterns   ?? prev?.patterns,
-            indicators: msg.indicators ?? prev?.indicators,
-          }));
+          // Two message types arrive on different cadences:
+          //   { type:'live',     symbol, account, trades }      ~300ms
+          //   { type:'patterns', symbol, indicators, patterns } ~30s
+          // Merge per-field so a fast 'live' update never wipes the
+          // pattern overlay, and a slow 'patterns' update never wipes
+          // the live account/trades/P&L.
+          setData(prev => {
+            const next = prev ? { ...prev } : {};
+            if (msg.symbol     != null) next.symbol     = msg.symbol;
+            if (msg.account    != null) next.account    = msg.account;
+            if (msg.trades     != null) next.trades     = msg.trades;
+            if (msg.patterns   != null) next.patterns   = msg.patterns;
+            if (msg.indicators != null) next.indicators = msg.indicators;
+            return next;
+          });
         } catch {}
       };
     }

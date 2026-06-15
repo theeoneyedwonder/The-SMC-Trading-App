@@ -4,6 +4,7 @@ import { useTheme } from '../contexts/ThemeContext';
 
 const API = 'http://127.0.0.1:8000';
 const TFS = ['M1','M5','M15','M30','H1','H4','D1'];
+const TF_SECONDS = { M1:60, M5:300, M15:900, M30:1800, H1:3600, H4:14400, D1:86400, W1:604800 };
 
 // ── Zone primitive (OB / FVG overlay) ────────────────────────────
 class ZonePrimitive {
@@ -182,6 +183,81 @@ function parseTime(str) {
   return isNaN(ms) ? null : Math.floor(ms/1000);
 }
 
+// ── MT5-style Trade Panel ─────────────────────────────────────────
+function splitPrice(p) {
+  if (!p || !isFinite(p)) return { main: '—', pips: '' };
+  let s;
+  if (p >= 100)     s = p.toFixed(2);
+  else if (p >= 10) s = p.toFixed(3);
+  else              s = p.toFixed(5);
+  return { main: s.slice(0, -2), pips: s.slice(-2) };
+}
+
+function TradePanel({ symbol, tick }) {
+  const [lot, setLot]         = useState('0.01');
+  const [trading, setTrading] = useState(null);
+  const [result, setResult]   = useState(null);
+
+  const executeTrade = async (side) => {
+    const lotNum = parseFloat(lot);
+    if (!isFinite(lotNum) || lotNum < 0.01) {
+      setResult({ ok: false, msg: 'Enter a lot size of at least 0.01' });
+      setTimeout(() => setResult(null), 4000);
+      return;
+    }
+    setTrading(side); setResult(null);
+    try {
+      const r = await fetch(`${API}/trade/market`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ symbol, lot: lotNum, type: side }),
+      });
+      const d = await r.json();
+      setResult(r.ok ? { ok: true, msg: `#${d.ticket} filled @ ${d.price}` }
+                     : { ok: false, msg: d.detail || 'Trade failed' });
+    } catch { setResult({ ok: false, msg: 'Connection error' }); }
+    setTrading(null);
+    setTimeout(() => setResult(null), 4000);
+  };
+
+  const bid = splitPrice(tick?.bid);
+  const ask = splitPrice(tick?.ask);
+
+  return (
+    <div className="trade-panel">
+      <div className="trade-panel-row">
+        <button className="trade-btn sell" onClick={() => executeTrade('SELL')} disabled={!!trading}>
+          {trading === 'SELL' ? '…' : 'SELL'}
+        </button>
+        <input
+          className="lot-input"
+          type="number"
+          inputMode="decimal"
+          min="0.01"
+          step="0.01"
+          value={lot}
+          onChange={e => setLot(e.target.value)}
+          title="Lot size — use the arrows to step by 0.01"
+        />
+        <button className="trade-btn buy" onClick={() => executeTrade('BUY')} disabled={!!trading}>
+          {trading === 'BUY' ? '…' : 'BUY'}
+        </button>
+      </div>
+      <div className="trade-prices-row">
+        <div className="trade-price sell-side">
+          <span className="tp-main">{bid.main}</span><span className="tp-pips">{bid.pips}</span>
+        </div>
+        <div className="trade-price buy-side">
+          <span className="tp-main">{ask.main}</span><span className="tp-pips">{ask.pips}</span>
+        </div>
+      </div>
+      {result && (
+        <div className={`trade-result ${result.ok ? 'ok' : 'err'}`}>{result.msg}</div>
+      )}
+    </div>
+  );
+}
+
 // ── Chart component ───────────────────────────────────────────────
 export default function Chart({ symbol, patterns, aiLevels }) {
   const containerRef  = useRef(null);
@@ -189,8 +265,13 @@ export default function Chart({ symbol, patterns, aiLevels }) {
   const seriesRef     = useRef(null);
   const zoneRef       = useRef(null);
   const overlayRef    = useRef(null);
-  const priceLinesRef = useRef([]);
-  const lastPriceRef  = useRef(null);
+  const priceLinesRef  = useRef([]);
+  const lastPriceRef   = useRef(null);
+  const priceLineRef   = useRef(null);
+  const liveBarRef     = useRef(null);
+  const lastTickRef    = useRef(0);
+  const marketOpenRef  = useRef(true);
+  const tfSecRef       = useRef(TF_SECONDS['H1']);  // kept in sync below via tf effect
   const { vars } = useTheme();
 
   const [tf, setTf]           = useState('H1');
@@ -209,11 +290,18 @@ export default function Chart({ symbol, patterns, aiLevels }) {
   const mouseStartRef  = useRef(null);
   const syncOverlayRef = useRef(null);
   const aiLevelsRef    = useRef([]);
+  const allCandlesRef  = useRef([]);
+  const loadingMoreRef = useRef(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [chartReady,  setChartReady]  = useState(false);
+  const [marketOpen,  setMarketOpen]  = useState(true);
+  const [liveTick,    setLiveTick]    = useState(null);
 
-  useEffect(() => { drawingsRef.current = drawings; },    [drawings]);
-  useEffect(() => { activeRef.current   = activeDraw; },  [activeDraw]);
-  useEffect(() => { toolRef.current     = tool; },        [tool]);
-  useEffect(() => { aiLevelsRef.current = aiLevels ?? []; }, [aiLevels]);
+  useEffect(() => { drawingsRef.current = drawings; },             [drawings]);
+  useEffect(() => { activeRef.current   = activeDraw; },           [activeDraw]);
+  useEffect(() => { toolRef.current     = tool; },                  [tool]);
+  useEffect(() => { aiLevelsRef.current = aiLevels ?? []; },        [aiLevels]);
+  useEffect(() => { tfSecRef.current    = TF_SECONDS[tf] ?? 3600; }, [tf]);
 
   // Persist drawings per symbol
   useEffect(() => { localStorage.setItem(`drawings_${symbol}`, JSON.stringify(drawings)); }, [drawings, symbol]);
@@ -251,6 +339,17 @@ export default function Chart({ symbol, patterns, aiLevels }) {
     series.attachPrimitive(zone);
     chartRef.current = chart; seriesRef.current = series; zoneRef.current = zone;
 
+    priceLineRef.current = series.createPriceLine({
+      price: 0,
+      color: 'rgba(129, 140, 248, 0.9)',
+      lineWidth: 1,
+      lineStyle: LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: '',
+    });
+
+    setChartReady(true);
+
     const syncOverlay = () => {
       if (overlayRef.current && containerRef.current) {
         overlayRef.current.width  = containerRef.current.clientWidth;
@@ -271,6 +370,8 @@ export default function Chart({ symbol, patterns, aiLevels }) {
     return () => {
       ro.disconnect(); chart.remove();
       chartRef.current = null; seriesRef.current = null; zoneRef.current = null;
+      priceLineRef.current = null;
+      setChartReady(false);
     };
   }, []);  // eslint-disable-line
 
@@ -302,12 +403,13 @@ export default function Chart({ symbol, patterns, aiLevels }) {
     return () => cancelAnimationFrame(id);
   }, []);
 
-  // ── Symbol change: clear zones / price lines ──────────────────
+  // ── Symbol / tf change: clear zones / price lines / live bar ──
   useEffect(() => {
+    liveBarRef.current = null;
     zoneRef.current?.setZones([]);
     priceLinesRef.current.forEach(pl => { try { seriesRef.current?.removePriceLine(pl); } catch {} });
     priceLinesRef.current = [];
-  }, [symbol]);
+  }, [symbol, tf]);
 
   // ── Candle fetch ──────────────────────────────────────────────
   const fetchCandles = useCallback(async () => {
@@ -317,7 +419,10 @@ export default function Chart({ symbol, patterns, aiLevels }) {
       const res  = await fetch(`${API}/candles/${symbol}/${tf}`);
       const data = await res.json();
       if (Array.isArray(data) && data.length && seriesRef.current) {
+        allCandlesRef.current = data;
+        liveBarRef.current = null;                          // clear before setData to avoid race
         seriesRef.current.setData(data);
+        liveBarRef.current = { ...data[data.length - 1] }; // seed live bar from latest candle
         lastPriceRef.current = data[data.length - 1].close;
         setLastPrice(data[data.length - 1].close);
         chartRef.current?.timeScale().fitContent();
@@ -329,49 +434,116 @@ export default function Chart({ symbol, patterns, aiLevels }) {
 
   useEffect(() => {
     fetchCandles();
-    const id = setInterval(fetchCandles, 60_000);
+    const id = setInterval(fetchCandles, 5 * 60_000); // safety sync every 5 min; live ticks handle intrabar
     return () => clearInterval(id);
   }, [fetchCandles]);
 
-  // ── Patterns (OB / FVG / BOS) ────────────────────────────────
+  const loadMoreCandles = useCallback(async () => {
+    if (loadingMoreRef.current || !seriesRef.current) return;
+    const current = allCandlesRef.current;
+    if (!current.length) return;
+    loadingMoreRef.current = true;
+    setLoadingMore(true);
+    try {
+      const res = await fetch(`${API}/candles/${symbol}/${tf}?offset=${current.length}`);
+      const older = await res.json();
+      if (Array.isArray(older) && older.length) {
+        const existingTimes = new Set(current.map(c => c.time));
+        const fresh = older.filter(c => !existingTimes.has(c.time));
+        if (fresh.length) {
+          const merged = [...fresh, ...current].sort((a, b) => a.time - b.time);
+          allCandlesRef.current = merged;
+          seriesRef.current.setData(merged);
+        }
+      }
+    } catch {}
+    finally { loadingMoreRef.current = false; setLoadingMore(false); }
+  }, [symbol, tf]);
+
+  useEffect(() => {
+    if (!chartReady || !chartRef.current) return;
+    const handler = (range) => { if (range && range.from < 10) loadMoreCandles(); };
+    chartRef.current.timeScale().subscribeVisibleLogicalRangeChange(handler);
+    return () => {
+      try { chartRef.current?.timeScale()?.unsubscribeVisibleLogicalRangeChange(handler); } catch {}
+    };
+  }, [chartReady, loadMoreCandles]);
+
+  // ── WebSocket tick stream — push-based, as fast as MT5 delivers ─
+  useEffect(() => {
+    if (!symbol) return;
+    let ws = null;
+    let reconnectTimer = null;
+    let cancelled = false;
+
+    const connectWs = () => {
+      if (cancelled) return;
+      try { ws = new WebSocket(`ws://127.0.0.1:8000/ws/ticks/${symbol}`); }
+      catch { if (!cancelled) reconnectTimer = setTimeout(connectWs, 1000); return; }
+
+      ws.onmessage = (e) => {
+        try {
+          const t = JSON.parse(e.data);
+          if (!t.bid || !t.ask) return;
+
+          const price   = (t.bid + t.ask) / 2;
+          const barTime = Math.floor(t.time / tfSecRef.current) * tfSecRef.current;
+          lastTickRef.current = Date.now();
+
+          if (!marketOpenRef.current) { marketOpenRef.current = true; setMarketOpen(true); }
+
+          if (seriesRef.current) {
+            const prev = liveBarRef.current;
+            if (!prev || barTime >= prev.time) {
+              const bar = (prev && prev.time === barTime)
+                ? { time: barTime, open: prev.open, high: Math.max(prev.high, price), low: Math.min(prev.low, price), close: price }
+                : { time: barTime, open: price, high: price, low: price, close: price };
+              liveBarRef.current = bar;
+              seriesRef.current.update(bar);
+            }
+            priceLineRef.current?.applyOptions({ price });
+          }
+
+          setLiveTick(t);
+        } catch {}
+      };
+
+      ws.onclose  = () => { if (!cancelled) reconnectTimer = setTimeout(connectWs, 1000); };
+      ws.onerror  = () => ws.close();
+    };
+
+    connectWs();
+    return () => {
+      cancelled = true;
+      clearTimeout(reconnectTimer);
+      try { ws?.close(); } catch {}
+    };
+  }, [symbol]);
+
+  // ── Market-closed detector ────────────────────────────────────
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (lastTickRef.current > 0 && Date.now() - lastTickRef.current > 30_000 && marketOpenRef.current) {
+        marketOpenRef.current = false;
+        setMarketOpen(false);
+      }
+    }, 5_000);
+    return () => clearInterval(id);
+  }, []);
+
+  // ── Structural patterns are no longer auto-drawn ──────────────
+  // OB / FVG / BOS used to be painted directly onto the chart, which made it
+  // look cluttered. The backend still DETECTS them and feeds them to Sage (the
+  // AI Companion); Sage curates a clean, reasonable set of levels on demand
+  // (rendered via `aiLevels`). Here we just make sure no stale structural
+  // zones / price lines remain on screen.
   useEffect(() => {
     if (!seriesRef.current || !zoneRef.current) return;
-
-    // Clear ref FIRST so it's always clean even if removePriceLine throws
     const toRemove = priceLinesRef.current;
     priceLinesRef.current = [];
     toRemove.forEach(pl => { try { seriesRef.current.removePriceLine(pl); } catch {} });
-
-    const tfData = patterns?.[tf];
-    if (!tfData) { zoneRef.current.setZones([]); return; }
-
-    const zones = [];
-    (tfData.order_blocks||[]).forEach(ob => {
-      const t = parseTime(ob.time); if (!t) return;
-      zones.push({ time:t, high:ob.high, low:ob.low,
-        fillColor:   ob.direction==='BULLISH'?'rgba(52,211,153,.09)':'rgba(251,113,133,.09)',
-        borderColor: ob.direction==='BULLISH'?'rgba(52,211,153,.5)':'rgba(251,113,133,.5)' });
-    });
-    (tfData.fvgs||[]).forEach(fvg => {
-      const t = parseTime(fvg.time); if (!t) return;
-      zones.push({ time:t, high:fvg.high, low:fvg.low,
-        fillColor:   fvg.direction==='BULLISH'?'rgba(96,165,250,.07)':'rgba(167,139,250,.07)',
-        borderColor: fvg.direction==='BULLISH'?'rgba(96,165,250,.45)':'rgba(167,139,250,.45)' });
-    });
-    zoneRef.current.setZones(zones);
-
-    (tfData.bos_mss||[]).forEach(bos => {
-      if (!isFinite(bos.level) || bos.level <= 0) return;
-      // Skip levels wildly mismatched to the current instrument's price scale
-      if (lastPrice && lastPrice > 10 && bos.level < lastPrice * 0.1) return;
-      const pl = seriesRef.current.createPriceLine({
-        price: bos.level, lineWidth:1, lineStyle:LineStyle.Dashed,
-        color: bos.direction==='BULLISH'?'#34d399':'#fb7185',
-        axisLabelVisible:true, title:`BOS ${bos.direction.slice(0,4)}`,
-      });
-      priceLinesRef.current.push(pl);
-    });
-  }, [patterns, tf, lastPrice]);
+    zoneRef.current.setZones([]);
+  }, [patterns, tf]);
 
   // ── Mouse events for drawing ──────────────────────────────────
   const getChartCoords = useCallback((clientX, clientY) => {
@@ -440,6 +612,10 @@ export default function Chart({ symbol, patterns, aiLevels }) {
   return (
     <>
       <div className="chart-toolbar">
+        <div className="chart-symbol">{symbol}</div>
+
+        <div className="chart-toolbar-sep" />
+
         <div className="tf-group">
           {TFS.map(t => (
             <button key={t} className={`tf-btn${tf===t?' active':''}`} onClick={() => setTf(t)}>{t}</button>
@@ -462,17 +638,22 @@ export default function Chart({ symbol, patterns, aiLevels }) {
         </div>
 
         {loading && <span className="chart-status">Loading...</span>}
+        {loadingMore && <span className="chart-status">◂ Loading history…</span>}
 
         <div className="chart-legend">
-          <span className="legend-item"><span className="legend-dot" style={{background:'rgba(52,211,153,.5)'}}/> OB Bull</span>
-          <span className="legend-item"><span className="legend-dot" style={{background:'rgba(251,113,133,.5)'}}/> OB Bear</span>
-          <span className="legend-item"><span className="legend-dot" style={{background:'rgba(96,165,250,.5)'}}/> FVG</span>
-          <span className="legend-item" style={{color:'var(--muted)'}}>-- BOS</span>
+          {aiLevels?.length > 0
+            ? <span className="legend-item" style={{color:'var(--indigo)'}}>◈ Sage levels</span>
+            : <span className="legend-item" style={{color:'var(--muted)'}}>Run Sage analysis to mark key levels</span>}
         </div>
       </div>
 
       <div style={{ position:'relative', flex:1, minHeight:0 }}>
         <div ref={containerRef} style={{ position:'absolute', inset:0 }} />
+        <TradePanel symbol={symbol} tick={liveTick} />
+        <div className={`market-status${marketOpen ? ' open' : ' closed'}`}>
+          <span className="market-dot" />
+          {marketOpen ? 'LIVE' : 'MARKET CLOSED'}
+        </div>
         <canvas
           ref={overlayRef}
           style={{ position:'absolute', inset:0, zIndex:2, pointerEvents: tool==='cursor' ? 'none' : 'all', ...cursorStyle }}

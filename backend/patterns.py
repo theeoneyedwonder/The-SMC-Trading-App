@@ -43,7 +43,13 @@ def detect_order_blocks(df: pd.DataFrame) -> list:
                     "valid"     : True,
                 })
 
-    return obs[-5:]  # keep only 5 most recent
+    if not obs:
+        return []
+    current_price = float(df.iloc[-1]["close"]) if not df.empty else None
+    if current_price and current_price > 0:
+        obs.sort(key=lambda x: abs((x["high"] + x["low"]) / 2 - current_price))
+        return obs[:5]
+    return obs[-5:]
 
 
 def detect_fvg(df: pd.DataFrame) -> list:
@@ -88,7 +94,13 @@ def detect_fvg(df: pd.DataFrame) -> list:
                 "valid"     : True,
             })
 
-    return fvgs[-5:]  # keep only 5 most recent
+    if not fvgs:
+        return []
+    current_price = float(df.iloc[-1]["close"]) if not df.empty else None
+    if current_price and current_price > 0:
+        fvgs.sort(key=lambda x: abs((x["high"] + x["low"]) / 2 - current_price))
+        return fvgs[:5]
+    return fvgs[-5:]
 
 
 def detect_bos_mss(df: pd.DataFrame) -> list:

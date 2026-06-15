@@ -64,6 +64,12 @@ def save_mt5_credentials(login: int, password: str, server: str):
     cfg['mt5'] = {'login': login, 'password': password, 'server': server}
     _write(cfg)
 
+def clear_mt5_credentials():
+    """Wipe stored MT5 credentials (called on logout)."""
+    cfg = _read()
+    cfg['mt5'] = {'login': 0, 'password': '', 'server': ''}
+    _write(cfg)
+
 # ─── Theme ────────────────────────────────────────────────────
 def get_theme() -> dict:
     return _read().get('theme', {})
@@ -80,6 +86,15 @@ def get_ai_api_key() -> str:
 def save_ai_api_key(key: str):
     cfg = _read()
     cfg['ai_api_key'] = key
+    _write(cfg)
+
+# ─── Web search (Tavily) key ──────────────────────────────────
+def get_search_api_key() -> str:
+    return _read().get('search_api_key', os.getenv('TAVILY_API_KEY', ''))
+
+def save_search_api_key(key: str):
+    cfg = _read()
+    cfg['search_api_key'] = key
     _write(cfg)
 
 # ─── Active symbol ────────────────────────────────────────────

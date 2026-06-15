@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const API = 'http://127.0.0.1:8000';
 const S = { WAIT:'wait', WELCOME:'welcome', NO_MT5:'no_mt5', FORM:'form', CONNECTING:'connecting', SUCCESS:'success', ERROR:'error' };
+const SERVERS_KEY = 'smc_past_servers';
 
 function openMT5Download() {
   const url = 'https://www.metatrader5.com/en/download';
@@ -9,13 +11,28 @@ function openMT5Download() {
   else window.open(url, '_blank', 'noopener');
 }
 
+function loadSavedServers() {
+  try { return JSON.parse(localStorage.getItem(SERVERS_KEY) || '[]'); } catch { return []; }
+}
+
+function saveServer(server) {
+  const trimmed = server.trim();
+  if (!trimmed) return;
+  const prev = loadSavedServers();
+  const next = [trimmed, ...prev.filter(s => s !== trimmed)].slice(0, 12);
+  localStorage.setItem(SERVERS_KEY, JSON.stringify(next));
+}
+
 export default function Setup({ onComplete }) {
-  const [step, setStep]       = useState(S.WAIT);
-  const [form, setForm]       = useState({ login:'', password:'', server:'' });
-  const [account, setAccount] = useState(null);
-  const [errMsg, setErrMsg]   = useState('');
+  const [step, setStep]         = useState(S.WAIT);
+  const [form, setForm]         = useState({ login:'', password:'', server:'' });
+  const [account, setAccount]   = useState(null);
+  const [errMsg, setErrMsg]     = useState('');
+  const [serverOpen, setServerOpen] = useState(false);
+  const [savedServers, setSavedServers] = useState([]);
 
   useEffect(() => {
+    setSavedServers(loadSavedServers());
     let live = true;
     const poll = async () => {
       try { const r = await fetch(`${API}/health`); if (r.ok && live) { setStep(S.WELCOME); return; } } catch {}
@@ -44,8 +61,15 @@ export default function Setup({ onComplete }) {
       });
       const data = await res.json();
       if (!res.ok) { setErrMsg(data.detail||'Connection failed.'); setStep(S.ERROR); return; }
+      saveServer(form.server);
+      setSavedServers(loadSavedServers());
       setAccount(data.account); setStep(S.SUCCESS);
     } catch { setErrMsg('Could not reach the backend. Ensure MetaTrader 5 is installed and running.'); setStep(S.ERROR); }
+  };
+
+  const selectServer = (srv) => {
+    setForm(p => ({ ...p, server: srv }));
+    setServerOpen(false);
   };
 
   const canSubmit = form.login.trim() && form.password && form.server.trim();
@@ -70,7 +94,6 @@ export default function Setup({ onComplete }) {
           <div className="setup-logo-mark">S</div>
           <div className="setup-logo-text">The SMC Trading App</div>
         </div>
-
 
         {step === S.WELCOME && (
           <div className="setup-body">
@@ -116,10 +139,60 @@ export default function Setup({ onComplete }) {
               <label htmlFor="s-pass">Password</label>
               <input id="s-pass" type="password" className="setup-input" placeholder="Your MT5 password" value={form.password} onChange={set('password')}/>
             </div>
+
+            {/* Server field with history dropdown */}
             <div className="setup-field">
-              <label htmlFor="s-srv">Server <span className="setup-hint">MT5 → File → Open Account → server name</span></label>
-              <input id="s-srv" type="text" className="setup-input" placeholder="e.g. ICMarkets-Demo01" value={form.server} onChange={set('server')} onKeyDown={e => e.key==='Enter'&&canSubmit&&handleConnect()}/>
+              <label htmlFor="s-srv">
+                Server <span className="setup-hint">MT5 → File → Open Account → server name</span>
+              </label>
+              <div className="setup-server-wrap" style={{ position: 'relative' }}>
+                <input
+                  id="s-srv"
+                  type="text"
+                  className="setup-input"
+                  placeholder="e.g. ICMarkets-Demo01"
+                  value={form.server}
+                  onChange={e => { set('server')(e); setServerOpen(false); }}
+                  onKeyDown={e => e.key === 'Enter' && canSubmit && handleConnect()}
+                  autoComplete="off"
+                />
+                {savedServers.length > 0 && (
+                  <button
+                    type="button"
+                    className="setup-server-chevron"
+                    onClick={() => setServerOpen(o => !o)}
+                    tabIndex={-1}
+                    title="Past servers"
+                  >
+                    {serverOpen ? '▲' : '▼'}
+                  </button>
+                )}
+                <AnimatePresence>
+                  {serverOpen && savedServers.length > 0 && (
+                    <motion.div
+                      className="setup-server-dropdown"
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.13 }}
+                    >
+                      <div className="setup-server-dropdown-label">Recent servers</div>
+                      {savedServers.map(srv => (
+                        <button
+                          key={srv}
+                          type="button"
+                          className="setup-server-opt"
+                          onClick={() => selectServer(srv)}
+                        >
+                          {srv}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
+
             <div className="setup-row-actions">
               <button className="setup-btn ghost"   onClick={() => setStep(S.WELCOME)}>← Back</button>
               <button className="setup-btn primary" onClick={handleConnect} disabled={!canSubmit}>Connect</button>
@@ -140,7 +213,7 @@ export default function Setup({ onComplete }) {
             <div className="setup-icon-circle ok">✓</div>
             <h2 className="setup-subheading">Connected!</h2>
             <div className="setup-account-table">
-              {[['Account', `#${account.login}`],['Name',account.name],['Balance',`${account.currency} ${Number(account.balance).toFixed(2)}`,'green'],['Broker',account.company],['Server',account.server]].map(([l,v,cls])=>(
+              {[['Account',`#${account.login}`],['Name',account.name],['Balance',`${account.currency} ${Number(account.balance).toFixed(2)}`,'green'],['Broker',account.company],['Server',account.server]].map(([l,v,cls])=>(
                 <div className="setup-acct-row" key={l}>
                   <span className="setup-acct-label">{l}</span>
                   <span className={`setup-acct-value${cls?' '+cls:''}`}>{v}</span>

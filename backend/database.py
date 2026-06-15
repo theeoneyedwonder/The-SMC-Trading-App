@@ -19,6 +19,6 @@ def get_db():
         db.close()
 
 def init_db():
-    from models import Trade, DetectedStructure
+    from models import Trade, Deal, ChatMessage, DetectedStructure
     Base.metadata.create_all(bind=engine)
     print("[DB] Database initialised OK")

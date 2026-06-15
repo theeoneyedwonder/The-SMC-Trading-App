@@ -1,6 +1,6 @@
 {
   "name": "the-smc-trading-app",
-  "version": "0.1.0-beta.1",
+  "version": "0.2.0",
   "description": "The SMC Trading App - Smart Money Concepts Dashboard",
   "private": true,
   "type": "module",
@@ -37,8 +37,18 @@
     ],
     "win": {
       "target": [
-        { "target": "nsis",     "arch": ["x64"] },
-        { "target": "portable", "arch": ["x64"] }
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
       ]
     },
     "nsis": {
@@ -59,6 +69,7 @@
   },
   "dependencies": {
     "electron-updater": "^6.3.9",
+    "framer-motion": "^12.40.0",
     "lightweight-charts": "^5.2.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"

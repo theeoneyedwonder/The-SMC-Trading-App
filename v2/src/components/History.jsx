@@ -20,7 +20,7 @@ export default function History() {
     return () => { live = false; };
   }, [days]);
 
-  const totalPnl = deals.reduce((s, d) => s + (d.profit ?? 0), 0);
+  const totalPnl = deals.reduce((s, d) => s + (d.net ?? d.profit ?? 0), 0);
 
   return (
     <>
@@ -66,27 +66,29 @@ export default function History() {
                 <th>Symbol</th>
                 <th>Direction</th>
                 <th>Volume</th>
-                <th>Price</th>
+                <th>Entry</th>
+                <th>Exit</th>
                 <th>Commission</th>
                 <th>Swap</th>
-                <th style={{textAlign:'right'}}>Profit</th>
+                <th style={{textAlign:'right'}}>Net P&L</th>
               </tr>
             </thead>
             <tbody>
               {[...deals].reverse().map(d => {
-                const profit = d.profit ?? 0;
+                const net = d.net ?? d.profit ?? 0;
                 return (
                   <tr key={d.ticket}>
                     <td style={{color:'var(--text2)',fontSize:11}}>{fmtDate(d.time)}</td>
                     <td style={{fontWeight:700}}>{d.symbol}</td>
                     <td><span className={d.direction==='BUY'?'badge-buy':'badge-sell'}>{d.direction}</span></td>
                     <td>{fmt(d.volume, 2)}</td>
+                    <td>{fmt(d.entry, 5)}</td>
                     <td>{fmt(d.price, 5)}</td>
                     <td style={{color:'var(--text2)'}}>{fmt(d.commission)}</td>
                     <td style={{color:'var(--text2)'}}>{fmt(d.swap)}</td>
                     <td style={{textAlign:'right'}}>
-                      <span className={profit>0?'pnl-pos':profit<0?'pnl-neg':'pnl-zero'}>
-                        {profit>=0?'+':''}{fmt(profit)}
+                      <span className={net>0?'pnl-pos':net<0?'pnl-neg':'pnl-zero'}>
+                        {net>=0?'+':''}{fmt(net)}
                       </span>
                     </td>
                   </tr>
