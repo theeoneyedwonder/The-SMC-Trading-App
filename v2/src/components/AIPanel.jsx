@@ -179,7 +179,7 @@ function StrategySheet({ strategy, strategyName, onSave, onClear, onClose }) {
   );
 }
 
-export default function AIPanel({ data, onClose, onAIAnalysis }) {
+export default function AIPanel({ data, nudge, onClose, onAIAnalysis }) {
   const [messages,      setMessages]      = useState([]);
   const [input,         setInput]         = useState('');
   const [loading,       setLoading]       = useState(false);
@@ -210,6 +210,16 @@ export default function AIPanel({ data, onClose, onAIAnalysis }) {
       } catch {}
     })();
   }, [login]);
+
+  // Proactive nudges: append live while the panel is open (it's already
+  // persisted server-side, so if the panel were closed it'd just show up
+  // next time history loads).
+  const lastNudgeIdRef = useRef(null);
+  useEffect(() => {
+    if (!nudge || nudge.id === lastNudgeIdRef.current) return;
+    lastNudgeIdRef.current = nudge.id;
+    setMessages(prev => [...prev, { role: 'assistant', content: nudge.text }]);
+  }, [nudge]);
 
   const clearChat = async () => {
     setMessages([]);
@@ -262,21 +272,66 @@ export default function AIPanel({ data, onClose, onAIAnalysis }) {
     if (!msg || loading || analyzing) return;
     setInput('');
     setStrategyOpen(false);
-    setMessages(prev => [...prev, { role: 'user', content: msg }]);
+    setMessages(prev => [...prev, { role: 'user', content: msg }, { role: 'assistant', content: '', streaming: true }]);
     setLoading(true);
+
+    const replaceLast = (next) => setMessages(prev => {
+      const copy = [...prev];
+      copy[copy.length - 1] = typeof next === 'function' ? next(copy[copy.length - 1]) : next;
+      return copy;
+    });
+
     try {
       const r = await fetch(`${API}/ai/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: msg, context: data ?? {}, strategy }),
       });
-      const d = await r.json();
-      setMessages(prev => [...prev, {
-        role: r.ok ? 'assistant' : 'error',
-        content: r.ok ? d.reply : (d.detail || 'Something went wrong.'),
-      }]);
+
+      if (!r.ok || !r.body) {
+        const d = await r.json().catch(() => ({}));
+        replaceLast({ role: 'error', content: d.detail || 'Something went wrong.' });
+        setLoading(false);
+        return;
+      }
+
+      const reader  = r.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let done   = false;
+
+      while (!done) {
+        const chunk = await reader.read();
+        if (chunk.done) break;
+        buffer += decoder.decode(chunk.value, { stream: true });
+
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() ?? '';
+
+        for (const part of parts) {
+          const line = part.trim();
+          if (!line.startsWith('data:')) continue;
+          const payload = line.slice(5).trim();
+          if (!payload) continue;
+
+          let evt;
+          try { evt = JSON.parse(payload); } catch { continue; }
+
+          if (evt.delta) {
+            replaceLast(last => ({ ...last, role: 'assistant', content: (last.content || '') + evt.delta }));
+          } else if (evt.error) {
+            replaceLast({ role: 'error', content: evt.error });
+            done = true;
+            break;
+          } else if (evt.done) {
+            replaceLast(last => ({ ...last, streaming: false }));
+            done = true;
+            break;
+          }
+        }
+      }
     } catch {
-      setMessages(prev => [...prev, { role: 'error', content: 'Could not reach the backend.' }]);
+      replaceLast({ role: 'error', content: 'Could not reach the backend.' });
     }
     setLoading(false);
     setTimeout(() => inputRef.current?.focus(), 50);
@@ -367,6 +422,16 @@ export default function AIPanel({ data, onClose, onAIAnalysis }) {
                   </div>
                 );
               }
+              if (m.role === 'assistant' && m.streaming && !m.content) {
+                return (
+                  <div key={i} className="sage-msg sage-msg-assistant">
+                    <div className="sage-avatar"><SageMark size={12} /></div>
+                    <div className="sage-bubble sage-bubble-assistant sage-typing">
+                      <span /><span /><span />
+                    </div>
+                  </div>
+                );
+              }
               return (
                 <div key={i} className={`sage-msg sage-msg-${m.role}`}>
                   {(m.role === 'assistant' || m.role === 'error') && (
@@ -381,7 +446,7 @@ export default function AIPanel({ data, onClose, onAIAnalysis }) {
               );
             })}
 
-            {busy && (
+            {analyzing && (
               <div className="sage-msg sage-msg-assistant">
                 <div className="sage-avatar"><SageMark size={12} /></div>
                 <div className="sage-bubble sage-bubble-assistant sage-typing">

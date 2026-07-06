@@ -6,6 +6,7 @@ import time
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
 from config import (
@@ -57,6 +58,37 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 _wake_loop: asyncio.Event | None = None  # set by lifespan, triggered after setup
+
+# ─── Proactive Sage nudges ─────────────────────────────────────
+# Only higher timeframes — M1..M30 recompute too often to be worth
+# interrupting the user for every reshuffle.
+NUDGE_TIMEFRAMES = ("H1", "H4", "D1")
+_seen_bos: dict[str, dict[str, set]] = {}
+
+def _bos_nudges(symbol: str, patterns: dict) -> list[dict]:
+    """Diff this cycle's BOS/MSS against what we've already seen for this
+    symbol+timeframe and return only genuinely new breaks. The first time a
+    symbol/timeframe pair is observed just baselines it (no nudge storm)."""
+    seen_for_symbol = _seen_bos.setdefault(symbol, {})
+    nudges = []
+    for tf in NUDGE_TIMEFRAMES:
+        tf_data = patterns.get(tf)
+        if not tf_data:
+            continue
+        current = {(b["direction"], round(b["level"], 2)) for b in tf_data.get("bos_mss", [])}
+        seen = seen_for_symbol.get(tf)
+        if seen is not None:
+            for direction, level in current - seen:
+                nudges.append({
+                    "symbol": symbol, "timeframe": tf,
+                    "direction": direction, "level": level,
+                    "text": (
+                        f"Just flagged a {direction.lower()} break of structure on {tf} "
+                        f"for {symbol} — price closed through {level:g}. Worth a look?"
+                    ),
+                })
+        seen_for_symbol[tf] = current
+    return nudges
 
 # ─── Fast live loop (account + trades + P&L) ──────────────────
 async def account_loop():
@@ -136,6 +168,13 @@ async def pattern_loop():
                 "indicators" : indicators,
                 "patterns"   : patterns,
             })
+
+            # Proactive Sage: surface newly-formed higher-timeframe breaks of
+            # structure unprompted, instead of waiting for the user to ask.
+            for nudge in _bos_nudges(symbol, patterns):
+                login = get_mt5_credentials()[0]
+                await loop.run_in_executor(None, lambda n=nudge: save_message(login, "assistant", n["text"]))
+                await manager.broadcast({"type": "nudge", "id": time.time(), **nudge})
 
             # Keep the persisted trade history fresh (captures closes within ~30s)
             await loop.run_in_executor(None, sync_deal_history)
@@ -525,57 +564,105 @@ async def ai_chat(req: AIChatRequest):
     tools = [TOOL_SCHEMA] if search_enabled() else None
 
     def _groq_body():
-        body = {"model": "llama-3.3-70b-versatile", "messages": messages, "max_tokens": 1024}
+        body = {
+            "model": "llama-3.3-70b-versatile", "messages": messages,
+            "max_tokens": 1024, "stream": True,
+        }
         if tools:
             body["tools"] = tools
             body["tool_choice"] = "auto"
         return body
 
-    try:
-        async with httpx.AsyncClient(timeout=40.0) as client:
-            # Up to 3 rounds so the model can call web_search then answer.
-            for _ in range(3):
-                resp = await client.post(
-                    "https://api.groq.com/openai/v1/chat/completions",
-                    headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
-                    json=_groq_body(),
-                )
-                resp.raise_for_status()
-                msg = resp.json()["choices"][0]["message"]
+    async def event_stream():
+        try:
+            async with httpx.AsyncClient(timeout=40.0) as client:
+                # Up to 3 rounds so the model can call web_search then answer.
+                for _ in range(3):
+                    full_content = ""
+                    tool_calls_acc: dict[int, dict] = {}
+                    finish_reason = None
 
-                tool_calls = msg.get("tool_calls")
-                if not tool_calls:
-                    reply = msg.get("content", "") or ""
-                    break
+                    async with client.stream(
+                        "POST", "https://api.groq.com/openai/v1/chat/completions",
+                        headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+                        json=_groq_body(),
+                    ) as resp:
+                        if resp.status_code >= 400:
+                            err = (await resp.aread()).decode(errors="replace")
+                            yield f"data: {json.dumps({'error': f'Groq API error: {err}'})}\n\n"
+                            return
+                        async for line in resp.aiter_lines():
+                            if not line.startswith("data:"):
+                                continue
+                            payload = line[len("data:"):].strip()
+                            if payload == "[DONE]":
+                                break
+                            chunk  = json.loads(payload)
+                            choice = chunk["choices"][0]
+                            delta  = choice.get("delta", {})
 
-                # Execute the requested tool calls, feed results back to the model
-                messages.append(msg)
-                for tc in tool_calls:
-                    args = {}
-                    try:
-                        import json as _j
-                        args = _j.loads(tc["function"].get("arguments") or "{}")
-                    except Exception:
-                        pass
-                    if tc["function"]["name"] == "web_search":
-                        result = await web_search(args.get("query", req.message))
-                    else:
-                        result = "Unknown tool."
-                    messages.append({
-                        "role": "tool",
-                        "tool_call_id": tc["id"],
-                        "content": result,
-                    })
-            else:
-                reply = "I wasn't able to complete that lookup — try rephrasing?"
+                            if delta.get("content"):
+                                full_content += delta["content"]
+                                yield f"data: {json.dumps({'delta': delta['content']})}\n\n"
 
-            await loop.run_in_executor(None, lambda: save_message(login, "user", req.message))
-            await loop.run_in_executor(None, lambda: save_message(login, "assistant", reply))
-            return {"reply": reply}
-    except httpx.HTTPStatusError as e:
-        raise HTTPException(status_code=502, detail=f"Groq API error: {e.response.text}")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+                            for tc in delta.get("tool_calls") or []:
+                                idx  = tc.get("index", 0)
+                                slot = tool_calls_acc.setdefault(idx, {"id": None, "name": None, "arguments": ""})
+                                if tc.get("id"):
+                                    slot["id"] = tc["id"]
+                                fn = tc.get("function") or {}
+                                if fn.get("name"):
+                                    slot["name"] = fn["name"]
+                                if fn.get("arguments"):
+                                    slot["arguments"] += fn["arguments"]
+
+                            if choice.get("finish_reason"):
+                                finish_reason = choice["finish_reason"]
+
+                    if finish_reason == "tool_calls" and tool_calls_acc:
+                        yield f"data: {json.dumps({'tool_call': True})}\n\n"
+                        messages.append({
+                            "role": "assistant",
+                            "content": full_content or None,
+                            "tool_calls": [
+                                {
+                                    "id": slot["id"],
+                                    "type": "function",
+                                    "function": {"name": slot["name"], "arguments": slot["arguments"]},
+                                }
+                                for slot in tool_calls_acc.values()
+                            ],
+                        })
+                        for slot in tool_calls_acc.values():
+                            try:
+                                args = json.loads(slot["arguments"] or "{}")
+                            except Exception:
+                                args = {}
+                            if slot["name"] == "web_search":
+                                result = await web_search(args.get("query", req.message))
+                            else:
+                                result = "Unknown tool."
+                            messages.append({
+                                "role": "tool",
+                                "tool_call_id": slot["id"],
+                                "content": result,
+                            })
+                        continue  # let the model see the tool result and respond
+
+                    await loop.run_in_executor(None, lambda: save_message(login, "user", req.message))
+                    await loop.run_in_executor(None, lambda: save_message(login, "assistant", full_content))
+                    yield f"data: {json.dumps({'done': True})}\n\n"
+                    return
+
+                fallback = "I wasn't able to complete that lookup — try rephrasing?"
+                yield f"data: {json.dumps({'delta': fallback})}\n\n"
+                yield f"data: {json.dumps({'done': True})}\n\n"
+        except httpx.HTTPStatusError as e:
+            yield f"data: {json.dumps({'error': f'Groq API error: {e.response.text}'})}\n\n"
+        except Exception as e:
+            yield f"data: {json.dumps({'error': str(e)})}\n\n"
+
+    return StreamingResponse(event_stream(), media_type="text/event-stream")
 
 # ─── Sage conversation memory ─────────────────────────────────
 @app.get("/ai/history")

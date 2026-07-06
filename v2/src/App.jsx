@@ -77,7 +77,7 @@ export default function App() {
   const [settingsOpen, setSettingsOpen]     = useState(false);
   const [panelOpen, setPanelOpen]           = useState(true);
   const [aiLevels, setAiLevels]             = useState([]);
-  const { data, connected }                 = useWebSocket();
+  const { data, connected, nudge }          = useWebSocket();
 
   // Keep ref in sync so the symbol load effect can read current value without a closure stale
   useEffect(() => { symbolRef.current = symbol; }, [symbol]);
@@ -282,7 +282,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* ── Floating Sage companion (bottom-right) ── */}
-      <SageBubble data={data} onAIAnalysis={levels => setAiLevels(levels)} />
+      <SageBubble data={data} nudge={nudge} onAIAnalysis={levels => setAiLevels(levels)} />
     </div>
   );
 }

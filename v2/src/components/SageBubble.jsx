@@ -1,9 +1,26 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import AIPanel, { SageMark } from './AIPanel';
 
-export default function SageBubble({ data, onAIAnalysis }) {
-  const [open, setOpen] = useState(false);
+export default function SageBubble({ data, nudge, onAIAnalysis }) {
+  const [open, setOpen]         = useState(false);
+  const [hasUnread, setUnread]  = useState(false);
+  const lastNudgeId             = useRef(null);
+
+  // A nudge arriving while Sage is closed just lights up the FAB — the
+  // message itself is already persisted server-side, so opening the panel
+  // will show it via the normal history load.
+  useEffect(() => {
+    if (!nudge || nudge.id === lastNudgeId.current) return;
+    lastNudgeId.current = nudge.id;
+    if (!open) setUnread(true);
+  }, [nudge, open]);
+
+  const toggle = () => setOpen(o => {
+    const next = !o;
+    if (next) setUnread(false);
+    return next;
+  });
 
   return (
     <>
@@ -19,6 +36,7 @@ export default function SageBubble({ data, onAIAnalysis }) {
           >
             <AIPanel
               data={data}
+              nudge={nudge}
               onClose={() => setOpen(false)}
               onAIAnalysis={onAIAnalysis}
             />
@@ -29,11 +47,12 @@ export default function SageBubble({ data, onAIAnalysis }) {
       {/* ── FAB ── */}
       <motion.button
         className={`sage-fab${open ? ' open' : ''}`}
-        onClick={() => setOpen(o => !o)}
+        onClick={toggle}
         title="Sage — AI Companion"
         whileHover={{ scale: 1.07 }}
         whileTap={{ scale: 0.88, transition: { type: 'spring', stiffness: 600, damping: 10 } }}
       >
+        {hasUnread && !open && <span className="sage-fab-badge" />}
         <AnimatePresence mode="wait" initial={false}>
           {open ? (
             <motion.span

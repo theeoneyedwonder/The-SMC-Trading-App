@@ -5,6 +5,7 @@ const WS_URL = 'ws://127.0.0.1:8000/ws';
 export function useWebSocket() {
   const [data, setData]           = useState(null);
   const [connected, setConnected] = useState(false);
+  const [nudge, setNudge]         = useState(null);
   const mountedRef                = useRef(true);
   const wsRef                     = useRef(null);
 
@@ -27,6 +28,11 @@ export function useWebSocket() {
         if (!mountedRef.current) return;
         try {
           const msg = JSON.parse(raw);
+          // Sage nudge — a one-off unprompted insight, not merged state.
+          if (msg.type === 'nudge') {
+            setNudge(msg);
+            return;
+          }
           // Two message types arrive on different cadences:
           //   { type:'live',     symbol, account, trades }      ~300ms
           //   { type:'patterns', symbol, indicators, patterns } ~30s
@@ -53,5 +59,5 @@ export function useWebSocket() {
     };
   }, []);
 
-  return { data, connected };
+  return { data, connected, nudge };
 }

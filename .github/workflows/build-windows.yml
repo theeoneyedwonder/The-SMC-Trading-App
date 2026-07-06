@@ -1,0 +1,53 @@
+name: Build Windows Installer
+
+# Manual trigger only — this spends real CI minutes and (once wired up)
+# would use `gh` locally. Run it from the Actions tab when you want a
+# fresh Setup.exe + portable.exe to test.
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install backend dependencies
+        working-directory: backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: Build backend (PyInstaller)
+        working-directory: backend
+        run: pyinstaller backend.spec --clean --noconfirm
+
+      - name: Install frontend dependencies
+        working-directory: v2
+        run: npm install
+
+      - name: Build frontend
+        working-directory: v2
+        run: npm run build
+
+      - name: Package Windows installer + portable exe
+        working-directory: v2
+        # --publish=never: this workflow only produces artifacts to download
+        # and inspect. Publishing a GitHub Release is a separate, deliberate step.
+        run: npx electron-builder --win --publish=never
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: SMC-Trading-App-Windows
+          path: release/**
+          if-no-files-found: error
