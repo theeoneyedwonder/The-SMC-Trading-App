@@ -7,6 +7,7 @@ import Setup              from './components/Setup';
 import Settings           from './components/Settings';
 import MarketPanel        from './components/MarketPanel';
 import SageBubble         from './components/SageBubble';
+import AIPanel            from './components/AIPanel';
 import SideRail           from './components/SideRail';
 import Home               from './components/Home';
 import Trades             from './components/Trades';
@@ -19,7 +20,7 @@ const FALLBACK_SYMBOLS = ['XAUUSDm','XAGUSDm','EURUSDm','GBPUSDm','USDJPYm','BTC
 
 const PAGE_TITLES = {
   home: 'TERMINAL', trades: 'POSITIONS', history: 'HISTORY',
-  account: 'ACCOUNT', performance: 'ANALYTICS',
+  account: 'ACCOUNT', performance: 'ANALYTICS', sage: 'SAGE_AI',
 };
 
 // Apply persisted font scale immediately (module level — no hook, no lifecycle delay)
@@ -162,32 +163,41 @@ export default function App() {
       {/* ── Everything right of the rail: topbar + body ── */}
       <div className="app-shell">
       {/* ── Top Bar ── */}
-      <header className="topbar">
-        <div className="topbar-left">
-          <span className="topbar-symbol">{activeSymbol}</span>
-          <span className="topbar-page">{PAGE_TITLES[page] ?? ''}</span>
+      <header className="h-12 shrink-0 flex items-center justify-between px-md border-b-2 border-outline-variant bg-surface-container relative z-40">
+        <div className="flex items-center gap-md h-full">
+          <div className="flex items-center gap-xs pr-md border-r-2 border-outline-variant h-full">
+            <span className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">ASSET</span>
+            <span className="font-headline-md text-headline-md font-bold text-primary-fixed glow-text-primary">{activeSymbol}</span>
+          </div>
+          <span className="font-label-caps text-label-caps text-on-surface-variant tracking-[0.2em]">{PAGE_TITLES[page] ?? ''}</span>
         </div>
 
-        <div className="topbar-right">
-          <motion.button
-            className={`icon-btn${panelOpen ? ' active' : ''}`}
+        <div className="flex items-center gap-sm h-full">
+          <button
             onClick={() => setPanelOpen(o => !o)}
             title="Watchlist"
-            whileHover={{ scale: 1.08 }}
-            whileTap={{ scale: 0.88, transition: { type: 'spring', stiffness: 500, damping: 12 } }}
+            className={
+              'w-8 h-8 flex items-center justify-center border-2 transition-colors ' +
+              (panelOpen
+                ? 'border-primary-fixed-dim text-primary-fixed-dim bg-primary-fixed/10'
+                : 'border-outline-variant text-on-surface-variant hover:text-primary-fixed-dim')
+            }
           >
-            <PanelIcon />
-          </motion.button>
-
+            <span className="material-symbols-outlined text-[18px]">list_alt</span>
+          </button>
+          <button
+            className="w-8 h-8 flex items-center justify-center border-2 border-outline-variant text-on-surface-variant hover:text-primary-fixed-dim transition-colors relative"
+            title="Notifications"
+          >
+            <span className="material-symbols-outlined text-[18px]">notifications</span>
+          </button>
           {topbarInitials && (
-            <motion.div
-              className="topbar-avatar"
+            <div
+              className="w-8 h-8 flex items-center justify-center bg-secondary/20 border-2 border-secondary text-secondary glow-secondary font-stat-lg text-[11px] font-bold"
               title={data.account.name || `#${data.account.login}`}
-              whileHover={{ scale: 1.08 }}
-              whileTap={{ scale: 0.92 }}
             >
               {topbarInitials}
-            </motion.div>
+            </div>
           )}
         </div>
       </header>
@@ -209,6 +219,7 @@ export default function App() {
               {page === 'history'     && <History />}
               {page === 'account'     && <AccountMetrics account={data?.account} />}
               {page === 'performance' && <Performance />}
+              {page === 'sage'        && <AIPanel data={data} nudge={nudge} onClose={() => setPage('home')} onAIAnalysis={levels => setAiLevels(levels)} />}
             </motion.div>
           </AnimatePresence>
         </main>

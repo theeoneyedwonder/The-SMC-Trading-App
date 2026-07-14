@@ -1,23 +1,23 @@
-import { motion } from 'framer-motion';
 import { useTheme } from '../contexts/ThemeContext';
 
-function TerminalIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>; }
-function AnalyticsIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>; }
-function SageIcon() { return <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 L14.2 9.8 L22 12 L14.2 14.2 L12 22 L9.8 14.2 L2 12 L9.8 9.8 Z"/></svg>; }
-function HistoryIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>; }
-function AccountIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>; }
-function PerfIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/></svg>; }
-function SettingsIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>; }
-function SunIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>; }
-function MoonIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>; }
-function LogoutIcon() { return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>; }
+// Material Symbols glyph
+function Icon({ name, className = '', fill = false }) {
+  return (
+    <span
+      className={`material-symbols-outlined ${className}`}
+      style={fill ? { fontVariationSettings: "'FILL' 1" } : undefined}
+    >
+      {name}
+    </span>
+  );
+}
 
 const ITEMS = [
-  { id: 'home',        label: 'Terminal',    Icon: TerminalIcon },
-  { id: 'performance', label: 'Analytics',   Icon: AnalyticsIcon },
-  { id: 'trades',      label: 'Positions',   Icon: AccountIcon },
-  { id: 'history',     label: 'History',     Icon: HistoryIcon },
-  { id: 'account',     label: 'Account',     Icon: PerfIcon },
+  { id: 'home',        label: 'Terminal',  icon: 'terminal' },
+  { id: 'performance', label: 'Analytics', icon: 'analytics' },
+  { id: 'trades',      label: 'Positions', icon: 'format_list_bulleted' },
+  { id: 'history',     label: 'History',   icon: 'history' },
+  { id: 'account',     label: 'Account',   icon: 'account_circle' },
 ];
 
 export default function SideRail({ page, setPage, account, connected, onSettingsClick, onLogout }) {
@@ -28,62 +28,87 @@ export default function SideRail({ page, setPage, account, connected, onSettings
     : account?.login ? String(account.login).slice(-2) : 'MT';
 
   return (
-    <aside className="rail">
-      {/* Brand */}
-      <div className="rail-brand">
-        <div className="rail-logo"><SageIcon /></div>
+    <aside className="w-[280px] shrink-0 flex flex-col bg-surface-container-lowest border-r-2 border-outline-variant shadow-[4px_0px_0px_0px_rgba(0,0,0,1)] relative z-50">
+      {/* Header */}
+      <div className="p-lg border-b-2 border-outline-variant flex items-center gap-md">
+        <div className="w-10 h-10 bg-primary-fixed glow-primary flex items-center justify-center shrink-0 text-on-primary-fixed">
+          <Icon name="query_stats" fill />
+        </div>
         <div>
-          <div className="rail-name">SMC&nbsp;TERMINAL</div>
-          <div className="rail-ver">v0.2 // SYSTEM ACTIVE</div>
+          <h1 className="font-display-lg text-[20px] font-black text-primary-fixed glow-text-primary tracking-tighter leading-none">SMC_CORE</h1>
+          <p className="font-label-caps text-label-caps text-on-surface-variant tracking-widest mt-1">v0.2 // ACTIVE</p>
         </div>
       </div>
 
       {/* Nav */}
-      <nav className="rail-nav">
-        {ITEMS.map(({ id, label, Icon }) => (
-          <motion.button
-            key={id}
-            className={`rail-item${page === id ? ' active' : ''}`}
-            onClick={() => setPage(id)}
-            whileTap={{ scale: 0.98 }}
-          >
-            {page === id && (
-              <motion.span className="rail-active-bar" layoutId="rail-active-bar"
-                transition={{ type: 'spring', damping: 26, stiffness: 320 }} />
-            )}
-            <span className="rail-item-icon"><Icon /></span>
-            <span className="rail-item-label">{label}</span>
-          </motion.button>
-        ))}
+      <nav className="flex-1 py-md overflow-y-auto flex flex-col gap-xs">
+        {ITEMS.map(({ id, label, icon }) => {
+          const active = page === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setPage(id)}
+              className={
+                'flex items-center gap-md px-md py-sm font-label-caps text-label-caps transition-all active:scale-95 duration-75 text-left ' +
+                (active
+                  ? 'border-l-4 border-primary-fixed-dim bg-surface-container-highest text-primary-fixed-dim'
+                  : 'border-l-4 border-transparent text-on-surface-variant hover:bg-surface-container-highest hover:text-primary')
+              }
+            >
+              <Icon name={icon} className={active ? 'drop-shadow-[0_0_10px_rgba(195,244,0,0.7)]' : ''} fill={active} />
+              {label}
+            </button>
+          );
+        })}
+
+        {/* Sage AI — violet accent (opens the companion) */}
+        <button
+          onClick={() => setPage('sage')}
+          className={
+            'flex items-center gap-md px-md py-sm font-label-caps text-label-caps transition-all active:scale-95 duration-75 text-left ' +
+            (page === 'sage'
+              ? 'border-l-4 border-secondary bg-secondary-container/15 text-secondary'
+              : 'border-l-4 border-transparent text-on-surface-variant hover:bg-surface-container-highest hover:text-secondary')
+          }
+        >
+          <Icon name="auto_awesome" className="text-secondary drop-shadow-[0_0_10px_rgba(220,184,255,0.7)]" fill />
+          Sage AI
+        </button>
       </nav>
 
       {/* Footer */}
-      <div className="rail-footer">
-        <div className="rail-conn">
-          <span className={`status-dot ${connected ? 'live' : 'offline'}`} />
-          <span className="rail-conn-label">{connected ? 'CONNECTED' : 'OFFLINE'}</span>
+      <div className="border-t-2 border-outline-variant flex flex-col">
+        {/* Connection status */}
+        <div className="flex items-center gap-sm px-md py-sm">
+          <span className={`w-2 h-2 rounded-full ${connected ? 'bg-primary-fixed-dim shadow-[0_0_8px_#abd600]' : 'bg-error'}`} />
+          <span className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">
+            {connected ? 'CONNECTED' : 'OFFLINE'}
+          </span>
         </div>
 
+        {/* User card */}
         {account && (
-          <div className="rail-user">
-            <div className="rail-avatar">{initials}</div>
-            <div className="rail-user-info">
-              <span className="rail-user-name">{account.name || `#${account.login}`}</span>
-              <span className="rail-user-sub">{account.server || account.company || 'MT5'}</span>
+          <div className="mx-md mb-sm p-sm flex items-center gap-sm bg-surface-container border-2 border-outline-variant">
+            <div className="w-8 h-8 bg-primary-fixed glow-primary text-on-primary-fixed flex items-center justify-center shrink-0 font-stat-lg text-[12px] font-bold">
+              {initials}
+            </div>
+            <div className="flex flex-col min-w-0">
+              <span className="font-body-bold text-body-bold text-primary truncate">{account.name || `#${account.login}`}</span>
+              <span className="font-label-caps text-label-caps text-on-surface-variant truncate">{account.server || account.company || 'MT5'}</span>
             </div>
           </div>
         )}
 
-        <div className="rail-actions">
-          <button className="rail-action" onClick={onSettingsClick}>
-            <span className="rail-action-icon"><SettingsIcon /></span>Settings
+        {/* Actions */}
+        <div className="flex flex-col">
+          <button onClick={onSettingsClick} className="flex items-center gap-md px-md py-sm font-label-caps text-label-caps text-on-surface-variant hover:bg-surface-container-highest hover:text-primary transition-all">
+            <Icon name="settings" />Settings
           </button>
-          <button className="rail-action" onClick={toggleMode}>
-            <span className="rail-action-icon">{mode === 'dark' ? <SunIcon /> : <MoonIcon />}</span>
-            {mode === 'dark' ? 'Light' : 'Dark'}
+          <button onClick={toggleMode} className="flex items-center gap-md px-md py-sm font-label-caps text-label-caps text-on-surface-variant hover:bg-surface-container-highest hover:text-primary transition-all">
+            <Icon name={mode === 'dark' ? 'light_mode' : 'dark_mode'} />{mode === 'dark' ? 'Light' : 'Dark'}
           </button>
-          <button className="rail-action danger" onClick={onLogout}>
-            <span className="rail-action-icon"><LogoutIcon /></span>Logout
+          <button onClick={onLogout} className="flex items-center gap-md px-md py-sm font-label-caps text-label-caps text-on-surface-variant hover:bg-surface-container-highest hover:text-error transition-all">
+            <Icon name="logout" />Logout
           </button>
         </div>
       </div>
