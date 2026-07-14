@@ -11,7 +11,6 @@ import AIPanel            from './components/AIPanel';
 import SideRail           from './components/SideRail';
 import Home               from './components/Home';
 import Trades             from './components/Trades';
-import History            from './components/History';
 import AccountMetrics     from './components/AccountMetrics';
 import Performance        from './components/Performance';
 
@@ -19,7 +18,7 @@ const API              = 'http://127.0.0.1:8000';
 const FALLBACK_SYMBOLS = ['XAUUSDm','XAGUSDm','EURUSDm','GBPUSDm','USDJPYm','BTCUSDm','NAS100m','US30m'];
 
 const PAGE_TITLES = {
-  home: 'TERMINAL', trades: 'POSITIONS', history: 'HISTORY',
+  home: 'TERMINAL', trades: 'POSITIONS_&_HISTORY',
   account: 'ACCOUNT', performance: 'ANALYTICS', sage: 'SAGE_AI',
 };
 
@@ -215,8 +214,7 @@ export default function App() {
               style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}
             >
               {page === 'home'        && <Home        symbol={activeSymbol} data={data} aiLevels={aiLevels} />}
-              {page === 'trades'      && <Trades      trades={data?.trades ?? []} onViewHistory={() => setPage('history')} />}
-              {page === 'history'     && <History />}
+              {page === 'trades'      && <Trades      trades={data?.trades ?? []} />}
               {page === 'account'     && <AccountMetrics account={data?.account} />}
               {page === 'performance' && <Performance />}
               {page === 'sage'        && <AIPanel data={data} nudge={nudge} onClose={() => setPage('home')} onAIAnalysis={levels => setAiLevels(levels)} />}

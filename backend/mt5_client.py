@@ -290,3 +290,72 @@ def execute_market_order(symbol: str, lot: float, order_type: str) -> dict:
         "volume"  : float(result.volume),
         "price"   : float(result.price),
     }
+
+
+def close_position(ticket: int) -> dict:
+    if not ensure_connected():
+        return {"success": False, "error": "Not connected to MT5"}
+
+    with _mt5_lock:
+        positions = mt5.positions_get()
+        pos = next((p for p in positions if p.ticket == ticket), None) if positions else None
+        if pos is None:
+            return {"success": False, "error": f"Position {ticket} not found"}
+
+        tick = mt5.symbol_info_tick(pos.symbol)
+        if tick is None:
+            return {"success": False, "error": f"Cannot get price for {pos.symbol}"}
+
+        close_type = mt5.ORDER_TYPE_SELL if pos.type == mt5.ORDER_TYPE_BUY else mt5.ORDER_TYPE_BUY
+        price      = float(tick.bid) if close_type == mt5.ORDER_TYPE_SELL else float(tick.ask)
+
+        info    = mt5.symbol_info(pos.symbol)
+        filling = mt5.ORDER_FILLING_IOC
+        if info is not None:
+            fm = info.filling_mode
+            if fm & 1:   filling = mt5.ORDER_FILLING_FOK
+            elif fm & 2: filling = mt5.ORDER_FILLING_IOC
+            elif fm & 4: filling = mt5.ORDER_FILLING_RETURN
+
+        request = {
+            "action"       : mt5.TRADE_ACTION_DEAL,
+            "symbol"       : pos.symbol,
+            "volume"       : float(pos.volume),
+            "type"         : close_type,
+            "position"     : ticket,
+            "price"        : price,
+            "deviation"    : 20,
+            "magic"        : 234000,
+            "comment"      : "SMC Bot close",
+            "type_time"    : mt5.ORDER_TIME_GTC,
+            "type_filling" : filling,
+        }
+
+        result   = mt5.order_send(request)
+        last_err = mt5.last_error() if result is None else None
+
+    if result is None:
+        return {"success": False, "error": f"MT5 error: {last_err}"}
+
+    if result.retcode != mt5.TRADE_RETCODE_DONE:
+        help_msg = _RETCODE_HELP.get(result.retcode)
+        msg = help_msg or f"{result.comment} (code {result.retcode})"
+        return {"success": False, "error": msg}
+
+    return {"success": True, "ticket": ticket}
+
+
+def close_positions(mode: str = "all") -> dict:
+    """mode: 'all' | 'profitable' | 'unprofitable' — closes every open
+    position matching the filter, tallying tickets that succeeded/failed."""
+    positions = get_open_trades()
+    if mode == "profitable":
+        positions = [p for p in positions if p.profit > 0]
+    elif mode == "unprofitable":
+        positions = [p for p in positions if p.profit < 0]
+
+    closed, failed = [], []
+    for p in positions:
+        result = close_position(p.ticket)
+        (closed if result.get("success") else failed).append(p.ticket)
+    return {"success": True, "closed": closed, "failed": failed}

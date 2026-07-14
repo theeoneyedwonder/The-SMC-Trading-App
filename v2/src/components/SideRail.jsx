@@ -16,7 +16,6 @@ const ITEMS = [
   { id: 'home',        label: 'Terminal',  icon: 'terminal' },
   { id: 'performance', label: 'Analytics', icon: 'analytics' },
   { id: 'trades',      label: 'Positions', icon: 'format_list_bulleted' },
-  { id: 'history',     label: 'History',   icon: 'history' },
   { id: 'account',     label: 'Account',   icon: 'account_circle' },
 ];
 

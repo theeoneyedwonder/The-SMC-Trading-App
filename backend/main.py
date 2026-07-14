@@ -19,7 +19,7 @@ from database import init_db
 from mt5_client import (
     connect, disconnect, get_open_trades, get_account_info,
     is_connected, select_symbol,
-    get_symbol_tick, execute_market_order,
+    get_symbol_tick, execute_market_order, close_position, close_positions,
     get_account_snapshot, get_quote, _mt5_lock,
 )
 from data import get_all_timeframes, get_candles
@@ -452,6 +452,24 @@ async def market_order(req: TradeRequest):
         raise HTTPException(status_code=400, detail=result.get("error", "Trade failed"))
     if _wake_loop:
         _wake_loop.set()   # refresh trades immediately
+    return result
+
+@app.post("/trade/close/{ticket}")
+async def close_trade(ticket: int):
+    loop   = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, lambda: close_position(ticket))
+    if not result.get("success"):
+        raise HTTPException(status_code=400, detail=result.get("error", "Close failed"))
+    if _wake_loop:
+        _wake_loop.set()
+    return result
+
+@app.post("/trade/close-all")
+async def close_all_trades(mode: str = "all"):
+    loop   = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, lambda: close_positions(mode))
+    if _wake_loop:
+        _wake_loop.set()
     return result
 
 # ─── Logout ───────────────────────────────────────────────────

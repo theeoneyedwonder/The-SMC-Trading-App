@@ -191,6 +191,15 @@ def positions_get(symbol=None):
 
 def order_send(request: dict):
     global _next_ticket
+    position_ticket = request.get('position')
+    if position_ticket is not None:
+        idx = next((i for i, p in enumerate(_positions) if p.ticket == position_ticket), None)
+        if idx is None:
+            return SimpleNamespace(retcode=10013, order=0, volume=0.0, price=0.0, comment="position not found")
+        pos = _positions.pop(idx)
+        return SimpleNamespace(retcode=TRADE_RETCODE_DONE, order=position_ticket,
+                                volume=pos.volume, price=request['price'], comment="mock close")
+
     symbol = request['symbol']
     price  = request['price']
     ticket = _next_ticket
