@@ -1,5 +1,35 @@
+/* Self-hosted fonts (bundled — work offline in the packaged app) */
+@import '@fontsource/inter/400.css';
+@import '@fontsource/inter/500.css';
+@import '@fontsource/inter/600.css';
+@import '@fontsource/inter/700.css';
+@import '@fontsource-variable/jetbrains-mono';
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 input, button, select, textarea { font-family: inherit; font-size: inherit; }
+
+:root {
+  /* Body / UI type */
+  --font-ui:   'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  /* Headings + all numeric/data display — the "terminal" voice */
+  --font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* ── Resolution scaling ───────────────────────────────────────
+     Multiplies the root font size so the whole UI grows on high-res
+     displays instead of rendering tiny at native resolution. Layouts
+     that use rem/em follow automatically; see App.css for the px→rem
+     base. Electron HiDPI (OS scaling) stacks on top of this cleanly. */
+  --res-scale: 1;
+}
+
+/* 1080p is the baseline (--res-scale: 1). Bump at 2K and 4K. */
+@media (min-width: 2200px)  { :root { --res-scale: 1.25; } }   /* ~2K / 1440p */
+@media (min-width: 3200px)  { :root { --res-scale: 1.6;  } }   /* ~4K */
+
+html {
+  /* 16px * res-scale is the rem base for the whole app */
+  font-size: calc(16px * var(--res-scale));
+}
 
 html, body, #root {
   height: 100%;
@@ -7,13 +37,20 @@ html, body, #root {
 }
 
 body {
-  font-family: 'Aptos', 'Aptos Display', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  font-family: var(--font-ui);
   -webkit-font-smoothing: antialiased;
-  font-size: 13.5px;
-  color: var(--text, #dde1f0);
+  text-rendering: optimizeLegibility;
+  font-size: 0.84rem;            /* ≈13.5px at baseline */
+  color: var(--text, #e5e2e1);
 }
 
-::-webkit-scrollbar { width: 5px; height: 5px; }
+/* Headings and anything explicitly tagged as data use the mono voice */
+h1, h2, h3, h4, .mono, .num {
+  font-family: var(--font-mono);
+  font-feature-settings: 'tnum' 1;   /* tabular figures so numbers align */
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border2, #22223c); border-radius: 3px; }
-::-webkit-scrollbar-thumb:hover { background: var(--muted, #6b7299); }
+::-webkit-scrollbar-thumb { background: var(--border, #353534); }
+::-webkit-scrollbar-thumb:hover { background: var(--muted, #8e9379); }

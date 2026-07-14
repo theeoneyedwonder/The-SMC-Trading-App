@@ -243,7 +243,7 @@ function SfsPresetCard({ name, p, active, onSelect }) {
       whileTap={{ scale: 0.96 }}
     >
       <div className="sfs-preset-preview">
-        <div style={{ background: p['--bg'], flex: 1, borderRadius: '6px 6px 0 0' }} />
+        <div style={{ background: p['--bg'], flex: 1 }} />
         <div style={{ background: p['--surface'], height: 10 }} />
         <div style={{ background: p['--indigo'], height: 4 }} />
       </div>
@@ -262,7 +262,7 @@ function SfsPresetCard({ name, p, active, onSelect }) {
 
 /* ── Chart Style ─────────────────────────────────────────────── */
 function ChartSection() {
-  const [color,   setColor]   = useState(() => localStorage.getItem('draw_color')        || '#818cf8');
+  const [color,   setColor]   = useState(() => localStorage.getItem('draw_color')        || '#d4ff3f');
   const [width,   setWidth]   = useState(() => Number(localStorage.getItem('draw_width') || 2));
   const [opacity, setOpacity] = useState(() => Number(localStorage.getItem('draw_fill_opacity') || 15));
 

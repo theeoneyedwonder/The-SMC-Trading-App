@@ -2,10 +2,27 @@ import { createContext, useContext, useState, useEffect } from 'react';
 
 const API = 'http://127.0.0.1:8000';
 
-export const DARK_PRESETS  = ['Dark Indigo', 'Dark Navy', 'Forest', 'Midnight', 'Charcoal'];
+export const DARK_PRESETS  = ['Brutalist', 'Dark Indigo', 'Dark Navy', 'Forest', 'Midnight', 'Charcoal'];
 export const LIGHT_PRESETS = ['Light Classic', 'Light Warm'];
 
 export const PRESETS = {
+  'Brutalist': {
+    '--bg': '#0d0d0d', '--surface': '#131313', '--surf2': '#181818',
+    '--surf3': '#1c1c1c', '--surf4': '#242424',
+    '--border': '#353534', '--border2': '#444444',
+    '--text': '#e5e2e1', '--text2': '#c4c9ac', '--muted': '#8e9379',
+    '--indigo': '#c3f400', '--indigo2': '#abd600',
+    '--green': '#c3f400', '--red': '#ffb4ab', '--gold': '#c3f400',
+    '--blue': '#dcb8ff', '--purple': '#dcb8ff', '--orange': '#ff9d00',
+    '--candle-up': '#c3f400', '--candle-down': '#ffb4ab',
+    '--chart-bg': '#0d0d0d',
+    '--on-accent': '#161e00',
+    /* Sage / AI voice — distinct lilac accent, separate from the lime trading accent */
+    '--sage': '#dcb8ff', '--sage-dim': '#2c0051', '--on-sage': '#2c0051',
+    '--shadow-sm': '3px 3px 0 rgba(0,0,0,.6)',
+    '--shadow-md': '5px 5px 0 rgba(0,0,0,.6)',
+    '--shadow-lg': '8px 8px 0 rgba(0,0,0,.7)',
+  },
   'Dark Indigo': {
     '--bg': '#060611', '--surface': '#0c0c1e', '--surf2': '#101022',
     '--surf3': '#141430', '--surf4': '#18183a',
@@ -15,7 +32,7 @@ export const PRESETS = {
     '--green': '#34d399', '--red': '#fb7185', '--gold': '#fbbf24',
     '--blue': '#60a5fa', '--purple': '#a78bfa', '--orange': '#fb923c',
     '--candle-up': '#34d399', '--candle-down': '#fb7185',
-    '--chart-bg': '#08081a',
+    '--chart-bg': '#08081a', '--on-accent': '#ffffff',
   },
   'Dark Navy': {
     '--bg': '#04070f', '--surface': '#080e1c', '--surf2': '#0c1424',
@@ -26,7 +43,7 @@ export const PRESETS = {
     '--green': '#10b981', '--red': '#ef4444', '--gold': '#f59e0b',
     '--blue': '#60a5fa', '--purple': '#8b5cf6', '--orange': '#f97316',
     '--candle-up': '#10b981', '--candle-down': '#ef4444',
-    '--chart-bg': '#030608',
+    '--chart-bg': '#030608', '--on-accent': '#ffffff',
   },
   'Forest': {
     '--bg': '#060b0a', '--surface': '#0c1210', '--surf2': '#101816',
@@ -37,7 +54,7 @@ export const PRESETS = {
     '--green': '#4ade80', '--red': '#f87171', '--gold': '#fcd34d',
     '--blue': '#22d3ee', '--purple': '#c084fc', '--orange': '#fb923c',
     '--candle-up': '#4ade80', '--candle-down': '#f87171',
-    '--chart-bg': '#040908',
+    '--chart-bg': '#040908', '--on-accent': '#ffffff',
   },
   'Midnight': {
     '--bg': '#070510', '--surface': '#100c1e', '--surf2': '#141226',
@@ -48,7 +65,7 @@ export const PRESETS = {
     '--green': '#34d399', '--red': '#fb7185', '--gold': '#fbbf24',
     '--blue': '#60a5fa', '--purple': '#e879f9', '--orange': '#fb923c',
     '--candle-up': '#34d399', '--candle-down': '#fb7185',
-    '--chart-bg': '#050310',
+    '--chart-bg': '#050310', '--on-accent': '#ffffff',
   },
   'Charcoal': {
     '--bg': '#0f0f0f', '--surface': '#1a1a1a', '--surf2': '#222222',
@@ -59,7 +76,7 @@ export const PRESETS = {
     '--green': '#22c55e', '--red': '#ef4444', '--gold': '#eab308',
     '--blue': '#3b82f6', '--purple': '#a855f7', '--orange': '#f97316',
     '--candle-up': '#22c55e', '--candle-down': '#ef4444',
-    '--chart-bg': '#111111',
+    '--chart-bg': '#111111', '--on-accent': '#ffffff',
   },
 
   // ── Light presets ─────────────────────────────────────────────
@@ -72,7 +89,7 @@ export const PRESETS = {
     '--green': '#059669', '--red': '#dc2626', '--gold': '#d97706',
     '--blue': '#2563eb', '--purple': '#7c3aed', '--orange': '#ea580c',
     '--candle-up': '#059669', '--candle-down': '#dc2626',
-    '--chart-bg': '#f8faff',
+    '--chart-bg': '#f8faff', '--on-accent': '#ffffff',
     '--shadow-sm': '0 2px 8px rgba(0,0,0,.08)',
     '--shadow-md': '0 8px 32px rgba(0,0,0,.12)',
     '--shadow-lg': '0 24px 64px rgba(0,0,0,.18)',
@@ -86,7 +103,7 @@ export const PRESETS = {
     '--green': '#047857', '--red': '#dc2626', '--gold': '#b45309',
     '--blue': '#1d4ed8', '--purple': '#6d28d9', '--orange': '#c2410c',
     '--candle-up': '#047857', '--candle-down': '#dc2626',
-    '--chart-bg': '#faf8f2',
+    '--chart-bg': '#faf8f2', '--on-accent': '#ffffff',
     '--shadow-sm': '0 2px 8px rgba(0,0,0,.07)',
     '--shadow-md': '0 8px 32px rgba(0,0,0,.10)',
     '--shadow-lg': '0 24px 64px rgba(0,0,0,.15)',
@@ -116,7 +133,7 @@ function applyTheme(vars) {
 const ThemeCtx = createContext(null);
 
 export function ThemeProvider({ children }) {
-  const [preset, setPreset]  = useState('Dark Indigo');
+  const [preset, setPreset]  = useState('Brutalist');
   const [overrides, setOver] = useState({});
 
   const vars = { ...(PRESETS[preset] ?? PRESETS['Dark Indigo']), ...overrides };
@@ -149,7 +166,7 @@ export function ThemeProvider({ children }) {
     persist(name, {});
   };
 
-  const toggleMode = () => changePreset(mode === 'dark' ? 'Light Classic' : 'Dark Indigo');
+  const toggleMode = () => changePreset(mode === 'dark' ? 'Light Classic' : 'Brutalist');
 
   const changeColor = (key, value) => {
     setOver(prev => {

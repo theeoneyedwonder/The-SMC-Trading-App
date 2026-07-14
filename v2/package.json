@@ -68,6 +68,8 @@
     }
   },
   "dependencies": {
+    "@fontsource-variable/jetbrains-mono": "^5.2.8",
+    "@fontsource/inter": "^5.2.8",
     "electron-updater": "^6.3.9",
     "framer-motion": "^12.40.0",
     "lightweight-charts": "^5.2.0",

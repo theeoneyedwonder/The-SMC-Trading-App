@@ -7,7 +7,7 @@ import Setup              from './components/Setup';
 import Settings           from './components/Settings';
 import MarketPanel        from './components/MarketPanel';
 import SageBubble         from './components/SageBubble';
-import Sidebar            from './components/Sidebar';
+import SideRail           from './components/SideRail';
 import Home               from './components/Home';
 import Trades             from './components/Trades';
 import History            from './components/History';
@@ -17,18 +17,14 @@ import Performance        from './components/Performance';
 const API              = 'http://127.0.0.1:8000';
 const FALLBACK_SYMBOLS = ['XAUUSDm','XAGUSDm','EURUSDm','GBPUSDm','USDJPYm','BTCUSDm','NAS100m','US30m'];
 
+const PAGE_TITLES = {
+  home: 'TERMINAL', trades: 'POSITIONS', history: 'HISTORY',
+  account: 'ACCOUNT', performance: 'ANALYTICS',
+};
+
 // Apply persisted font scale immediately (module level — no hook, no lifecycle delay)
 const _savedScale = localStorage.getItem('ui_font_scale');
 if (_savedScale) document.documentElement.style.setProperty('--font-scale', _savedScale);
-
-function GearIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="3"/>
-      <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-    </svg>
-  );
-}
 
 function PanelIcon() {
   return (
@@ -40,36 +36,12 @@ function PanelIcon() {
   );
 }
 
-function SunIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="5"/>
-      <line x1="12" y1="1" x2="12" y2="3"/>
-      <line x1="12" y1="21" x2="12" y2="23"/>
-      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-      <line x1="1" y1="12" x2="3" y2="12"/>
-      <line x1="21" y1="12" x2="23" y2="12"/>
-      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-    </svg>
-  );
-}
-
-function MoonIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/>
-    </svg>
-  );
-}
 
 export default function App() {
   const { vars, mode, toggleMode } = useTheme();
 
   const [configured, setConfigured] = useState(null);
   const [page, setPage]             = useState('home');
-  const [sidebarOpen, setSidebarOpen]       = useState(false);
   const [symbol, setSymbol]         = useState('XAUUSDm');
   const symbolRef                   = useRef('XAUUSDm');
   const [symbols, setSymbols]       = useState(FALLBACK_SYMBOLS);
@@ -143,20 +115,20 @@ export default function App() {
   }, [configured]);
 
   if (configured === null) return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#060611', color:'#a0a8c8', fontFamily:"'Aptos','Segoe UI',sans-serif", gap:16, padding:'0 32px', textAlign:'center' }}>
+    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#000000', color:'#b0b0b0', fontFamily:"'Aptos','Segoe UI',sans-serif", gap:16, padding:'0 32px', textAlign:'center' }}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
       {!backendTimeout ? (
         <>
-          <div style={{ width:36, height:36, border:'3px solid #1a1a30', borderTopColor:'#818cf8', borderRadius:'50%', animation:'spin .8s linear infinite' }} />
+          <div style={{ width:36, height:36, border:'3px solid #242424', borderTopColor:'#d4ff3f', borderRadius:'50%', animation:'spin .8s linear infinite' }} />
           <span style={{ fontSize:12 }}>Starting backend…</span>
         </>
       ) : (
         <>
           <div style={{ fontSize:28, marginBottom:4 }}>⚠️</div>
-          <div style={{ fontSize:14, fontWeight:700, color:'#e8ecf8', marginBottom:4 }}>Backend not responding</div>
-          <div style={{ fontSize:12, color:'#6b7299', lineHeight:1.7, maxWidth:380 }}>
+          <div style={{ fontSize:14, fontWeight:700, color:'#ffffff', marginBottom:4 }}>Backend not responding</div>
+          <div style={{ fontSize:12, color:'#787878', lineHeight:1.7, maxWidth:380 }}>
             The Python backend failed to start. This is usually caused by antivirus software blocking it.<br/><br/>
-            Open <strong style={{color:'#a0a8c8'}}>Windows Security → Virus &amp; threat protection → Protection history</strong> and check if <code style={{color:'#818cf8'}}>smc-bot-backend.exe</code> was blocked, then add an exclusion for the app folder.
+            Open <strong style={{color:'#b0b0b0'}}>Windows Security → Virus &amp; threat protection → Protection history</strong> and check if <code style={{color:'#d4ff3f'}}>smc-bot-backend.exe</code> was blocked, then add an exclusion for the app folder.
           </div>
         </>
       )}
@@ -174,10 +146,8 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* ── Animated Sidebar Drawer ── */}
-      <Sidebar
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
+      {/* ── Persistent left rail (always-visible nav) ── */}
+      <SideRail
         page={page}
         setPage={setPage}
         account={data?.account}
@@ -189,30 +159,13 @@ export default function App() {
         }}
       />
 
+      {/* ── Everything right of the rail: topbar + body ── */}
+      <div className="app-shell">
       {/* ── Top Bar ── */}
       <header className="topbar">
         <div className="topbar-left">
-          <motion.button
-            className="hamburger-btn"
-            onClick={() => setSidebarOpen(o => !o)}
-            title="Menu"
-            whileHover={{ scale: 1.06 }}
-            whileTap={{ scale: 0.86, transition: { type: 'spring', stiffness: 600, damping: 10 } }}
-          >
-            <motion.span
-              animate={sidebarOpen ? { rotate: 45, y: 7.5 } : { rotate: 0, y: 0 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 26 }}
-            />
-            <motion.span
-              animate={sidebarOpen ? { opacity: 0, x: -6 } : { opacity: 1, x: 0 }}
-              transition={{ duration: 0.12 }}
-            />
-            <motion.span
-              animate={sidebarOpen ? { rotate: -45, y: -7.5 } : { rotate: 0, y: 0 }}
-              transition={{ type: 'spring', stiffness: 400, damping: 26 }}
-            />
-          </motion.button>
-
+          <span className="topbar-symbol">{activeSymbol}</span>
+          <span className="topbar-page">{PAGE_TITLES[page] ?? ''}</span>
         </div>
 
         <div className="topbar-right">
@@ -230,8 +183,6 @@ export default function App() {
             <motion.div
               className="topbar-avatar"
               title={data.account.name || `#${data.account.login}`}
-              onClick={() => setSidebarOpen(true)}
-              style={{ cursor: 'pointer' }}
               whileHover={{ scale: 1.08 }}
               whileTap={{ scale: 0.92 }}
             >
@@ -282,6 +233,7 @@ export default function App() {
           )}
         </AnimatePresence>
       </div>
+      </div>{/* /app-shell */}
 
       <AnimatePresence>
         {settingsOpen && (

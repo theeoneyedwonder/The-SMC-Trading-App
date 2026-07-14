@@ -51,10 +51,10 @@ const THEME_VARS = {
 };
 
 const DARK_DEFAULTS = {
-  bg: '#060611',
-  text: '#e8ecf8',
-  text2: '#a0a8c8',
-  accent: '#818cf8',
+  bg: '#000000',
+  text: '#ffffff',
+  text2: '#b0b0b0',
+  accent: '#d4ff3f',
 };
 
 function getSavedThemeVars() {

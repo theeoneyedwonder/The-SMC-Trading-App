@@ -50,7 +50,7 @@ const TOOLS = [
   { id:'eraser',    label:'Eraser',      icon:'⌦' },
 ];
 
-function drawColor() { return localStorage.getItem('draw_color') || '#818cf8'; }
+function drawColor() { return localStorage.getItem('draw_color') || '#d4ff3f'; }
 function drawWidth() { return Number(localStorage.getItem('draw_width') || 2); }
 function drawFillOpacity() { return Number(localStorage.getItem('draw_fill_opacity') || 15); }
 function uid() { return typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`; }
@@ -65,7 +65,7 @@ function renderDrawings(canvas, chart, series, drawings, active, aiLevels) {
 
   for (const d of all) {
     ctx.save();
-    ctx.strokeStyle = d.color || '#818cf8';
+    ctx.strokeStyle = d.color || '#d4ff3f';
     ctx.lineWidth   = d.width || 2;
     ctx.lineCap     = 'round';
     ctx.lineJoin    = 'round';
@@ -77,7 +77,7 @@ function renderDrawings(canvas, chart, series, drawings, active, aiLevels) {
       ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
       // label
       ctx.font = '11px monospace';
-      ctx.fillStyle = d.color || '#818cf8';
+      ctx.fillStyle = d.color || '#d4ff3f';
       ctx.textAlign = 'right';
       ctx.textBaseline = 'bottom';
       ctx.fillText(Number(d.price).toFixed(d.price > 100 ? 2 : 5), W - 72, y - 3);
@@ -91,7 +91,7 @@ function renderDrawings(canvas, chart, series, drawings, active, aiLevels) {
       // end dots
       [[ x1,y1],[x2,y2]].forEach(([cx,cy]) => {
         ctx.beginPath(); ctx.arc(cx,cy,4,0,Math.PI*2);
-        ctx.fillStyle=d.color||'#818cf8'; ctx.fill();
+        ctx.fillStyle=d.color||'#d4ff3f'; ctx.fill();
       });
 
     } else if (d.type === 'rect') {
@@ -100,7 +100,7 @@ function renderDrawings(canvas, chart, series, drawings, active, aiLevels) {
       if (x1==null||y1==null||x2==null||y2==null) { ctx.restore(); continue; }
       const rx=Math.min(x1,x2), ry=Math.min(y1,y2), rw=Math.abs(x2-x1), rh=Math.abs(y2-y1);
       const op = drawFillOpacity();
-      ctx.fillStyle = (d.color||'#818cf8') + Math.round(op*2.55).toString(16).padStart(2,'0');
+      ctx.fillStyle = (d.color||'#d4ff3f') + Math.round(op*2.55).toString(16).padStart(2,'0');
       ctx.setLineDash([]);
       ctx.fillRect(rx,ry,rw,rh); ctx.strokeRect(rx,ry,rw,rh);
 
