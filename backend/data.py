@@ -1,5 +1,7 @@
+import os
+import importlib
 import pandas as pd
-import MetaTrader5 as mt5
+mt5 = importlib.import_module('mt5_mock' if os.environ.get('SMC_MOCK') == '1' else 'MetaTrader5')
 from mt5_client import ensure_connected, _mt5_lock
 from config import CANDLE_LIMIT, TIMEFRAMES, get_active_symbol
 

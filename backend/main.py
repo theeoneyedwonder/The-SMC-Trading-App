@@ -226,6 +226,9 @@ class SetupRequest(BaseModel):
 @app.get("/setup/check-mt5")
 def check_mt5_installed():
     """Detect whether MT5 terminal is installed on this machine."""
+    if os.environ.get('SMC_MOCK') == '1':
+        return {"installed": True, "path": "mock"}
+
     import glob
 
     candidates = [
@@ -266,7 +269,8 @@ def setup_status():
 @app.post("/setup")
 async def setup(req: SetupRequest):
     """Test MT5 credentials and persist them if successful."""
-    import MetaTrader5 as mt5
+    import importlib
+    mt5 = importlib.import_module('mt5_mock' if os.environ.get('SMC_MOCK') == '1' else 'MetaTrader5')
 
     def _test_connection():
         mt5.shutdown()
@@ -350,7 +354,8 @@ def get_symbol():
 @app.get("/symbols/available")
 def symbols_available():
     """Return symbols visible in Market Watch on the connected MT5 account."""
-    import MetaTrader5 as _mt5
+    import importlib
+    _mt5 = importlib.import_module('mt5_mock' if os.environ.get('SMC_MOCK') == '1' else 'MetaTrader5')
     if not is_connected():
         return {"symbols": [], "connected": False}
     with _mt5_lock:
@@ -371,7 +376,8 @@ def set_symbol(symbol: str):
 @app.get("/symbols/search")
 def symbols_search(q: str = "", limit: int = 40):
     """Search ALL broker symbols by name substring (for the watchlist search box)."""
-    import MetaTrader5 as _mt5
+    import importlib
+    _mt5 = importlib.import_module('mt5_mock' if os.environ.get('SMC_MOCK') == '1' else 'MetaTrader5')
     if not is_connected():
         return {"symbols": []}
     with _mt5_lock:

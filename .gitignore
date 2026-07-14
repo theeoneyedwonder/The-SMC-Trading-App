@@ -30,6 +30,7 @@ backend/*.db
 
 # Python venv
 .venv/
+.venv-mock/
 venv/
 
 # OS

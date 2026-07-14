@@ -29,7 +29,7 @@ export default function History() {
           Trade History
           <span className="page-count">{deals.length} trades</span>
           {deals.length > 0 && (
-            <span style={{marginLeft:'auto', fontSize:13, fontWeight:700, color: totalPnl>=0?'var(--green)':'var(--red)'}}>
+            <span className={`page-title-side ${totalPnl>=0?'pos':'neg'}`}>
               Net: {totalPnl>=0?'+':''}{fmt(totalPnl)}
             </span>
           )}
@@ -37,7 +37,7 @@ export default function History() {
       </div>
 
       <div className="filter-bar">
-        <span style={{fontSize:11,color:'var(--text2)'}}>Show last</span>
+        <span className="filter-label">Show last</span>
         <select className="filter-select" value={days} onChange={e => setDays(Number(e.target.value))}>
           <option value={7}>7 days</option>
           <option value={14}>14 days</option>
@@ -70,7 +70,7 @@ export default function History() {
                 <th>Exit</th>
                 <th>Commission</th>
                 <th>Swap</th>
-                <th style={{textAlign:'right'}}>Net P&L</th>
+                <th className="td-right">Net P&L</th>
               </tr>
             </thead>
             <tbody>
@@ -78,15 +78,15 @@ export default function History() {
                 const net = d.net ?? d.profit ?? 0;
                 return (
                   <tr key={d.ticket}>
-                    <td style={{color:'var(--text2)',fontSize:11}}>{fmtDate(d.time)}</td>
-                    <td style={{fontWeight:700}}>{d.symbol}</td>
+                    <td className="td-muted" style={{fontSize:11}}>{fmtDate(d.time)}</td>
+                    <td className="td-strong">{d.symbol}</td>
                     <td><span className={d.direction==='BUY'?'badge-buy':'badge-sell'}>{d.direction}</span></td>
                     <td>{fmt(d.volume, 2)}</td>
                     <td>{fmt(d.entry, 5)}</td>
                     <td>{fmt(d.price, 5)}</td>
-                    <td style={{color:'var(--text2)'}}>{fmt(d.commission)}</td>
-                    <td style={{color:'var(--text2)'}}>{fmt(d.swap)}</td>
-                    <td style={{textAlign:'right'}}>
+                    <td className="td-muted">{fmt(d.commission)}</td>
+                    <td className="td-muted">{fmt(d.swap)}</td>
+                    <td className="td-right">
                       <span className={net>0?'pnl-pos':net<0?'pnl-neg':'pnl-zero'}>
                         {net>=0?'+':''}{fmt(net)}
                       </span>

@@ -13,9 +13,34 @@ app.setName('The SMC Trading App');
 const isDev = !app.isPackaged;
 const userDataDir = app.getPath('userData');
 const configPath = path.join(userDataDir, 'settings.json');
+// Separate from settings.json (which the Python backend also reads/writes) —
+// this is purely Electron main-process window-geometry state.
+const windowStatePath = path.join(userDataDir, 'window-state.json');
+
+function loadWindowState(key) {
+  try {
+    const state = JSON.parse(fs.readFileSync(windowStatePath, 'utf-8'));
+    return state[key] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function saveWindowState(key, bounds) {
+  let state = {};
+  try { state = JSON.parse(fs.readFileSync(windowStatePath, 'utf-8')); } catch {}
+  state[key] = bounds;
+  try {
+    fs.mkdirSync(userDataDir, { recursive: true });
+    fs.writeFileSync(windowStatePath, JSON.stringify(state, null, 2));
+  } catch (e) {
+    console.warn('[App] Failed to save window state:', e.message);
+  }
+}
 
 let backend = null;
 let mainWin = null;
+let sageWin = null;
 let splash = null;
 let crashWin = null;
 let pendingCrash = null;
@@ -173,7 +198,54 @@ function createMain() {
     }
   });
 
-  mainWin.on('closed', () => { mainWin = null; });
+  mainWin.on('closed', () => {
+    mainWin = null;
+    sageWin?.close();
+  });
+}
+
+function createSageWindow() {
+  if (sageWin) { sageWin.show(); sageWin.focus(); return; }
+
+  const vars  = getSavedThemeVars();
+  const saved = loadWindowState('sage');
+
+  sageWin = new BrowserWindow({
+    width: saved?.width ?? 460,
+    height: saved?.height ?? 820,
+    x: saved?.x,
+    y: saved?.y,
+    minWidth: 360,
+    minHeight: 480,
+    backgroundColor: vars.bg,
+    title: 'Sage — AI Companion',
+    show: false,
+    webPreferences: {
+      contextIsolation: true,
+      nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.cjs'),
+    },
+  });
+
+  // Real, independent top-level window (not a panel drawn inside mainWin) —
+  // window managers like Hyprland can tile it, move it to another monitor,
+  // or float it, instead of it being an overlay stuck on top of the chart.
+  if (isDev) {
+    sageWin.loadURL('http://localhost:5175/#sage');
+  } else {
+    sageWin.loadFile(path.join(__dirname, '..', 'dist', 'index.html'), { hash: 'sage' });
+  }
+
+  // Both windows load the same index.html (same <title>), which would
+  // otherwise overwrite this window's title after load — keep it distinct
+  // so window switchers / WM rules can tell the two apart.
+  sageWin.on('page-title-updated', (event) => event.preventDefault());
+
+  sageWin.once('ready-to-show', () => sageWin.show());
+  sageWin.on('close', () => {
+    if (!sageWin.isDestroyed()) saveWindowState('sage', sageWin.getBounds());
+  });
+  sageWin.on('closed', () => { sageWin = null; });
 }
 
 function createCrashWindow(error) {
@@ -206,6 +278,7 @@ function createCrashWindow(error) {
 }
 
 ipcMain.handle('open-external', (_, url) => shell.openExternal(url));
+ipcMain.handle('sage:open', () => createSageWindow());
 ipcMain.handle('crash:get-data', () => pendingCrash);
 ipcMain.handle('crash:dismiss', () => crashWin?.close());
 ipcMain.handle('crash:submit', async (_event, description) => {

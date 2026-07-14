@@ -38,7 +38,7 @@ export default function Trades({ trades }) {
                 <th>Take Profit</th>
                 <th>Swap</th>
                 <th>Duration</th>
-                <th style={{textAlign:'right'}}>P&L</th>
+                <th className="td-right">P&L</th>
               </tr>
             </thead>
             <tbody>
@@ -46,15 +46,15 @@ export default function Trades({ trades }) {
                 const pnl = t.profit ?? 0;
                 return (
                   <tr key={t.ticket}>
-                    <td style={{fontWeight:700, color:'var(--text)'}}>{t.symbol ?? '—'}</td>
+                    <td className="td-strong">{t.symbol ?? '—'}</td>
                     <td><span className={t.direction==='BUY'?'badge-buy':'badge-sell'}>{t.direction}</span></td>
                     <td>{fmt(t.lots, 2)}</td>
                     <td>{fmt(t.entry, 5)}</td>
-                    <td style={{color:'var(--red)'}}>{t.sl ? fmt(t.sl, 5) : '—'}</td>
-                    <td style={{color:'var(--green)'}}>{t.tp ? fmt(t.tp, 5) : '—'}</td>
-                    <td style={{color:'var(--text2)'}}>{fmt(t.swap ?? 0)}</td>
-                    <td style={{color:'var(--text2)'}}>{duration(t.time)}</td>
-                    <td style={{textAlign:'right'}}>
+                    <td className="td-red">{t.sl ? fmt(t.sl, 5) : '—'}</td>
+                    <td className="td-green">{t.tp ? fmt(t.tp, 5) : '—'}</td>
+                    <td className="td-muted">{fmt(t.swap ?? 0)}</td>
+                    <td className="td-muted">{duration(t.time)}</td>
+                    <td className="td-right">
                       <span className={pnl>0?'pnl-pos':pnl<0?'pnl-neg':'pnl-zero'}>
                         {pnl>=0?'+':''}{fmt(pnl)}
                       </span>

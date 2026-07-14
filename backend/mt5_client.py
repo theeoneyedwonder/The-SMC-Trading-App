@@ -1,6 +1,8 @@
+import os
 import time
 import threading
-import MetaTrader5 as mt5
+import importlib
+mt5 = importlib.import_module('mt5_mock' if os.environ.get('SMC_MOCK') == '1' else 'MetaTrader5')
 from config import (
     MT5_TIMEOUT, MAX_RETRIES, RETRY_DELAY, MAX_RETRY_DELAY,
     get_mt5_credentials, get_active_symbol,

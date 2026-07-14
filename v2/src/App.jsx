@@ -75,7 +75,7 @@ export default function App() {
   const [symbols, setSymbols]       = useState(FALLBACK_SYMBOLS);
   const [changingSymbol, setChangingSymbol] = useState(false);
   const [settingsOpen, setSettingsOpen]     = useState(false);
-  const [panelOpen, setPanelOpen]           = useState(true);
+  const [panelOpen, setPanelOpen]           = useState(false);
   const [aiLevels, setAiLevels]             = useState([]);
   const { data, connected, nudge }          = useWebSocket();
 
@@ -194,12 +194,23 @@ export default function App() {
         <div className="topbar-left">
           <motion.button
             className="hamburger-btn"
-            onClick={() => setSidebarOpen(true)}
+            onClick={() => setSidebarOpen(o => !o)}
             title="Menu"
             whileHover={{ scale: 1.06 }}
             whileTap={{ scale: 0.86, transition: { type: 'spring', stiffness: 600, damping: 10 } }}
           >
-            <span /><span /><span />
+            <motion.span
+              animate={sidebarOpen ? { rotate: 45, y: 7.5 } : { rotate: 0, y: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 26 }}
+            />
+            <motion.span
+              animate={sidebarOpen ? { opacity: 0, x: -6 } : { opacity: 1, x: 0 }}
+              transition={{ duration: 0.12 }}
+            />
+            <motion.span
+              animate={sidebarOpen ? { rotate: -45, y: -7.5 } : { rotate: 0, y: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 26 }}
+            />
           </motion.button>
 
         </div>
@@ -282,7 +293,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* ── Floating Sage companion (bottom-right) ── */}
-      <SageBubble data={data} nudge={nudge} onAIAnalysis={levels => setAiLevels(levels)} />
+      <SageBubble data={data} nudge={nudge} hidden={panelOpen} onAIAnalysis={levels => setAiLevels(levels)} />
     </div>
   );
 }

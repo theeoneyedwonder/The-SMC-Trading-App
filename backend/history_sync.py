@@ -5,9 +5,11 @@ fragile around broker-vs-local timezones. We mirror every closed deal into the
 local SQLite DB so the history is retained permanently and survives reconnects,
 restarts, and MT5's own rolling history window.
 """
+import os
+import importlib
 from datetime import datetime, timedelta
 
-import MetaTrader5 as mt5
+mt5 = importlib.import_module('mt5_mock' if os.environ.get('SMC_MOCK') == '1' else 'MetaTrader5')
 from mt5_client import ensure_connected, _mt5_lock
 from database import SessionLocal
 from models import Deal

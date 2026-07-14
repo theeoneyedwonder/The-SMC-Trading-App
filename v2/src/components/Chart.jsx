@@ -425,6 +425,11 @@ export default function Chart({ symbol, patterns, aiLevels }) {
         liveBarRef.current = { ...data[data.length - 1] }; // seed live bar from latest candle
         lastPriceRef.current = data[data.length - 1].close;
         setLastPrice(data[data.length - 1].close);
+        // Seed the price line from real data immediately — otherwise it sits at
+        // its placeholder price:0 until the first live tick arrives, and if
+        // setData() (which drives autoscale) runs before that tick, the Y-axis
+        // permanently bakes in a 0-to-price range instead of the real one.
+        priceLineRef.current?.applyOptions({ price: data[data.length - 1].close });
         chartRef.current?.timeScale().fitContent();
         syncOverlayRef.current?.();
       }
