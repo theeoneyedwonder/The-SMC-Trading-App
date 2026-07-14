@@ -215,7 +215,7 @@ export default function App() {
               style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}
             >
               {page === 'home'        && <Home        symbol={activeSymbol} data={data} aiLevels={aiLevels} />}
-              {page === 'trades'      && <Trades      trades={data?.trades ?? []} />}
+              {page === 'trades'      && <Trades      trades={data?.trades ?? []} onViewHistory={() => setPage('history')} />}
               {page === 'history'     && <History />}
               {page === 'account'     && <AccountMetrics account={data?.account} />}
               {page === 'performance' && <Performance />}
