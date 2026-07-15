@@ -100,8 +100,16 @@ export default function SideRail({ page, setPage, account, connected, onSettings
 
         {/* Actions */}
         <div className="flex flex-col">
-          <button onClick={onSettingsClick} className="flex items-center gap-md px-md py-sm font-label-caps text-label-caps text-on-surface-variant hover:bg-surface-container-highest hover:text-primary transition-all">
-            <Icon name="settings" />Settings
+          <button
+            onClick={onSettingsClick}
+            className={
+              'flex items-center gap-md px-md py-sm font-label-caps text-label-caps transition-all border-l-4 ' +
+              (page === 'settings'
+                ? 'border-primary-fixed-dim bg-surface-container-highest text-primary-fixed-dim'
+                : 'border-transparent text-on-surface-variant hover:bg-surface-container-highest hover:text-primary')
+            }
+          >
+            <Icon name="settings" fill={page === 'settings'} />Settings
           </button>
           <button onClick={toggleMode} className="flex items-center gap-md px-md py-sm font-label-caps text-label-caps text-on-surface-variant hover:bg-surface-container-highest hover:text-primary transition-all">
             <Icon name={mode === 'dark' ? 'light_mode' : 'dark_mode'} />{mode === 'dark' ? 'Light' : 'Dark'}

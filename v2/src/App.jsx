@@ -20,6 +20,7 @@ const FALLBACK_SYMBOLS = ['XAUUSDm','XAGUSDm','EURUSDm','GBPUSDm','USDJPYm','BTC
 const PAGE_TITLES = {
   home: 'TERMINAL', trades: 'POSITIONS_&_HISTORY',
   account: 'ACCOUNT', performance: 'ANALYTICS', sage: 'SAGE_AI',
+  settings: 'SETTINGS',
 };
 
 // Apply persisted font scale immediately (module level — no hook, no lifecycle delay)
@@ -46,7 +47,6 @@ export default function App() {
   const symbolRef                   = useRef('XAUUSDm');
   const [symbols, setSymbols]       = useState(FALLBACK_SYMBOLS);
   const [changingSymbol, setChangingSymbol] = useState(false);
-  const [settingsOpen, setSettingsOpen]     = useState(false);
   const [panelOpen, setPanelOpen]           = useState(false);
   const [aiLevels, setAiLevels]             = useState([]);
   const { data, connected, nudge }          = useWebSocket();
@@ -144,6 +144,11 @@ export default function App() {
     ? String(data.account.login).slice(-2)
     : null;
 
+  const disconnect = async () => {
+    try { await fetch(`${API}/setup/logout`, { method: 'POST' }); } catch {}
+    window.location.reload();
+  };
+
   return (
     <div className="app">
       {/* ── Persistent left rail (always-visible nav) ── */}
@@ -152,11 +157,8 @@ export default function App() {
         setPage={setPage}
         account={data?.account}
         connected={connected}
-        onSettingsClick={() => setSettingsOpen(true)}
-        onLogout={async () => {
-          try { await fetch(`${API}/setup/logout`, { method: 'POST' }); } catch {}
-          window.location.reload();
-        }}
+        onSettingsClick={() => setPage('settings')}
+        onLogout={disconnect}
       />
 
       {/* ── Everything right of the rail: topbar + body ── */}
@@ -218,6 +220,7 @@ export default function App() {
               {page === 'account'     && <AccountMetrics account={data?.account} />}
               {page === 'performance' && <Performance />}
               {page === 'sage'        && <AIPanel data={data} nudge={nudge} onClose={() => setPage('home')} onAIAnalysis={levels => setAiLevels(levels)} />}
+              {page === 'settings'    && <Settings account={data?.account} onLogout={disconnect} />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -243,15 +246,6 @@ export default function App() {
         </AnimatePresence>
       </div>
       </div>{/* /app-shell */}
-
-      <AnimatePresence>
-        {settingsOpen && (
-          <Settings
-            onClose={() => setSettingsOpen(false)}
-            account={data?.account}
-          />
-        )}
-      </AnimatePresence>
 
       {/* ── Floating Sage companion (bottom-right) ── */}
       <SageBubble data={data} nudge={nudge} hidden={panelOpen} onAIAnalysis={levels => setAiLevels(levels)} />
