@@ -97,6 +97,27 @@ def save_search_api_key(key: str):
     cfg['search_api_key'] = key
     _write(cfg)
 
+# ─── Sage durable memory (notes Sage has chosen to remember) ──
+_SAGE_NOTES_CAP = 20
+
+def get_sage_notes() -> list[str]:
+    return _read().get('sage_notes', [])
+
+def add_sage_note(note: str):
+    note = (note or '').strip()
+    if not note:
+        return
+    notes = get_sage_notes()
+    notes.append(note)
+    cfg = _read()
+    cfg['sage_notes'] = notes[-_SAGE_NOTES_CAP:]
+    _write(cfg)
+
+def clear_sage_notes():
+    cfg = _read()
+    cfg['sage_notes'] = []
+    _write(cfg)
+
 # ─── Risk management ──────────────────────────────────────────
 _RISK_DEFAULTS = {
     "max_daily_loss_pct": 5.0,

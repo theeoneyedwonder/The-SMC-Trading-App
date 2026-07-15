@@ -97,6 +97,26 @@ class PriceAlert(Base):
         return f"<PriceAlert {self.symbol} {self.condition} {self.target}>"
 
 
+class TradeAnnotation(Base):
+    """Auto-captured SMC context at the moment a trade was opened — the
+    trade journal's "why" for each position, keyed by position ticket."""
+    __tablename__ = "trade_annotations"
+
+    id              = Column(Integer, primary_key=True, index=True)
+    ticket          = Column(Integer, index=True, unique=True)
+    login           = Column(Integer, index=True)
+    symbol          = Column(String)
+    direction       = Column(String)              # "BUY" | "SELL"
+    setup_kind      = Column(String, nullable=True)   # "OB" | "FVG" | "BOS"
+    setup_direction = Column(String, nullable=True)   # "BULLISH" | "BEARISH"
+    setup_timeframe = Column(String, nullable=True)
+    note            = Column(String, nullable=True)
+    created_at      = Column(DateTime, server_default=func.now())
+
+    def __repr__(self):
+        return f"<TradeAnnotation #{self.ticket} {self.setup_kind} {self.setup_direction}>"
+
+
 class EventLog(Base):
     """System/execution/alert log feed (System Log panel)."""
     __tablename__ = "event_log"

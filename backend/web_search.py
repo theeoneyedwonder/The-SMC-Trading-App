@@ -14,11 +14,13 @@ def search_enabled() -> bool:
     return bool(get_search_api_key())
 
 
-async def web_search(query: str, max_results: int = 5) -> str:
-    """Run a web search and return a compact, model-friendly text summary."""
+async def web_search(query: str, max_results: int = 5) -> dict:
+    """Run a web search. Returns {"text": <model-facing summary>,
+    "citations": [{title, url, snippet}, ...]} so the frontend can render
+    real citation cards instead of just inline text."""
     key = get_search_api_key()
     if not key:
-        return "Web search is not configured (no Tavily API key)."
+        return {"text": "Web search is not configured (no Tavily API key).", "citations": []}
     try:
         async with httpx.AsyncClient(timeout=20.0) as client:
             resp = await client.post(TAVILY_URL, json={
@@ -31,9 +33,10 @@ async def web_search(query: str, max_results: int = 5) -> str:
             resp.raise_for_status()
             data = resp.json()
     except Exception as e:
-        return f"Web search failed: {e}"
+        return {"text": f"Web search failed: {e}", "citations": []}
 
-    parts = []
+    parts     = []
+    citations = []
     if data.get("answer"):
         parts.append(f"Summary: {data['answer']}")
     for i, r in enumerate(data.get("results", [])[:max_results], 1):
@@ -41,7 +44,10 @@ async def web_search(query: str, max_results: int = 5) -> str:
         content = (r.get("content", "") or "").strip().replace("\n", " ")
         url     = r.get("url", "")
         parts.append(f"[{i}] {title}\n{content}\nSource: {url}")
-    return "\n\n".join(parts) if parts else "No results found."
+        citations.append({"title": title, "url": url, "snippet": content[:220]})
+
+    text = "\n\n".join(parts) if parts else "No results found."
+    return {"text": text, "citations": citations}
 
 
 # OpenAI / Groq-style tool schema the model sees

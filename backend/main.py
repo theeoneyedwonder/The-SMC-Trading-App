@@ -32,12 +32,15 @@ from patterns import analyse_patterns
 from alerts import (
     alert_connection_lost, alert_reconnected,
     alert_trade_opened, alert_trade_closed,
+    alert_price_hit, alert_structure,
 )
 from notifications import (
     create_alert, list_alerts, delete_alert, check_alerts,
     log_event, get_event_log,
 )
 from screener import scan_market
+from sage_memory import REMEMBER_TOOL_SCHEMA, remember, notes_context
+from journal import annotate_trade, get_annotation, list_annotations
 
 # ─── WebSocket manager ────────────────────────────────────────
 class ConnectionManager:
@@ -64,6 +67,33 @@ class ConnectionManager:
 
 manager = ConnectionManager()
 _wake_loop: asyncio.Event | None = None  # set by lifespan, triggered after setup
+
+# Most recent patterns per symbol — updated every pattern_loop cycle, read
+# by the trade journal to snapshot "why" a trade was taken at open time.
+_last_patterns: dict[str, dict] = {}
+
+def _current_setup(symbol: str) -> dict:
+    """Most recent detected structure for a symbol, preferring higher
+    timeframes as more representative of the prevailing setup."""
+    patterns = _last_patterns.get(symbol)
+    if not patterns:
+        return {}
+    for tf in ("H1", "H4", "M30", "M15", "D1", "M5", "M1"):
+        tf_data = patterns.get(tf)
+        if not tf_data:
+            continue
+        events = []
+        for o in tf_data.get("order_blocks", []):
+            events.append(("OB", o["direction"], o["time"]))
+        for f in tf_data.get("fvgs", []):
+            events.append(("FVG", f["direction"], f["time"]))
+        for b in tf_data.get("bos_mss", []):
+            events.append(("BOS", b["direction"], b["time"]))
+        if events:
+            events.sort(key=lambda e: e[2], reverse=True)
+            kind, direction, _ = events[0]
+            return {"setup_kind": kind, "setup_direction": direction, "setup_timeframe": tf}
+    return {}
 
 # ─── Proactive Sage nudges ─────────────────────────────────────
 # Only higher timeframes — M1..M30 recompute too often to be worth
@@ -166,6 +196,7 @@ async def pattern_loop():
             tf_data    = await loop.run_in_executor(None, lambda: get_all_timeframes(symbol=symbol))
             indicators = await loop.run_in_executor(None, lambda: analyse_all_timeframes(tf_data))
             patterns   = await loop.run_in_executor(None, lambda: analyse_patterns(tf_data))
+            _last_patterns[symbol] = patterns
 
             # Only patterns/indicators here — account/trades flow via account_loop
             await manager.broadcast({
@@ -182,6 +213,7 @@ async def pattern_loop():
                 await loop.run_in_executor(None, lambda n=nudge: save_message(login, "assistant", n["text"]))
                 await loop.run_in_executor(None, lambda n=nudge: log_event(
                     "SAGE", "Pattern Detected", n["text"], value=n["timeframe"], symbol=n["symbol"]))
+                await loop.run_in_executor(None, lambda n=nudge: alert_structure(n["timeframe"], "BOS", n["direction"]))
                 await manager.broadcast({"type": "nudge", "id": time.time(), **nudge})
 
             # Keep the persisted trade history fresh (captures closes within ~30s)
@@ -215,6 +247,7 @@ async def monitor_loop():
                     await loop.run_in_executor(None, lambda a=a, msg=msg: log_event(
                         "PRICE_ALERT", "Price Alert Triggered", msg,
                         value=f"{a['target']:g}", symbol=a["symbol"]))
+                    await loop.run_in_executor(None, lambda a=a: alert_price_hit(a["symbol"], a["condition"], a["target"]))
                     await manager.broadcast({"type": "alert_triggered", **a})
 
                 risk = get_risk_settings()
@@ -548,6 +581,13 @@ async def market_order(req: TradeRequest):
         f"{req.symbol} {req.lot} lots @ {result.get('price')}",
         value=f"{req.lot} LOT", symbol=req.symbol))
 
+    # Trade journal: snapshot whatever SMC setup was live for this symbol
+    # right now, so every position has a real answer to "why was this taken".
+    setup = _current_setup(req.symbol)
+    login = get_mt5_credentials()[0]
+    await loop.run_in_executor(None, lambda: annotate_trade(
+        ticket=result["ticket"], login=login, symbol=req.symbol, direction=req.type, **setup))
+
     if _wake_loop:
         _wake_loop.set()   # refresh trades immediately
     return result
@@ -678,6 +718,10 @@ async def ai_chat(req: AIChatRequest):
     if req.strategy:
         system += f"\nUser's custom trading strategy:\n{req.strategy}\n"
 
+    system += notes_context()
+    system += ("\nYou have a remember_note tool — use it when the user shares something worth "
+               "recalling long-term (risk tolerance, preferred instruments, trading style, goals).")
+
     if search_enabled():
         system += ("\nYou have a web_search tool for current/real-time info (news, live events, "
                    "recent prices). Use it whenever the answer depends on information after your "
@@ -689,7 +733,7 @@ async def ai_chat(req: AIChatRequest):
     messages += history
     messages.append({"role": "user", "content": req.message})
 
-    tools = [TOOL_SCHEMA] if search_enabled() else None
+    tools = [REMEMBER_TOOL_SCHEMA] + ([TOOL_SCHEMA] if search_enabled() else [])
 
     def _groq_body():
         body = {
@@ -767,7 +811,12 @@ async def ai_chat(req: AIChatRequest):
                             except Exception:
                                 args = {}
                             if slot["name"] == "web_search":
-                                result = await web_search(args.get("query", req.message))
+                                search_result = await web_search(args.get("query", req.message))
+                                result = search_result["text"]
+                                if search_result["citations"]:
+                                    yield f"data: {json.dumps({'citations': search_result['citations']})}\n\n"
+                            elif slot["name"] == "remember_note":
+                                result = await loop.run_in_executor(None, lambda a=args: remember(a.get("note", "")))
                             else:
                                 result = "Unknown tool."
                             messages.append({
@@ -969,6 +1018,21 @@ async def screener_endpoint(timeframe: str = "H1"):
     minutes = TIMEFRAMES.get(timeframe, 60)
     loop    = asyncio.get_event_loop()
     return await loop.run_in_executor(None, lambda: scan_market(minutes))
+
+# ─── Trade journal ───────────────────────────────────────────────
+@app.get("/journal")
+async def journal_list(limit: int = 100):
+    login = get_mt5_credentials()[0]
+    loop  = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: list_annotations(login, limit))
+
+@app.get("/journal/{ticket}")
+async def journal_get(ticket: int):
+    loop   = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, lambda: get_annotation(ticket))
+    if result is None:
+        raise HTTPException(404, "No journal entry for this ticket")
+    return result
 
 # ─── WebSocket (market data) ──────────────────────────────────
 @app.websocket("/ws")

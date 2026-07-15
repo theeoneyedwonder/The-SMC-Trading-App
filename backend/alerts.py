@@ -39,6 +39,10 @@ def alert_trade_closed(direction: str, entry: float, profit: float):
     result = "PROFIT" if profit >= 0 else "LOSS"
     _send(f"Trade Closed - {result}", f"{direction} closed\nP&L: {profit:.2f}", timeout=10)
 
+def alert_price_hit(symbol: str, condition: str, target: float):
+    verb = "crossed above" if condition == "above" else "crossed below"
+    _send(f"Price Alert - {symbol}", f"{symbol} {verb} {target:g}", timeout=10)
+
 def alert_connection_lost():
     _send("Connection Lost", "MT5 dropped. Reconnecting...", timeout=12)
 
