@@ -48,7 +48,7 @@ def get_all_messages(login: int, limit: int = 200) -> list:
                   .order_by(ChatMessage.id.asc())
                   .limit(limit)
                   .all())
-        return [{"role": r.role, "content": r.content} for r in rows]
+        return [{"role": r.role, "content": r.content, "time": r.created_at.isoformat() if r.created_at else None} for r in rows]
     finally:
         db.close()
 

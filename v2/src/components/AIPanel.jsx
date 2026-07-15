@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
+import Button from './Button';
 
 const API = 'http://127.0.0.1:8000';
 
@@ -15,32 +16,21 @@ const SUGGESTIONS = [
 // 4-pointed sparkle — the Sage mark
 export function SageMark({ size = 20, style }) {
   return (
-    <svg
-      width={size} height={size}
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      style={style}
-    >
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" style={style}>
       <path d="M12 2 L14.2 9.8 L22 12 L14.2 14.2 L12 22 L9.8 14.2 L2 12 L9.8 9.8 Z" />
     </svg>
   );
 }
 
-function SendIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" width="16" height="16">
-      <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-    </svg>
-  );
+function fmtClock(iso) {
+  if (!iso) return '--:--:--';
+  const d = new Date(iso);
+  if (isNaN(d)) return '--:--:--';
+  return d.toLocaleTimeString('en-GB', { hour12: false });
 }
 
-function PlusIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"
-      strokeLinecap="round" width="17" height="17">
-      <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-    </svg>
-  );
+function fmtNum(n, d = 2) {
+  return n == null ? '—' : Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 }
 
 function sageGreeting(name) {
@@ -57,57 +47,88 @@ function sageGreeting(name) {
   return pool[h % pool.length];
 }
 
+// Flatten the per-timeframe pattern payload into a single recency-sorted feed
+function recentSmcEvents(patterns) {
+  if (!patterns) return [];
+  const events = [];
+  for (const [tf, tfData] of Object.entries(patterns)) {
+    for (const b of tfData?.bos_mss ?? [])
+      events.push({ tf, kind: 'BOS', direction: b.direction, price: b.level, time: b.time });
+    for (const f of tfData?.fvgs ?? [])
+      events.push({ tf, kind: 'FVG', direction: f.direction, price: (f.high + f.low) / 2, time: f.time });
+    for (const o of tfData?.order_blocks ?? [])
+      events.push({ tf, kind: 'OB', direction: o.direction, price: (o.high + o.low) / 2, time: o.time });
+  }
+  events.sort((a, b) => new Date(b.time) - new Date(a.time));
+  return events.slice(0, 12);
+}
+
+function dirClass(direction) {
+  return direction === 'BULLISH' ? 'text-primary-fixed-dim' : direction === 'BEARISH' ? 'text-error' : 'text-on-surface-variant';
+}
+
 // Rich analysis card — shown inline in chat when /ai/analyze is called
 function AnalysisCard({ data }) {
-  const biasColor =
-    data.bias === 'bullish' ? 'var(--green)' :
-    data.bias === 'bearish' ? 'var(--red)' :
-    'var(--muted)';
+  const bullish = data.bias === 'bullish';
+  const bearish = data.bias === 'bearish';
+  const biasClass = bullish ? 'text-primary-fixed-dim border-primary-fixed-dim bg-primary-fixed/10'
+                   : bearish ? 'text-error border-error bg-error/10'
+                   : 'text-on-surface-variant border-outline-variant bg-surface-container-high';
+  const barColor = bullish ? 'bg-primary-fixed-dim' : bearish ? 'bg-error' : 'bg-on-surface-variant';
 
   return (
-    <div className="sage-analysis-card">
-      <div className="sac-bias-row">
-        <span className="sac-bias-badge" style={{
-          color: biasColor,
-          borderColor: biasColor + '55',
-          background: biasColor + '18',
-        }}>
+    <div className="flex flex-col gap-sm">
+      <div className="flex items-center justify-between gap-sm flex-wrap">
+        <span className={`font-label-caps text-label-caps px-sm py-xs border-2 ${biasClass}`}>
           {(data.bias ?? 'neutral').toUpperCase()}
         </span>
-        <span className="sac-confidence">{data.confidence ?? 0}% confidence</span>
+        <span className="font-label-caps text-label-caps text-on-surface-variant">{data.confidence ?? 0}% CONFIDENCE</span>
       </div>
-      <div className="sac-bar-track">
-        <div className="sac-bar-fill" style={{ width: `${data.confidence ?? 0}%`, background: biasColor }} />
+      <div className="h-2 w-full bg-surface-variant border-2 border-outline-variant">
+        <div className={`h-full ${barColor}`} style={{ width: `${data.confidence ?? 0}%` }} />
       </div>
 
-      {data.reason && <p className="sac-reason">{data.reason}</p>}
+      {data.reason && <p className="text-on-surface text-[13px] font-body-base leading-relaxed">{data.reason}</p>}
 
       {data.setup?.active && (
-        <div className="sac-setup">
-          <span className={`sac-dir ${(data.setup.direction ?? '').toLowerCase()}`}>
-            {data.setup.direction}
-          </span>
-          {data.setup.entry != null && <span>Entry <strong>{data.setup.entry}</strong></span>}
-          {data.setup.sl    != null && <span>SL <strong style={{ color: 'var(--red)' }}>{data.setup.sl}</strong></span>}
-          {data.setup.tp    != null && <span>TP <strong style={{ color: 'var(--green)' }}>{data.setup.tp}</strong></span>}
-          {data.setup.rr    != null && <span className="sac-rr">R:R {Number(data.setup.rr).toFixed(1)}</span>}
+        <div className="bg-surface border-2 border-outline-variant p-sm">
+          <div className="grid grid-cols-3 gap-xs mb-sm border-b-2 border-outline-variant pb-xs">
+            <div>
+              <div className="font-label-caps text-[9px] text-on-surface-variant">ENTRY</div>
+              <div className="font-stat-lg text-[14px] text-primary">{data.setup.entry ?? '—'}</div>
+            </div>
+            <div>
+              <div className="font-label-caps text-[9px] text-on-surface-variant">SL</div>
+              <div className="font-stat-lg text-[14px] text-error">{data.setup.sl ?? '—'}</div>
+            </div>
+            <div>
+              <div className="font-label-caps text-[9px] text-on-surface-variant">TP</div>
+              <div className="font-stat-lg text-[14px] text-primary-fixed-dim">{data.setup.tp ?? '—'}</div>
+            </div>
+          </div>
+          <div className="flex items-center gap-sm flex-wrap">
+            <span className={`font-label-caps text-label-caps px-xs py-[2px] border-2 ${data.setup.direction === 'BUY' ? 'border-primary-fixed-dim text-primary-fixed-dim' : 'border-error text-error'}`}>
+              {data.setup.direction}
+            </span>
+            {data.setup.rr != null && <span className="font-label-caps text-label-caps text-secondary">R:R {Number(data.setup.rr).toFixed(1)}</span>}
+          </div>
         </div>
       )}
 
       {data.key_levels?.length > 0 && (
-        <div className="sac-levels">
-          <div className="sac-levels-title">Key levels · marked on chart</div>
+        <div className="flex flex-col gap-xs">
+          <div className="font-label-caps text-label-caps text-on-surface-variant">KEY LEVELS · MARKED ON CHART</div>
           {data.key_levels.map((lvl, i) => (
-            <div key={i} className="sac-level-row">
-              <span className={`sac-dot ${lvl.type ?? ''}`} />
-              <span className="sac-level-lbl">{lvl.label}</span>
-              <span className="sac-level-price">{lvl.price}</span>
+            <div key={i} className="flex items-center gap-sm font-stat-lg text-[12px]">
+              <span className={'w-2 h-2 shrink-0 ' + (lvl.type === 'support' ? 'bg-primary-fixed-dim' : lvl.type === 'resistance' ? 'bg-error' : 'bg-secondary')} />
+              <span className="flex-1 text-on-surface-variant truncate">{lvl.label}</span>
+              <span className="text-primary">{lvl.price}</span>
             </div>
           ))}
         </div>
       )}
 
-      {data.summary && <p className="sac-summary">{data.summary}</p>}
+      {data.summary && <p className="text-on-surface-variant text-[12px] font-body-base leading-relaxed border-t-2 border-outline-variant pt-sm">{data.summary}</p>}
     </div>
   );
 }
@@ -130,51 +151,37 @@ function StrategySheet({ strategy, strategyName, onSave, onClear, onClose }) {
 
   return (
     <motion.div
-      className="sage-strat-sheet"
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 10 }}
+      className="border-t-2 border-outline-variant bg-surface-container-low p-md flex flex-col gap-sm shrink-0"
+      initial={{ opacity: 0, height: 0 }}
+      animate={{ opacity: 1, height: 'auto' }}
+      exit={{ opacity: 0, height: 0 }}
       transition={{ duration: 0.15 }}
     >
-      <div className="sss-header">
-        <span>Strategy Document</span>
-        <button className="sss-close" onClick={onClose}>✕</button>
+      <div className="flex items-center justify-between">
+        <span className="font-label-caps text-label-caps text-secondary">STRATEGY DOCUMENT</span>
+        <button onClick={onClose} className="text-on-surface-variant hover:text-error transition-colors">
+          <span className="material-symbols-outlined text-[16px]">close</span>
+        </button>
       </div>
-      <p className="sss-hint">
+      <p className="font-body-base text-[12px] text-on-surface-variant">
         Upload or paste your trading strategy. Sage will use it in every analysis and chat.
       </p>
-      <input
-        ref={fileRef}
-        type="file"
-        accept=".txt,.md,.csv"
-        style={{ display: 'none' }}
-        onChange={handleFile}
-      />
-      <div className="sss-actions">
-        <button className="sss-upload" onClick={() => fileRef.current?.click()}>
-          Upload file (.txt / .md)
-        </button>
-        {strategy && (
-          <button className="sss-remove" onClick={() => { onClear(); onClose(); }}>
-            Remove
-          </button>
-        )}
+      <input ref={fileRef} type="file" accept=".txt,.md,.csv" className="hidden" onChange={handleFile} />
+      <div className="flex gap-sm">
+        <Button variant="ghost" size="sm" onClick={() => fileRef.current?.click()}>Upload File</Button>
+        {strategy && <Button variant="danger" size="sm" onClick={() => { onClear(); onClose(); }}>Remove</Button>}
       </div>
-      {name && <div className="sss-filename">Document: {name}</div>}
+      {name && <div className="font-label-caps text-label-caps text-secondary">DOCUMENT: {name}</div>}
       <textarea
-        className="sss-textarea"
+        className="bg-[#141414] border-2 border-outline-variant p-sm text-[13px] text-on-surface font-body-base focus:outline-none focus:border-secondary transition-colors resize-none placeholder:text-on-surface-variant"
         placeholder="Or paste your strategy here — entry rules, exit criteria, risk management, preferred SMC setups…"
         value={draft}
         onChange={e => setDraft(e.target.value)}
-        rows={6}
+        rows={5}
       />
-      <button
-        className="sss-save"
-        disabled={!draft.trim()}
-        onClick={() => { onSave(draft, name); onClose(); }}
-      >
-        {strategy && strategy === draft ? '✓ Strategy saved' : 'Save strategy'}
-      </button>
+      <Button variant="secondary" size="md" disabled={!draft.trim()} onClick={() => { onSave(draft, name); onClose(); }}>
+        {strategy && strategy === draft ? 'Strategy Saved' : 'Save Strategy'}
+      </Button>
     </motion.div>
   );
 }
@@ -218,7 +225,7 @@ export default function AIPanel({ data, nudge, onClose, onAIAnalysis }) {
   useEffect(() => {
     if (!nudge || nudge.id === lastNudgeIdRef.current) return;
     lastNudgeIdRef.current = nudge.id;
-    setMessages(prev => [...prev, { role: 'assistant', content: nudge.text }]);
+    setMessages(prev => [...prev, { role: 'assistant', content: nudge.text, time: new Date().toISOString() }]);
   }, [nudge]);
 
   const clearChat = async () => {
@@ -247,6 +254,7 @@ export default function AIPanel({ data, nudge, onClose, onAIAnalysis }) {
     setMessages(prev => [...prev, {
       role: 'user',
       content: 'Analyze the chart and identify key trade setups.',
+      time: new Date().toISOString(),
     }]);
     try {
       const r = await fetch(`${API}/ai/analyze`, {
@@ -257,12 +265,12 @@ export default function AIPanel({ data, nudge, onClose, onAIAnalysis }) {
       const d = await r.json();
       if (r.ok) {
         onAIAnalysis?.(d.key_levels ?? []);
-        setMessages(prev => [...prev, { role: 'analysis', data: d }]);
+        setMessages(prev => [...prev, { role: 'analysis', data: d, time: new Date().toISOString() }]);
       } else {
-        setMessages(prev => [...prev, { role: 'error', content: d.detail || 'Analysis failed.' }]);
+        setMessages(prev => [...prev, { role: 'error', content: d.detail || 'Analysis failed.', time: new Date().toISOString() }]);
       }
     } catch {
-      setMessages(prev => [...prev, { role: 'error', content: 'Could not reach the backend.' }]);
+      setMessages(prev => [...prev, { role: 'error', content: 'Could not reach the backend.', time: new Date().toISOString() }]);
     }
     setAnalyzing(false);
   };
@@ -272,7 +280,11 @@ export default function AIPanel({ data, nudge, onClose, onAIAnalysis }) {
     if (!msg || loading || analyzing) return;
     setInput('');
     setStrategyOpen(false);
-    setMessages(prev => [...prev, { role: 'user', content: msg }, { role: 'assistant', content: '', streaming: true }]);
+    setMessages(prev => [
+      ...prev,
+      { role: 'user', content: msg, time: new Date().toISOString() },
+      { role: 'assistant', content: '', streaming: true, time: new Date().toISOString() },
+    ]);
     setLoading(true);
 
     const replaceLast = (next) => setMessages(prev => {
@@ -290,7 +302,7 @@ export default function AIPanel({ data, nudge, onClose, onAIAnalysis }) {
 
       if (!r.ok || !r.body) {
         const d = await r.json().catch(() => ({}));
-        replaceLast({ role: 'error', content: d.detail || 'Something went wrong.' });
+        replaceLast({ role: 'error', content: d.detail || 'Something went wrong.', time: new Date().toISOString() });
         setLoading(false);
         return;
       }
@@ -320,7 +332,7 @@ export default function AIPanel({ data, nudge, onClose, onAIAnalysis }) {
           if (evt.delta) {
             replaceLast(last => ({ ...last, role: 'assistant', content: (last.content || '') + evt.delta }));
           } else if (evt.error) {
-            replaceLast({ role: 'error', content: evt.error });
+            replaceLast({ role: 'error', content: evt.error, time: new Date().toISOString() });
             done = true;
             break;
           } else if (evt.done) {
@@ -331,7 +343,7 @@ export default function AIPanel({ data, nudge, onClose, onAIAnalysis }) {
         }
       }
     } catch {
-      replaceLast({ role: 'error', content: 'Could not reach the backend.' });
+      replaceLast({ role: 'error', content: 'Could not reach the backend.', time: new Date().toISOString() });
     }
     setLoading(false);
     setTimeout(() => inputRef.current?.focus(), 50);
@@ -345,171 +357,247 @@ export default function AIPanel({ data, nudge, onClose, onAIAnalysis }) {
   const busy        = loading || analyzing;
   const hasMessages = messages.length > 0 || busy;
   const acct        = data?.account;
+  const events      = recentSmcEvents(data?.patterns);
 
   return (
-    <div className="sage-panel">
+    <div className="flex-1 h-full flex gap-md p-md overflow-hidden min-h-0">
 
-      {/* ── Header ── */}
-      <div className="sage-header">
-        <div className="sage-header-brand">
-          <div className="sage-logo-mark">
-            <SageMark size={16} />
+      {/* ── LEFT: Sage Terminal ── */}
+      <section className="flex-[2] flex flex-col glass-panel module-glow-secondary relative overflow-hidden min-w-0 border-secondary/30">
+
+        {/* Header */}
+        <div className="p-sm border-b border-white/10 flex justify-between items-center shrink-0 gap-sm flex-wrap bg-white/[0.02]">
+          <div className="flex items-center gap-sm">
+            <div className="w-7 h-7 border-2 border-secondary text-secondary glow-secondary flex items-center justify-center bg-secondary/10 shrink-0">
+              <SageMark size={14} />
+            </div>
+            <div>
+              <h3 className="font-headline-md text-headline-md text-secondary glow-text-secondary leading-none">SAGE_TERMINAL</h3>
+              <p className="font-label-caps text-label-caps text-on-surface-variant mt-1 tracking-widest">SMART MONEY ANALYST</p>
+            </div>
           </div>
-          <div>
-            <div className="sage-name">Sage</div>
-            <div className="sage-tagline">SMART MONEY ANALYST</div>
+          <div className="flex items-center gap-sm">
+            {acct && (
+              <div className="hidden md:flex items-center gap-xs font-label-caps text-label-caps text-on-surface-variant border-r-2 border-outline-variant pr-sm mr-xs">
+                <span className="text-primary">{data?.symbol ?? '—'}</span>
+                <span>·</span>
+                <span>{acct.currency} {fmtNum(acct.balance)}</span>
+              </div>
+            )}
+            <span className="font-label-caps text-label-caps px-sm py-xs bg-surface-container border-2 border-outline-variant text-primary-fixed-dim shrink-0">
+              STATUS: ONLINE
+            </span>
+            <button
+              onClick={onClose}
+              title="Close Sage"
+              className="w-7 h-7 flex items-center justify-center border-2 border-outline-variant text-on-surface-variant hover:text-error hover:border-error transition-colors shrink-0"
+            >
+              <span className="material-symbols-outlined text-[16px]">close</span>
+            </button>
           </div>
         </div>
 
-        <div className="sage-header-right">
-          {acct && (
-            <div className="sage-ctx">
-              <span className="sage-ctx-sym">{data?.symbol ?? '—'}</span>
-              <span className="sage-ctx-sep">·</span>
-              <span className="sage-ctx-bal">
-                {acct.currency}&nbsp;
-                {Number(acct.balance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-              {acct.profit != null && (
-                <>
-                  <span className="sage-ctx-sep">·</span>
-                  <span style={{ color: acct.profit >= 0 ? 'var(--green)' : 'var(--red)', fontWeight: 600 }}>
-                    {acct.profit >= 0 ? '+' : ''}{Number(acct.profit).toFixed(2)}
-                  </span>
-                </>
-              )}
-            </div>
-          )}
-          <button className="sage-close-btn" onClick={onClose} title="Close Sage">✕</button>
-        </div>
-      </div>
-
-      {/* ── Memory bar ── */}
-      {hasMessages && (
-        <div className="sage-memory-bar">
-          <span>✓ Sage remembers this conversation</span>
-          <button onClick={clearChat}>Clear</button>
-        </div>
-      )}
-
-      {/* ── Messages ── */}
-      <div className="sage-messages">
-        {!hasMessages ? (
-          /* Empty / greeting state */
-          <div className="sage-empty">
-            <div className="sage-empty-mark">
-              <SageMark size={34} />
-            </div>
-            <div className="sage-greeting-text">{sageGreeting(acct?.name)}</div>
-
-            <div className="sage-chips">
-              {SUGGESTIONS.map(s => (
-                <button key={s.label} className="sage-chip" onClick={() => handleSuggestion(s)}>
-                  <span className="sage-chip-label">{s.label}</span>
-                  <span className="sage-chip-sub">{s.sub}</span>
-                </button>
-              ))}
-            </div>
+        {/* Memory bar */}
+        {hasMessages && (
+          <div className="px-md py-xs border-b border-white/10 bg-secondary/5 flex items-center justify-between shrink-0">
+            <span className="font-label-caps text-label-caps text-secondary flex items-center gap-xs">
+              <span className="material-symbols-outlined text-[12px]">check_circle</span>
+              MEMORY: CONVERSATION SAVED
+            </span>
+            <button onClick={clearChat} className="font-label-caps text-label-caps text-on-surface-variant hover:text-error transition-colors">
+              CLEAR
+            </button>
           </div>
-        ) : (
-          <>
-            {messages.map((m, i) => {
-              if (m.role === 'analysis') {
+        )}
+
+        {/* Messages */}
+        <div className="flex-1 overflow-y-auto p-md flex flex-col gap-md font-stat-lg text-body-base min-h-0">
+          {!hasMessages ? (
+            <div className="flex-1 flex flex-col items-center justify-center gap-lg text-center p-lg">
+              <div className="w-14 h-14 border-2 border-secondary text-secondary glow-secondary flex items-center justify-center bg-secondary/10">
+                <SageMark size={28} />
+              </div>
+              <div className="font-headline-md text-headline-md text-on-surface max-w-[360px]">{sageGreeting(acct?.name)}</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-sm w-full max-w-[560px]">
+                {SUGGESTIONS.map(s => (
+                  <button
+                    key={s.label}
+                    onClick={() => handleSuggestion(s)}
+                    className="flex flex-col items-start gap-xs p-sm border-2 border-outline-variant bg-surface-container hover:border-secondary hover:bg-secondary/5 transition-colors text-left"
+                  >
+                    <span className="font-body-bold text-body-bold text-primary">{s.label}</span>
+                    <span className="font-label-caps text-label-caps text-on-surface-variant">{s.sub}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            <>
+              {messages.map((m, i) => {
+                const time = fmtClock(m.time);
+
+                if (m.role === 'analysis') {
+                  return (
+                    <div key={i} className="flex flex-col gap-xs max-w-[85%]">
+                      <div className="font-label-caps text-label-caps text-on-surface-variant">SAGE_AI // {time}</div>
+                      <div className="bg-[#141414] border-2 border-secondary p-sm hover:bg-surface-container-high transition-colors">
+                        <AnalysisCard data={m.data} />
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (m.role === 'assistant' && m.streaming && !m.content) {
+                  return (
+                    <div key={i} className="flex flex-col gap-xs max-w-[85%]">
+                      <div className="font-label-caps text-label-caps text-on-surface-variant">SAGE_AI // {time}</div>
+                      <div className="bg-surface border-2 border-outline-variant p-sm flex gap-1 items-center w-fit">
+                        <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-bounce" style={{ animationDelay: '0ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-bounce" style={{ animationDelay: '120ms' }} />
+                        <span className="w-1.5 h-1.5 rounded-full bg-secondary animate-bounce" style={{ animationDelay: '240ms' }} />
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (m.role === 'user') {
+                  return (
+                    <div key={i} className="flex flex-col gap-xs max-w-[85%] self-end items-end">
+                      <div className="font-label-caps text-label-caps text-on-surface-variant">USER // {time}</div>
+                      <div className="bg-surface-container-high border-2 border-primary-fixed-dim p-sm text-primary whitespace-pre-wrap">{m.content}</div>
+                    </div>
+                  );
+                }
+
+                if (m.role === 'error') {
+                  return (
+                    <div key={i} className="flex flex-col gap-xs max-w-[85%]">
+                      <div className="font-label-caps text-label-caps text-error">SAGE_AI // {time}</div>
+                      <div className="bg-error/10 border-2 border-error p-sm text-error whitespace-pre-wrap">{m.content}</div>
+                    </div>
+                  );
+                }
+
+                // assistant (plain text; may still be streaming with partial content)
                 return (
-                  <div key={i} className="sage-msg sage-msg-assistant">
-                    <div className="sage-avatar"><SageMark size={12} /></div>
-                    <AnalysisCard data={m.data} />
-                  </div>
-                );
-              }
-              if (m.role === 'assistant' && m.streaming && !m.content) {
-                return (
-                  <div key={i} className="sage-msg sage-msg-assistant">
-                    <div className="sage-avatar"><SageMark size={12} /></div>
-                    <div className="sage-bubble sage-bubble-assistant sage-typing">
-                      <span /><span /><span />
+                  <div key={i} className="flex flex-col gap-xs max-w-[85%]">
+                    <div className="font-label-caps text-label-caps text-on-surface-variant">SAGE_AI // {time}</div>
+                    <div className="bg-surface border-2 border-outline-variant p-sm text-on-surface hover:bg-surface-container-high transition-colors whitespace-pre-wrap">
+                      {m.content}
+                      {m.streaming && <span className="inline-block w-[6px] h-[14px] bg-secondary ml-1 align-middle animate-pulse" />}
                     </div>
                   </div>
                 );
-              }
-              return (
-                <div key={i} className={`sage-msg sage-msg-${m.role}`}>
-                  {(m.role === 'assistant' || m.role === 'error') && (
-                    <div className="sage-avatar"><SageMark size={12} /></div>
-                  )}
-                  <div className={`sage-bubble sage-bubble-${m.role}`}>
-                    {m.content.split('\n').map((line, j, arr) => (
-                      <span key={j}>{line}{j < arr.length - 1 && <br />}</span>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-
-            {analyzing && (
-              <div className="sage-msg sage-msg-assistant">
-                <div className="sage-avatar"><SageMark size={12} /></div>
-                <div className="sage-bubble sage-bubble-assistant sage-typing">
-                  <span /><span /><span />
-                </div>
-              </div>
-            )}
-            <div ref={bottomRef} />
-          </>
-        )}
-      </div>
-
-      {/* ── Strategy sheet (slides up when + pressed) ── */}
-      <AnimatePresence>
-        {strategyOpen && (
-          <StrategySheet
-            strategy={strategy}
-            strategyName={strategyName}
-            onSave={saveStrategy}
-            onClear={clearStrategy}
-            onClose={() => setStrategyOpen(false)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* ── Strategy loaded indicator ── */}
-      {strategy && !strategyOpen && (
-        <div className="sage-strat-indicator">
-          <span>📄 {strategyName || 'Strategy loaded'}</span>
-          <button onClick={() => setStrategyOpen(true)}>Edit</button>
+              })}
+              <div ref={bottomRef} />
+            </>
+          )}
         </div>
-      )}
 
-      {/* ── Input bar ── */}
-      <div className="sage-input-area">
-        <button
-          className={`sage-plus-btn${strategyOpen ? ' active' : ''}`}
-          onClick={() => setStrategyOpen(o => !o)}
-          title={strategy ? 'Edit strategy document' : 'Upload strategy document'}
-        >
-          <PlusIcon />
-        </button>
-        <textarea
-          ref={inputRef}
-          className="sage-input"
-          rows={1}
-          placeholder="Ask about market structure, your trades…"
-          value={input}
-          onChange={e => setInput(e.target.value)}
-          onKeyDown={e => {
-            if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); }
-          }}
-          disabled={busy}
-        />
-        <button
-          className="sage-send-btn"
-          onClick={() => send()}
-          disabled={!input.trim() || busy}
-        >
-          <SendIcon />
-        </button>
-      </div>
+        {/* Strategy sheet (slides up when the attach button is pressed) */}
+        <AnimatePresence>
+          {strategyOpen && (
+            <StrategySheet
+              strategy={strategy}
+              strategyName={strategyName}
+              onSave={saveStrategy}
+              onClear={clearStrategy}
+              onClose={() => setStrategyOpen(false)}
+            />
+          )}
+        </AnimatePresence>
 
+        {/* Strategy loaded indicator */}
+        {strategy && !strategyOpen && (
+          <div className="px-md py-xs border-t border-white/10 bg-secondary/5 flex items-center justify-between shrink-0">
+            <span className="font-label-caps text-label-caps text-secondary flex items-center gap-xs">
+              <span className="material-symbols-outlined text-[12px]">description</span>
+              {strategyName || 'Strategy loaded'}
+            </span>
+            <button onClick={() => setStrategyOpen(true)} className="font-label-caps text-label-caps text-on-surface-variant hover:text-secondary transition-colors">
+              EDIT
+            </button>
+          </div>
+        )}
+
+        {/* Input */}
+        <div className="p-sm border-t-2 border-outline-variant bg-surface-container-low shrink-0 flex gap-sm items-end">
+          <button
+            onClick={() => setStrategyOpen(o => !o)}
+            title={strategy ? 'Edit strategy document' : 'Upload strategy document'}
+            className={
+              'w-9 h-9 shrink-0 flex items-center justify-center border-2 transition-colors ' +
+              (strategyOpen ? 'border-secondary text-secondary bg-secondary/10' : 'border-outline-variant text-on-surface-variant hover:text-secondary hover:border-secondary')
+            }
+          >
+            <span className="material-symbols-outlined text-[18px]">attach_file</span>
+          </button>
+          <div className="flex-1 relative">
+            <span className="absolute left-sm top-1/2 -translate-y-1/2 font-stat-lg text-body-bold text-secondary pointer-events-none">&gt;</span>
+            <textarea
+              ref={inputRef}
+              rows={1}
+              className="w-full bg-[#141414] border-2 border-outline-variant py-sm pl-lg pr-sm font-stat-lg text-body-base text-primary focus:outline-none focus:border-secondary placeholder:text-on-surface-variant transition-colors resize-none"
+              placeholder="Query Sage AI..."
+              value={input}
+              onChange={e => setInput(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } }}
+              disabled={busy}
+            />
+          </div>
+          <Button variant="secondary" size="md" disabled={!input.trim() || busy} onClick={() => send()}>
+            <span className="material-symbols-outlined text-[16px]">send</span>
+          </Button>
+        </div>
+      </section>
+
+      {/* ── RIGHT: Live data & actions ── */}
+      <aside className="w-[300px] shrink-0 flex flex-col gap-md">
+
+        {/* SMC Logic Stream */}
+        <div className="flex-1 glass-panel module-glow flex flex-col overflow-hidden min-h-0">
+          <div className="p-sm border-b border-white/10 flex justify-between items-center shrink-0">
+            <h3 className="font-label-caps text-label-caps text-primary tracking-widest">LIVE_SMC_EVENTS</h3>
+            <div className="w-2 h-2 rounded-full bg-error shadow-[0_0_8px_#ffb4ab] animate-pulse" />
+          </div>
+          <div className="flex-1 overflow-y-auto p-xs min-h-0">
+            {events.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full gap-xs text-center py-lg">
+                <span className="material-symbols-outlined text-[24px] text-outline-variant">radar</span>
+                <span className="font-label-caps text-label-caps text-on-surface-variant">SCANNING FOR EVENTS…</span>
+              </div>
+            ) : (
+              <table className="w-full text-left font-stat-lg text-[12px]">
+                <tbody className="divide-y divide-white/5">
+                  {events.map((e, i) => (
+                    <tr key={i} className="hover:bg-white/5 cursor-default transition-colors">
+                      <td className="py-xs px-sm text-on-surface-variant">{fmtClock(e.time)}</td>
+                      <td className={'py-xs px-sm font-bold ' + dirClass(e.direction)}>
+                        {e.kind} <span className="text-on-surface-variant font-normal">{e.tf}</span>
+                      </td>
+                      <td className="py-xs px-sm text-right text-primary">{fmtNum(e.price, e.price > 100 ? 1 : 4)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+
+        {/* AI Analysis Action */}
+        <div className="glass-panel module-glow-secondary p-md flex flex-col justify-center items-center gap-md relative overflow-hidden shrink-0 border-secondary/30">
+          <div className="text-center z-10">
+            <h4 className="font-headline-md text-headline-md text-secondary glow-text-secondary mb-xs">ANALYZE MARKET</h4>
+            <p className="font-body-base text-[12px] text-on-surface-variant">
+              Run a full SMC structure scan on <span className="text-primary">{data?.symbol ?? 'the active symbol'}</span> across every timeframe.
+            </p>
+          </div>
+          <Button variant="secondary" size="md" className="w-full z-10" disabled={busy} onClick={runAnalysis}>
+            <span className="material-symbols-outlined text-[16px]">radar</span>
+            {analyzing ? 'SCANNING…' : 'ANALYZE CHART'}
+          </Button>
+        </div>
+      </aside>
     </div>
   );
 }
