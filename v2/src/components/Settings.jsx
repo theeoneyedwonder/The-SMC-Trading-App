@@ -1,15 +1,28 @@
 import { useState, useEffect } from 'react';
 import { PRESETS, DARK_PRESETS, LIGHT_PRESETS, EDITABLE_COLORS, useTheme } from '../contexts/ThemeContext';
 import Button from './Button';
+import Maintenance from './Maintenance';
 
 const API = 'http://127.0.0.1:8000';
 
 const SECTIONS = [
-  { id: 'account',    label: 'Account & API',        icon: 'key' },
-  { id: 'appearance', label: 'Interface Preferences', icon: 'palette' },
-  { id: 'chart',      label: 'Chart Style',           icon: 'candlestick_chart' },
-  { id: 'ai',         label: 'Sage AI Core',          icon: 'auto_awesome' },
+  { id: 'account',    label: 'Account & API',         icon: 'key' },
+  { id: 'appearance', label: 'Interface Preferences',  icon: 'palette' },
+  { id: 'chart',      label: 'Chart Style',            icon: 'candlestick_chart' },
+  { id: 'ai',         label: 'Sage AI Core',           icon: 'auto_awesome' },
+  { id: 'risk',       label: 'Risk Management',        icon: 'warning' },
+  { id: 'screener',   label: 'Asset Screener',         icon: 'troubleshoot' },
+  { id: 'alerts',     label: 'Alerts & Notifications', icon: 'notifications_active' },
+  { id: 'calendar',   label: 'Economic Calendar',      icon: 'event' },
 ];
+
+// Sections with a real backend behind them vs. maintenance placeholders
+const PENDING_SECTIONS = {
+  risk:     'RISK MANAGEMENT',
+  screener: 'ASSET SCREENER',
+  alerts:   'ALERTS & NOTIFICATIONS',
+  calendar: 'ECONOMIC CALENDAR',
+};
 
 const FONT_OPTS = [
   { label: 'Small',  value: 0.88 },
@@ -27,7 +40,7 @@ function GroupTitle({ children, action }) {
   );
 }
 
-export default function Settings({ account, onLogout }) {
+export default function Settings({ account, onLogout, onNavigateHome }) {
   const [section, setSection] = useState('account');
   const { preset, vars, overrides, changePreset, changeColor, resetOverrides } = useTheme();
 
@@ -144,6 +157,9 @@ export default function Settings({ account, onLogout }) {
               showSearchKey={showSearchKey} setShowSearchKey={setShowSearchKey}
               searchSaving={searchSaving} searchSaved={searchSaved} saveSearchKey={saveSearchKey}
             />
+          )}
+          {PENDING_SECTIONS[section] && (
+            <Maintenance label={PENDING_SECTIONS[section]} onReturn={onNavigateHome} />
           )}
         </div>
       </div>

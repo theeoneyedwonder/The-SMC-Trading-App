@@ -220,7 +220,7 @@ export default function App() {
               {page === 'account'     && <AccountMetrics account={data?.account} />}
               {page === 'performance' && <Performance />}
               {page === 'sage'        && <AIPanel data={data} nudge={nudge} onClose={() => setPage('home')} onAIAnalysis={levels => setAiLevels(levels)} />}
-              {page === 'settings'    && <Settings account={data?.account} onLogout={disconnect} />}
+              {page === 'settings'    && <Settings account={data?.account} onLogout={disconnect} onNavigateHome={() => setPage('home')} />}
             </motion.div>
           </AnimatePresence>
         </main>
