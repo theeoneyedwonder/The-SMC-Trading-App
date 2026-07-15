@@ -14,13 +14,14 @@ from config import (
     is_configured, get_mt5_credentials,
     get_active_symbol, save_active_symbol,
     save_mt5_credentials, clear_mt5_credentials,
+    get_risk_settings, save_risk_settings,
 )
 from database import init_db
 from mt5_client import (
     connect, disconnect, get_open_trades, get_account_info,
     is_connected, select_symbol,
     get_symbol_tick, execute_market_order, close_position, close_positions,
-    get_account_snapshot, get_quote, _mt5_lock,
+    get_account_snapshot, get_quote, modify_position_sltp, _mt5_lock,
 )
 from data import get_all_timeframes, get_candles
 from history_sync import sync_deal_history, get_history, get_performance
@@ -32,6 +33,11 @@ from alerts import (
     alert_connection_lost, alert_reconnected,
     alert_trade_opened, alert_trade_closed,
 )
+from notifications import (
+    create_alert, list_alerts, delete_alert, check_alerts,
+    log_event, get_event_log,
+)
+from screener import scan_market
 
 # ─── WebSocket manager ────────────────────────────────────────
 class ConnectionManager:
@@ -174,6 +180,8 @@ async def pattern_loop():
             for nudge in _bos_nudges(symbol, patterns):
                 login = get_mt5_credentials()[0]
                 await loop.run_in_executor(None, lambda n=nudge: save_message(login, "assistant", n["text"]))
+                await loop.run_in_executor(None, lambda n=nudge: log_event(
+                    "SAGE", "Pattern Detected", n["text"], value=n["timeframe"], symbol=n["symbol"]))
                 await manager.broadcast({"type": "nudge", "id": time.time(), **nudge})
 
             # Keep the persisted trade history fresh (captures closes within ~30s)
@@ -191,6 +199,57 @@ async def pattern_loop():
             pass
 
 
+# ─── Monitor loop (price alerts + auto-breakeven) ──────────────
+async def monitor_loop():
+    """Lighter-weight 5s cadence — checks user price alerts against live
+    quotes and, if enabled, moves stop-loss to breakeven once a position's
+    price move crosses the configured trigger."""
+    loop = asyncio.get_event_loop()
+    while True:
+        try:
+            if is_configured() and is_connected():
+                triggered = await loop.run_in_executor(None, check_alerts)
+                for a in triggered:
+                    verb = "crossed above" if a["condition"] == "above" else "crossed below"
+                    msg  = f"{a['symbol']} {verb} {a['target']:g}"
+                    await loop.run_in_executor(None, lambda a=a, msg=msg: log_event(
+                        "PRICE_ALERT", "Price Alert Triggered", msg,
+                        value=f"{a['target']:g}", symbol=a["symbol"]))
+                    await manager.broadcast({"type": "alert_triggered", **a})
+
+                risk = get_risk_settings()
+                if risk.get("auto_breakeven_enabled"):
+                    trigger_pct = float(risk.get("auto_breakeven_trigger_pct", 1.5))
+                    trades = await loop.run_in_executor(None, get_open_trades)
+                    for t in trades:
+                        entry = getattr(t, "price_open", 0)
+                        if not entry:
+                            continue
+                        tick = await loop.run_in_executor(None, lambda s=t.symbol: get_symbol_tick(s))
+                        if not tick:
+                            continue
+                        is_buy  = t.type == 0
+                        current = tick.get("bid") if is_buy else tick.get("ask")
+                        if not current:
+                            continue
+                        move_pct = ((current - entry) / entry * 100) if is_buy \
+                                   else ((entry - current) / entry * 100)
+                        at_breakeven = (is_buy and t.sl >= entry > 0) or (not is_buy and 0 < t.sl <= entry)
+                        if move_pct >= trigger_pct and not at_breakeven:
+                            result = await loop.run_in_executor(
+                                None, lambda tk=t.ticket, e=entry: modify_position_sltp(tk, sl=e))
+                            if result.get("success"):
+                                await loop.run_in_executor(None, lambda t=t, entry=entry: log_event(
+                                    "EXECUTION", "Auto-Breakeven Triggered",
+                                    f"{t.symbol} SL moved to entry {entry:g}",
+                                    value=f"#{t.ticket}", symbol=t.symbol))
+                                if _wake_loop:
+                                    _wake_loop.set()
+        except Exception as e:
+            print(f"[MONITOR] {e}")
+        await asyncio.sleep(5)
+
+
 # ─── Lifespan ─────────────────────────────────────────────────
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -198,11 +257,13 @@ async def lifespan(app: FastAPI):
     _wake_loop = asyncio.Event()
     print("[BOT] Starting up...")
     init_db()
+    log_event("SYSTEM", "Session Start", "Backend initialised successfully.")
     # Don't block startup on connect — pattern_loop establishes the
     # connection in the background so the UI/HTTP server is up instantly.
     asyncio.create_task(pattern_loop())
     asyncio.create_task(account_loop())
     asyncio.create_task(tick_broadcaster())
+    asyncio.create_task(monitor_loop())
     yield
     print("[BOT] Shutting down...")
     disconnect()
@@ -446,12 +507,47 @@ class TradeRequest(BaseModel):
 
 @app.post("/trade/market")
 async def market_order(req: TradeRequest):
-    loop   = asyncio.get_event_loop()
+    loop = asyncio.get_event_loop()
+    risk = get_risk_settings()
+
+    # ── Risk enforcement (checked synchronously at order time) ──
+    if risk.get("drawdown_lock_enabled") or risk.get("max_daily_loss_pct"):
+        snap    = await loop.run_in_executor(None, get_account_snapshot)
+        acct    = snap.get("account", {})
+        balance = acct.get("balance") or 0
+        equity  = acct.get("equity", balance) or balance
+
+        if risk.get("drawdown_lock_enabled") and balance > 0:
+            drawdown_pct = max(0.0, (balance - equity) / balance * 100)
+            if drawdown_pct >= float(risk.get("drawdown_lock_trigger_pct", 10)):
+                raise HTTPException(400, f"Drawdown lock active — equity down {drawdown_pct:.1f}% from balance")
+
+        if risk.get("max_daily_loss_pct") and balance > 0:
+            perf     = await loop.run_in_executor(None, get_performance)
+            today_pl = (perf.get("today") or 0) + (acct.get("profit") or 0)
+            if today_pl < 0 and abs(today_pl) / balance * 100 >= float(risk["max_daily_loss_pct"]):
+                raise HTTPException(400, f"Daily loss limit reached ({risk['max_daily_loss_pct']}%)")
+
+    # ── Default stop-loss (only if the caller didn't set one) ──
+    sl = req.sl
+    if not sl and risk.get("default_sl_enabled") and risk.get("default_sl_pct"):
+        tick = await loop.run_in_executor(None, lambda: get_symbol_tick(req.symbol))
+        price = tick.get("ask") if req.type == "BUY" else tick.get("bid")
+        if price:
+            pct = float(risk["default_sl_pct"]) / 100
+            sl = price * (1 - pct) if req.type == "BUY" else price * (1 + pct)
+
     result = await loop.run_in_executor(
-        None, lambda: execute_market_order(req.symbol, req.lot, req.type, req.sl, req.tp)
+        None, lambda: execute_market_order(req.symbol, req.lot, req.type, sl, req.tp)
     )
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "Trade failed"))
+
+    await loop.run_in_executor(None, lambda: log_event(
+        "EXECUTION", f"{req.type.title()} Order Filled",
+        f"{req.symbol} {req.lot} lots @ {result.get('price')}",
+        value=f"{req.lot} LOT", symbol=req.symbol))
+
     if _wake_loop:
         _wake_loop.set()   # refresh trades immediately
     return result
@@ -462,6 +558,8 @@ async def close_trade(ticket: int):
     result = await loop.run_in_executor(None, lambda: close_position(ticket))
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "Close failed"))
+    await loop.run_in_executor(None, lambda: log_event(
+        "EXECUTION", "Position Closed", f"Ticket #{ticket} closed", value=f"#{ticket}"))
     if _wake_loop:
         _wake_loop.set()
     return result
@@ -470,6 +568,10 @@ async def close_trade(ticket: int):
 async def close_all_trades(mode: str = "all"):
     loop   = asyncio.get_event_loop()
     result = await loop.run_in_executor(None, lambda: close_positions(mode))
+    closed = result.get("closed", [])
+    if closed:
+        await loop.run_in_executor(None, lambda: log_event(
+            "EXECUTION", f"Closed {len(closed)} Position(s)", f"Mode: {mode}", value=mode))
     if _wake_loop:
         _wake_loop.set()
     return result
@@ -819,6 +921,54 @@ async def performance_endpoint():
     loop = asyncio.get_event_loop()
     await loop.run_in_executor(None, sync_deal_history)
     return await loop.run_in_executor(None, get_performance)
+
+# ─── Risk management ────────────────────────────────────────────
+@app.get("/settings/risk")
+async def risk_settings_get():
+    return get_risk_settings()
+
+@app.post("/settings/risk")
+async def risk_settings_set(data: dict):
+    save_risk_settings(data)
+    return {"ok": True}
+
+# ─── Alerts & Notifications ─────────────────────────────────────
+class AlertRequest(BaseModel):
+    symbol:    str
+    condition: str   # "above" | "below"
+    target:    float
+
+@app.get("/alerts")
+async def alerts_list():
+    login = get_mt5_credentials()[0]
+    loop  = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: list_alerts(login))
+
+@app.post("/alerts")
+async def alerts_create(req: AlertRequest):
+    if req.condition not in ("above", "below"):
+        raise HTTPException(400, "condition must be 'above' or 'below'")
+    login = get_mt5_credentials()[0]
+    loop  = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: create_alert(login, req.symbol, req.condition, req.target))
+
+@app.delete("/alerts/{alert_id}")
+async def alerts_delete(alert_id: int):
+    loop = asyncio.get_event_loop()
+    await loop.run_in_executor(None, lambda: delete_alert(alert_id))
+    return {"ok": True}
+
+@app.get("/alerts/log")
+async def alerts_log(limit: int = 50):
+    loop = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: get_event_log(limit))
+
+# ─── Asset screener ──────────────────────────────────────────────
+@app.get("/screener")
+async def screener_endpoint(timeframe: str = "H1"):
+    minutes = TIMEFRAMES.get(timeframe, 60)
+    loop    = asyncio.get_event_loop()
+    return await loop.run_in_executor(None, lambda: scan_market(minutes))
 
 # ─── WebSocket (market data) ──────────────────────────────────
 @app.websocket("/ws")

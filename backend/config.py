@@ -97,6 +97,26 @@ def save_search_api_key(key: str):
     cfg['search_api_key'] = key
     _write(cfg)
 
+# ─── Risk management ──────────────────────────────────────────
+_RISK_DEFAULTS = {
+    "max_daily_loss_pct": 5.0,
+    "max_leverage": 100,
+    "auto_breakeven_enabled": False,
+    "auto_breakeven_trigger_pct": 1.5,
+    "default_sl_enabled": False,
+    "default_sl_pct": 0.5,
+    "drawdown_lock_enabled": False,
+    "drawdown_lock_trigger_pct": 10.0,
+}
+
+def get_risk_settings() -> dict:
+    return {**_RISK_DEFAULTS, **_read().get('risk', {})}
+
+def save_risk_settings(data: dict):
+    cfg = _read()
+    cfg['risk'] = {**_RISK_DEFAULTS, **data}
+    _write(cfg)
+
 # ─── Active symbol ────────────────────────────────────────────
 def get_active_symbol() -> str:
     return _read().get('symbol', os.getenv('MT5_SYMBOL', 'XAUUSDm'))

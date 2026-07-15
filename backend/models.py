@@ -77,3 +77,37 @@ class DetectedStructure(Base):
 
     def __repr__(self):
         return f"<Structure {self.kind} {self.direction} on {self.timeframe}>"
+
+
+class PriceAlert(Base):
+    """User-defined price alert (Alerts & Notifications center)."""
+    __tablename__ = "price_alerts"
+
+    id           = Column(Integer, primary_key=True, index=True)
+    login        = Column(Integer, index=True)
+    symbol       = Column(String)
+    condition    = Column(String)          # "above" | "below"
+    target       = Column(Float)
+    enabled      = Column(Boolean, default=True)
+    triggered    = Column(Boolean, default=False)
+    triggered_at = Column(DateTime, nullable=True)
+    created_at   = Column(DateTime, server_default=func.now())
+
+    def __repr__(self):
+        return f"<PriceAlert {self.symbol} {self.condition} {self.target}>"
+
+
+class EventLog(Base):
+    """System/execution/alert log feed (System Log panel)."""
+    __tablename__ = "event_log"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    kind       = Column(String)           # "SAGE" | "EXECUTION" | "PRICE_ALERT" | "SYSTEM"
+    title      = Column(String)
+    message    = Column(String)
+    value      = Column(String, nullable=True)
+    symbol     = Column(String, nullable=True)
+    created_at = Column(DateTime, server_default=func.now())
+
+    def __repr__(self):
+        return f"<EventLog {self.kind} {self.title}>"

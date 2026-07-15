@@ -361,3 +361,31 @@ def close_positions(mode: str = "all") -> dict:
         result = close_position(p.ticket)
         (closed if result.get("success") else failed).append(p.ticket)
     return {"success": True, "closed": closed, "failed": failed}
+
+
+def modify_position_sltp(ticket: int, sl: float | None = None, tp: float | None = None) -> dict:
+    """Modify SL/TP on an existing open position (used by auto-breakeven)."""
+    if not ensure_connected():
+        return {"success": False, "error": "Not connected to MT5"}
+
+    with _mt5_lock:
+        positions = mt5.positions_get()
+        pos = next((p for p in positions if p.ticket == ticket), None) if positions else None
+        if pos is None:
+            return {"success": False, "error": f"Position {ticket} not found"}
+
+        request = {
+            "action"  : mt5.TRADE_ACTION_SLTP,
+            "position": ticket,
+            "symbol"  : pos.symbol,
+            "sl"      : float(sl) if sl is not None else float(pos.sl),
+            "tp"      : float(tp) if tp is not None else float(pos.tp),
+        }
+        result   = mt5.order_send(request)
+        last_err = mt5.last_error() if result is None else None
+
+    if result is None:
+        return {"success": False, "error": f"MT5 error: {last_err}"}
+    if result.retcode != mt5.TRADE_RETCODE_DONE:
+        return {"success": False, "error": f"{result.comment} (code {result.retcode})"}
+    return {"success": True}

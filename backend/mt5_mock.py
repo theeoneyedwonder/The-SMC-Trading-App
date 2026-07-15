@@ -23,6 +23,7 @@ ORDER_TYPE_BUY, ORDER_TYPE_SELL = 0, 1
 ORDER_FILLING_FOK, ORDER_FILLING_IOC, ORDER_FILLING_RETURN = 0, 1, 2
 ORDER_TIME_GTC = 0
 TRADE_ACTION_DEAL = 1
+TRADE_ACTION_SLTP = 6
 TRADE_RETCODE_DONE = 10009
 
 _RATES_DTYPE = [
@@ -192,6 +193,16 @@ def positions_get(symbol=None):
 def order_send(request: dict):
     global _next_ticket
     position_ticket = request.get('position')
+
+    if request.get('action') == TRADE_ACTION_SLTP and position_ticket is not None:
+        pos = next((p for p in _positions if p.ticket == position_ticket), None)
+        if pos is None:
+            return SimpleNamespace(retcode=10013, order=0, volume=0.0, price=0.0, comment="position not found")
+        pos.sl = request.get('sl', pos.sl)
+        pos.tp = request.get('tp', pos.tp)
+        return SimpleNamespace(retcode=TRADE_RETCODE_DONE, order=position_ticket,
+                                volume=pos.volume, price=pos.price_open, comment="mock sltp modify")
+
     if position_ticket is not None:
         idx = next((i for i, p in enumerate(_positions) if p.ticket == position_ticket), None)
         if idx is None:
