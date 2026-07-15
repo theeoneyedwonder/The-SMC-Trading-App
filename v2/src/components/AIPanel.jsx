@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import Button from './Button';
+import { recentSmcEvents, dirClass, fmtClock } from '../lib/smcEvents';
 
 const API = 'http://127.0.0.1:8000';
 
@@ -22,13 +23,6 @@ export function SageMark({ size = 20, style }) {
   );
 }
 
-function fmtClock(iso) {
-  if (!iso) return '--:--:--';
-  const d = new Date(iso);
-  if (isNaN(d)) return '--:--:--';
-  return d.toLocaleTimeString('en-GB', { hour12: false });
-}
-
 function fmtNum(n, d = 2) {
   return n == null ? '—' : Number(n).toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d });
 }
@@ -45,26 +39,6 @@ function sageGreeting(name) {
   else if (h < 21) pool = [`Evening${who}. How did the day trade?`, 'Reviewing the session?'];
   else             pool = ['Watching the Asia open?', 'Late one — what\'s on the radar?'];
   return pool[h % pool.length];
-}
-
-// Flatten the per-timeframe pattern payload into a single recency-sorted feed
-function recentSmcEvents(patterns) {
-  if (!patterns) return [];
-  const events = [];
-  for (const [tf, tfData] of Object.entries(patterns)) {
-    for (const b of tfData?.bos_mss ?? [])
-      events.push({ tf, kind: 'BOS', direction: b.direction, price: b.level, time: b.time });
-    for (const f of tfData?.fvgs ?? [])
-      events.push({ tf, kind: 'FVG', direction: f.direction, price: (f.high + f.low) / 2, time: f.time });
-    for (const o of tfData?.order_blocks ?? [])
-      events.push({ tf, kind: 'OB', direction: o.direction, price: (o.high + o.low) / 2, time: o.time });
-  }
-  events.sort((a, b) => new Date(b.time) - new Date(a.time));
-  return events.slice(0, 12);
-}
-
-function dirClass(direction) {
-  return direction === 'BULLISH' ? 'text-primary-fixed-dim' : direction === 'BEARISH' ? 'text-error' : 'text-on-surface-variant';
 }
 
 // Rich analysis card — shown inline in chat when /ai/analyze is called

@@ -441,12 +441,14 @@ class TradeRequest(BaseModel):
     symbol: str
     lot:    float
     type:   str   # "BUY" | "SELL"
+    sl:     float | None = None
+    tp:     float | None = None
 
 @app.post("/trade/market")
 async def market_order(req: TradeRequest):
     loop   = asyncio.get_event_loop()
     result = await loop.run_in_executor(
-        None, lambda: execute_market_order(req.symbol, req.lot, req.type)
+        None, lambda: execute_market_order(req.symbol, req.lot, req.type, req.sl, req.tp)
     )
     if not result.get("success"):
         raise HTTPException(status_code=400, detail=result.get("error", "Trade failed"))

@@ -213,7 +213,7 @@ export default function App() {
               transition={{ duration: 0.14, ease: 'easeOut' }}
               style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}
             >
-              {page === 'home'        && <Home        symbol={activeSymbol} data={data} aiLevels={aiLevels} />}
+              {page === 'home'        && <Home        symbol={activeSymbol} data={data} aiLevels={aiLevels} nudge={nudge} onSelectSymbol={selectSymbol} onOpenSage={() => setPage('sage')} />}
               {page === 'trades'      && <Trades      trades={data?.trades ?? []} />}
               {page === 'account'     && <AccountMetrics account={data?.account} />}
               {page === 'performance' && <Performance />}

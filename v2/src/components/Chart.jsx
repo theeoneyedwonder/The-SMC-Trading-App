@@ -183,82 +183,10 @@ function parseTime(str) {
   return isNaN(ms) ? null : Math.floor(ms/1000);
 }
 
-// ── MT5-style Trade Panel ─────────────────────────────────────────
-function splitPrice(p) {
-  if (!p || !isFinite(p)) return { main: '—', pips: '' };
-  let s;
-  if (p >= 100)     s = p.toFixed(2);
-  else if (p >= 10) s = p.toFixed(3);
-  else              s = p.toFixed(5);
-  return { main: s.slice(0, -2), pips: s.slice(-2) };
-}
-
-function TradePanel({ symbol, tick }) {
-  const [lot, setLot]         = useState('0.01');
-  const [trading, setTrading] = useState(null);
-  const [result, setResult]   = useState(null);
-
-  const executeTrade = async (side) => {
-    const lotNum = parseFloat(lot);
-    if (!isFinite(lotNum) || lotNum < 0.01) {
-      setResult({ ok: false, msg: 'Enter a lot size of at least 0.01' });
-      setTimeout(() => setResult(null), 4000);
-      return;
-    }
-    setTrading(side); setResult(null);
-    try {
-      const r = await fetch(`${API}/trade/market`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ symbol, lot: lotNum, type: side }),
-      });
-      const d = await r.json();
-      setResult(r.ok ? { ok: true, msg: `#${d.ticket} filled @ ${d.price}` }
-                     : { ok: false, msg: d.detail || 'Trade failed' });
-    } catch { setResult({ ok: false, msg: 'Connection error' }); }
-    setTrading(null);
-    setTimeout(() => setResult(null), 4000);
-  };
-
-  const bid = splitPrice(tick?.bid);
-  const ask = splitPrice(tick?.ask);
-
-  return (
-    <div className="trade-panel">
-      <div className="trade-panel-row">
-        <button className="trade-btn sell" onClick={() => executeTrade('SELL')} disabled={!!trading}>
-          {trading === 'SELL' ? '…' : 'SELL'}
-        </button>
-        <input
-          className="lot-input"
-          type="number"
-          inputMode="decimal"
-          min="0.01"
-          step="0.01"
-          value={lot}
-          onChange={e => setLot(e.target.value)}
-          title="Lot size — use the arrows to step by 0.01"
-        />
-        <button className="trade-btn buy" onClick={() => executeTrade('BUY')} disabled={!!trading}>
-          {trading === 'BUY' ? '…' : 'BUY'}
-        </button>
-      </div>
-      <div className="trade-prices-row">
-        <div className="trade-price sell-side">
-          <span className="tp-main">{bid.main}</span><span className="tp-pips">{bid.pips}</span>
-        </div>
-        <div className="trade-price buy-side">
-          <span className="tp-main">{ask.main}</span><span className="tp-pips">{ask.pips}</span>
-        </div>
-      </div>
-      {result && (
-        <div className={`trade-result ${result.ok ? 'ok' : 'err'}`}>{result.msg}</div>
-      )}
-    </div>
-  );
-}
-
 // ── Chart component ───────────────────────────────────────────────
+// (The order ticket used to float here as an overlay; it now lives as the
+// full right-hand Order Execution Panel in Home.jsx, matching the mockup's
+// dedicated ticket column instead of a floating widget over the chart.)
 export default function Chart({ symbol, patterns, aiLevels }) {
   const containerRef  = useRef(null);
   const chartRef      = useRef(null);
@@ -295,7 +223,6 @@ export default function Chart({ symbol, patterns, aiLevels }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [chartReady,  setChartReady]  = useState(false);
   const [marketOpen,  setMarketOpen]  = useState(true);
-  const [liveTick,    setLiveTick]    = useState(null);
 
   useEffect(() => { drawingsRef.current = drawings; },             [drawings]);
   useEffect(() => { activeRef.current   = activeDraw; },           [activeDraw]);
@@ -508,8 +435,6 @@ export default function Chart({ symbol, patterns, aiLevels }) {
             }
             priceLineRef.current?.applyOptions({ price });
           }
-
-          setLiveTick(t);
         } catch {}
       };
 
@@ -616,52 +541,77 @@ export default function Chart({ symbol, patterns, aiLevels }) {
 
   return (
     <>
-      <div className="chart-toolbar">
-        <div className="chart-symbol">{symbol}</div>
-
-        <div className="chart-toolbar-sep" />
-
-        <div className="tf-group">
+      <div className="h-10 shrink-0 glass-panel module-glow flex items-center gap-sm px-sm relative z-10">
+        <div className="flex items-center gap-1">
           {TFS.map(t => (
-            <button key={t} className={`tf-btn${tf===t?' active':''}`} onClick={() => setTf(t)}>{t}</button>
+            <button
+              key={t}
+              onClick={() => setTf(t)}
+              className={
+                'px-2 py-1 text-[10px] font-bold uppercase tracking-wider border transition-all ' +
+                (tf === t
+                  ? 'text-primary-fixed bg-primary-fixed/10 border-primary-fixed/30 glow-text-primary shadow-[0_0_12px_rgba(195,244,0,0.3)]'
+                  : 'text-on-surface-variant hover:text-primary hover:bg-white/5 border-transparent')
+              }
+            >
+              {t}
+            </button>
           ))}
         </div>
 
-        <div className="chart-toolbar-sep" />
+        <div className="w-px h-5 bg-white/10 shrink-0" />
 
-        <div className="draw-group">
+        <div className="flex items-center gap-1">
           {TOOLS.map(({ id, label, icon }) => (
-            <button key={id} title={label} className={`draw-btn${tool===id?' active':''}`} onClick={() => setTool(id)}>
+            <button
+              key={id}
+              title={label}
+              onClick={() => setTool(id)}
+              className={
+                'w-6 h-6 flex items-center justify-center text-[13px] font-bold border transition-all ' +
+                (tool === id
+                  ? 'text-primary-fixed bg-primary-fixed/10 border-primary-fixed/30'
+                  : 'text-on-surface-variant hover:text-primary hover:bg-white/5 border-transparent')
+              }
+            >
               {icon}
             </button>
           ))}
           {drawings.length > 0 && (
-            <button className="draw-btn clear-btn" title="Clear all drawings" onClick={() => setDrawings([])}>
+            <button
+              title="Clear all drawings"
+              onClick={() => setDrawings([])}
+              className="w-6 h-6 flex items-center justify-center text-[13px] text-error hover:bg-error/10 transition-colors"
+            >
               ✕
             </button>
           )}
         </div>
 
-        {loading && <span className="chart-status">Loading...</span>}
-        {loadingMore && <span className="chart-status">◂ Loading history…</span>}
+        {loading && <span className="font-label-caps text-[10px] text-on-surface-variant">LOADING…</span>}
+        {loadingMore && <span className="font-label-caps text-[10px] text-on-surface-variant">◂ LOADING HISTORY…</span>}
 
-        <div className="chart-legend">
-          {aiLevels?.length > 0
-            ? <span className="legend-item" style={{color:'var(--indigo)'}}>◈ Sage levels</span>
-            : <span className="legend-item" style={{color:'var(--muted)'}}>Run Sage analysis to mark key levels</span>}
+        <div className="ml-auto flex items-center gap-sm min-w-0">
+          <span className="font-label-caps text-[10px] hidden md:inline truncate">
+            {aiLevels?.length > 0
+              ? <span className="text-secondary">◈ SAGE LEVELS ACTIVE</span>
+              : <span className="text-on-surface-variant">RUN SAGE ANALYSIS TO MARK KEY LEVELS</span>}
+          </span>
+          <div className="flex items-center gap-xs px-sm py-xs border border-white/20 rounded-full bg-white/5 shrink-0">
+            <span className={'w-2 h-2 rounded-full ' + (marketOpen ? 'bg-primary-fixed shadow-[0_0_12px_rgba(195,244,0,0.9)] animate-pulse' : 'bg-error')} />
+            <span className={'font-label-caps text-[10px] uppercase font-bold ' + (marketOpen ? 'text-primary-fixed' : 'text-error')}>
+              {marketOpen ? 'LIVE' : 'MARKET CLOSED'}
+            </span>
+          </div>
         </div>
       </div>
 
-      <div style={{ position:'relative', flex:1, minHeight:0 }}>
-        <div ref={containerRef} style={{ position:'absolute', inset:0 }} />
-        <TradePanel symbol={symbol} tick={liveTick} />
-        <div className={`market-status${marketOpen ? ' open' : ' closed'}`}>
-          <span className="market-dot" />
-          {marketOpen ? 'LIVE' : 'MARKET CLOSED'}
-        </div>
+      <div className="relative flex-1 min-h-0">
+        <div ref={containerRef} className="absolute inset-0" />
         <canvas
           ref={overlayRef}
-          style={{ position:'absolute', inset:0, zIndex:2, pointerEvents: tool==='cursor' ? 'none' : 'all', ...cursorStyle }}
+          className="absolute inset-0 z-[2]"
+          style={{ pointerEvents: tool==='cursor' ? 'none' : 'all', ...cursorStyle }}
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}

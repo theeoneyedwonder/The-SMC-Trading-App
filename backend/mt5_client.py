@@ -240,7 +240,7 @@ def get_quote(symbol: str) -> dict:
     }
 
 
-def execute_market_order(symbol: str, lot: float, order_type: str) -> dict:
+def execute_market_order(symbol: str, lot: float, order_type: str, sl: float | None = None, tp: float | None = None) -> dict:
     if not ensure_connected():
         return {"success": False, "error": "Not connected to MT5"}
 
@@ -272,6 +272,8 @@ def execute_market_order(symbol: str, lot: float, order_type: str) -> dict:
             "type_time"    : mt5.ORDER_TIME_GTC,
             "type_filling" : filling,
         }
+        if sl: request["sl"] = float(sl)
+        if tp: request["tp"] = float(tp)
 
         result = mt5.order_send(request)
         last_err = mt5.last_error() if result is None else None

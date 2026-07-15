@@ -206,8 +206,8 @@ def order_send(request: dict):
     _next_ticket += 1
     _positions.append(SimpleNamespace(
         ticket=ticket, symbol=symbol, type=request['type'], price_open=price,
-        sl=0.0, tp=0.0, profit=0.0, volume=request['volume'], swap=0.0,
-        time=int(time.time()),
+        sl=request.get('sl', 0.0), tp=request.get('tp', 0.0), profit=0.0,
+        volume=request['volume'], swap=0.0, time=int(time.time()),
     ))
     return SimpleNamespace(retcode=TRADE_RETCODE_DONE, order=ticket,
                             volume=request['volume'], price=price, comment="mock fill")
