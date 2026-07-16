@@ -15,6 +15,7 @@ Head to the [Releases](../../releases) page for the latest installer, or build a
 - [MetaTrader 5](https://www.metatrader5.com/en/download) installed and logged in to a live or demo account
 - A free [Groq API key](https://console.groq.com) *(optional — only needed for Sage)*
 - A free [Tavily API key](https://tavily.com) *(optional — only needed to give Sage live web search)*
+- A free [Finnhub API key](https://finnhub.io/register) *(optional — only needed for the Economic Calendar)*
 
 No Python, Node.js, or any other runtime needed. The installer is fully self-contained.
 
@@ -25,16 +26,21 @@ No Python, Node.js, or any other runtime needed. The installer is fully self-con
 - **Live MT5 integration** — streams account data, open positions, and floating P&L over WebSocket in real time (~300ms heartbeat, tick-level price updates)
 - **SMC pattern detection** — automatically identifies Order Blocks, Fair Value Gaps, and Break of Structure / Market Structure Shifts across M1 → D1 timeframes
 - **Interactive charting** — TradingView Lightweight Charts with SMC zone overlays; draw trend lines, rectangles, Fibonacci retracements, and horizontal levels directly on the chart
-- **Sage — AI companion** — powered by Groq (Llama 3.3 70B):
+- **Asset Screener** — scans every configured symbol for its most recent SMC signal (OB / FVG / BOS) and ranks them by a confidence score; one click loads a pair on the terminal
+- **Alerts & Notifications** — user-defined price alerts plus a persistent system event log (executions, triggered alerts, Sage detections), backed by native desktop toasts
+- **Economic Calendar** — high-impact macro events (CPI, rate decisions, NFP…) via Finnhub, filterable by time window and impact
+- **Risk management** — daily-loss cap and drawdown lock, plus optional auto-breakeven and default stop-loss, all enforced server-side at execution time
+- **Trade journal** — every position is auto-tagged with the SMC setup that was live when it was opened, surfaced right on the Positions table
+- **Sage — AI companion** — a dedicated command-center page, powered by Groq (Llama 3.3 70B):
   - **Streaming replies** — answers arrive token-by-token, not in one delayed block
   - **Proactive nudges** — Sage speaks up *unprompted* when a new higher-timeframe (H1/H4/D1) break of structure forms
-  - **Standalone window** — Sage opens as its own top-level OS window, so tiling window managers (Windows Snap, Hyprland, etc.) can place it beside the chart instead of it overlaying the workspace
   - **Structured analysis** — generates a directional bias, confidence score, and suggested entry / SL / TP, and curates a clean set of key levels drawn straight onto the chart
-  - **Live context + memory** — sees your account, open trades, and multi-timeframe structure, and remembers the conversation per account
-  - **Web search** — optional Tavily-backed live search for news and current events
+  - **Configurable persona + conviction** — choose Sage's analytical / aggressive / conservative voice and a confidence threshold below which setups aren't flagged as actionable
+  - **Live context + memory** — sees your account, open trades, and multi-timeframe structure, remembers the conversation per account, and keeps durable notes on how you trade
+  - **Web search with citations** — optional Tavily-backed live search for news and current events, rendered as source cards
   - **Custom strategy** — upload or paste your own trading rules for Sage to follow
 - **Trade history & performance** — persisted closed-trade log and P&L metrics by day, week, and month
-- **Themes** — multiple presets including a **Brutalist** default (black canvas, hard edges, one loud accent), plus full per-color overrides and font scaling
+- **Interface preferences** — brutalist look with Dark / Light / Glow themes, Inter / Mono typography, display density, a live glow-intensity control, and a Web Audio sound system (order fill / alert / error)
 
 ---
 
@@ -49,6 +55,7 @@ No Python, Node.js, or any other runtime needed. The installer is fully self-con
 | Broker bridge | MetaTrader 5 (`MetaTrader5` Python package) |
 | AI | Groq API — Llama 3.3 70B |
 | Web search | Tavily API (optional) |
+| Economic calendar | Finnhub API (optional) |
 
 ---
 
@@ -123,8 +130,9 @@ Output goes to `release\`. The **portable** `.exe` runs without installing; the 
 ## Configuration
 
 - **MT5 credentials** — entered via the in-app setup wizard; stored in `%APPDATA%\QUANT_CORE\settings.json`
-- **Groq API key** — added in **Settings → AI Companion**; free at [console.groq.com](https://console.groq.com)
-- **Tavily API key** — added in **Settings → AI Companion** to enable Sage's web search; free at [tavily.com](https://tavily.com)
+- **Groq API key** — added in **Settings → Sage AI Core**; free at [console.groq.com](https://console.groq.com)
+- **Tavily API key** — added in **Settings → Sage AI Core** to enable Sage's web search; free at [tavily.com](https://tavily.com)
+- **Finnhub API key** — added in **Settings → Economic Calendar** to populate the calendar; free at [finnhub.io](https://finnhub.io/register)
 
 ---
 
@@ -133,30 +141,34 @@ Output goes to `release\`. The **portable** `.exe` runs without installing; the 
 ```
 Electron (main.js)
   ├── Main window — React UI (Vite / dist)
-  │     ├── TradingView Lightweight Charts
-  │     ├── Chart drawing overlay (Canvas)
-  │     └── WebSocket client (live + patterns + nudges)
-  ├── Sage window — standalone, tileable AI companion
-  │     └── shares the same backend + a same-origin channel to mark chart levels
+  │     ├── TradingView Lightweight Charts + drawing overlay (Canvas)
+  │     ├── Terminal · Analytics · Positions · Screener · Alerts · Calendar · Sage · Settings
+  │     └── WebSocket client (live account/trades + patterns + nudges + alert triggers)
   └── FastAPI backend (PyInstaller bundle, or python main.py in dev)
         ├── MetaTrader5 bridge      (or mt5_mock.py when SMC_MOCK=1)
         ├── SMC pattern analyser    (order blocks, FVGs, BOS/MSS)
+        ├── Asset screener          (ranks symbols by live SMC confidence)
+        ├── Monitor loop            (price alerts + auto-breakeven, 5s cadence)
+        ├── Risk engine             (daily-loss cap, drawdown lock, default SL)
+        ├── Trade journal           (auto-tags each fill with its SMC setup)
         ├── Proactive nudge diff    (surfaces new HTF structure)
         ├── Sage — streaming chat + structured analysis (Groq)
-        └── Web search (Tavily, optional)
+        ├── Web search (Tavily) + Economic calendar (Finnhub) — both optional
+        └── Event log + desktop notifications
 ```
 
 ---
 
 ## Recent Updates
 
-- **Sage now streams** its chat responses token-by-token (SSE), instead of waiting for the full reply.
-- **Proactive Sage** — the backend diffs each analysis cycle's higher-timeframe breaks of structure and has Sage surface genuinely new ones unprompted, over the live WebSocket.
-- **Sage is now its own window** — a real top-level OS window that tiling WMs can place independently, with its size and position remembered across launches. Falls back to an in-page panel in a plain browser.
-- **Native non-Windows dev mode** (`SMC_MOCK=1`) so the whole app — backend included — runs and can be UI-tested on Linux/macOS without MetaTrader 5.
-- **Windows CI** — a GitHub Actions workflow produces the installer + portable exe on a Windows runner on demand.
-- **Brutalist theme** — a new default look (black canvas, sharp corners, hard offset shadows, single lime accent), alongside the existing presets which now share the same structural language.
-- **UI fixes** — layout no longer clips at narrow/tiled widths; chart price-scale autoscale race fixed; watchlist and Sage no longer auto-open; various overlap and animation polish.
+**QUANT_CORE rebrand** — formerly "The SMC Trading App," rebuilt around a brutalist design language for a new era of the app.
+
+- **New workspaces** — Asset Screener, Alerts & Notifications, and an Economic Calendar joined the main nav.
+- **Real risk management** — daily-loss cap, drawdown lock, auto-breakeven, and default stop-loss, all enforced server-side at execution time.
+- **Sage upgrades** — configurable persona + confidence threshold, web-search results rendered as citation cards, durable memory about how you trade, and an auto-populated trade journal that tags every fill with its live SMC setup. Sage now lives as a dedicated command-center page.
+- **Interface preferences, rebuilt** — Dark / Light / Glow themes, Inter / Mono typography, display density, a live glow-intensity control, and a Web Audio sound system (order fill / alert / error).
+- **Sage streams** its replies token-by-token (SSE) and speaks up *unprompted* when a new higher-timeframe break of structure forms.
+- **Native non-Windows dev mode** (`SMC_MOCK=1`) runs the whole app — backend included — on Linux/macOS without MetaTrader 5, and **Windows CI** produces the installer + portable exe on demand.
 
 ---
 
