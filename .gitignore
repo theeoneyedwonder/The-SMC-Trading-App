@@ -11,9 +11,6 @@ backend/build/
 backend/bot_state.db
 
 # Node
-frontend/node_modules/
-frontend/dist/
-frontend/.vite/
 v2/node_modules/
 v2/dist/
 v2/.vite/
