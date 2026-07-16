@@ -171,6 +171,7 @@ function createMain() {
     minWidth: 1100,
     minHeight: 680,
     backgroundColor: vars.bg,
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
     show: false,
     webPreferences: {
       contextIsolation: true,
@@ -219,6 +220,7 @@ function createSageWindow() {
     minHeight: 480,
     backgroundColor: vars.bg,
     title: 'Sage — AI Companion',
+    icon: path.join(__dirname, '..', 'build', 'icon.png'),
     show: false,
     webPreferences: {
       contextIsolation: true,
