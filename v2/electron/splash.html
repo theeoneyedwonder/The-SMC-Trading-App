@@ -4,10 +4,10 @@
 <meta charset="UTF-8"/>
 <style>
   :root {
-    --bg:     #060611;
+    --bg:     #0d0d0d;
     --text:   #e8ecf8;
     --text2:  #a0a8c8;
-    --accent: #818cf8;
+    --accent: #c3f400;
   }
   @media (prefers-color-scheme: light) {
     :root {
@@ -26,6 +26,7 @@
     font-family: 'Aptos', 'Aptos Display', 'Segoe UI', system-ui, sans-serif;
     user-select: none;
   }
+  .mark { margin-bottom: 18px; line-height: 0; }
   .badge {
     font-size: 10px; font-weight: 700; letter-spacing: 6px;
     color: var(--accent); text-transform: uppercase;
@@ -56,6 +57,12 @@
 </style>
 </head>
 <body>
+  <div class="mark">
+    <svg width="56" height="56" viewBox="0 0 32 32">
+      <rect x="6" y="16" width="20" height="10" fill="#c3f400"></rect>
+      <rect x="6" y="6" width="20" height="20" fill="none" stroke="#c3f400" stroke-width="2.6"></rect>
+    </svg>
+  </div>
   <div class="badge">Smart Money Concepts</div>
   <div class="title">QUANT_CORE</div>
   <div class="subtitle">by TheEoneYedWonder</div>

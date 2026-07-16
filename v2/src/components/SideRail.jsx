@@ -1,4 +1,5 @@
 import { useTheme } from '../contexts/ThemeContext';
+import { LogoZone } from './Logo';
 
 // Material Symbols glyph
 function Icon({ name, className = '', fill = false }) {
@@ -34,7 +35,7 @@ export default function SideRail({ page, setPage, account, connected, onSettings
       {/* Header */}
       <div className="p-lg border-b-2 border-outline-variant flex items-center gap-md">
         <div className="w-10 h-10 bg-primary-fixed glow-primary flex items-center justify-center shrink-0 text-on-primary-fixed">
-          <Icon name="query_stats" fill />
+          <LogoZone size={22} />
         </div>
         <div>
           <h1 className="font-display-lg text-[20px] font-black text-primary-fixed glow-text-primary tracking-tighter leading-none">QUANT_CORE</h1>
