@@ -183,6 +183,27 @@ function parseTime(str) {
   return isNaN(ms) ? null : Math.floor(ms/1000);
 }
 
+// Creates the "last price" dashed line lazily, seeded with a real price the
+// first time one is available. Never seed it with a placeholder like 0 —
+// Lightweight Charts factors price lines into the initial autoscale range,
+// so a 0 -> realPrice jump bakes in a 0..realPrice Y-axis that never
+// recovers, squashing all real candles into a sliver near the top.
+function ensurePriceLine(ref, series, price) {
+  if (!series) return;
+  if (ref.current) {
+    ref.current.applyOptions({ price });
+  } else {
+    ref.current = series.createPriceLine({
+      price,
+      color: 'rgba(129, 140, 248, 0.9)',
+      lineWidth: 1,
+      lineStyle: LineStyle.Dashed,
+      axisLabelVisible: true,
+      title: '',
+    });
+  }
+}
+
 // ── Chart component ───────────────────────────────────────────────
 // (The order ticket used to float here as an overlay; it now lives as the
 // full right-hand Order Execution Panel in Home.jsx, matching the mockup's
@@ -198,6 +219,8 @@ export default function Chart({ symbol, patterns, aiLevels }) {
   const priceLineRef   = useRef(null);
   const liveBarRef     = useRef(null);
   const lastTickRef    = useRef(0);
+  const wsRef          = useRef(null);
+  const connectedAtRef = useRef(0);
   const marketOpenRef  = useRef(true);
   const tfSecRef       = useRef(TF_SECONDS['H1']);  // kept in sync below via tf effect
   const { vars } = useTheme();
@@ -223,6 +246,7 @@ export default function Chart({ symbol, patterns, aiLevels }) {
   const [loadingMore, setLoadingMore] = useState(false);
   const [chartReady,  setChartReady]  = useState(false);
   const [marketOpen,  setMarketOpen]  = useState(true);
+  const [mt5Connected, setMt5Connected] = useState(true);
 
   useEffect(() => { drawingsRef.current = drawings; },             [drawings]);
   useEffect(() => { activeRef.current   = activeDraw; },           [activeDraw]);
@@ -266,14 +290,8 @@ export default function Chart({ symbol, patterns, aiLevels }) {
     series.attachPrimitive(zone);
     chartRef.current = chart; seriesRef.current = series; zoneRef.current = zone;
 
-    priceLineRef.current = series.createPriceLine({
-      price: 0,
-      color: 'rgba(129, 140, 248, 0.9)',
-      lineWidth: 1,
-      lineStyle: LineStyle.Dashed,
-      axisLabelVisible: true,
-      title: '',
-    });
+    // priceLineRef is intentionally NOT created here — see ensurePriceLine().
+    // Creating it now with a placeholder price would corrupt autoscale.
 
     setChartReady(true);
 
@@ -352,11 +370,7 @@ export default function Chart({ symbol, patterns, aiLevels }) {
         liveBarRef.current = { ...data[data.length - 1] }; // seed live bar from latest candle
         lastPriceRef.current = data[data.length - 1].close;
         setLastPrice(data[data.length - 1].close);
-        // Seed the price line from real data immediately — otherwise it sits at
-        // its placeholder price:0 until the first live tick arrives, and if
-        // setData() (which drives autoscale) runs before that tick, the Y-axis
-        // permanently bakes in a 0-to-price range instead of the real one.
-        priceLineRef.current?.applyOptions({ price: data[data.length - 1].close });
+        ensurePriceLine(priceLineRef, seriesRef.current, data[data.length - 1].close);
         chartRef.current?.timeScale().fitContent();
         syncOverlayRef.current?.();
       }
@@ -412,6 +426,9 @@ export default function Chart({ symbol, patterns, aiLevels }) {
       if (cancelled) return;
       try { ws = new WebSocket(`ws://127.0.0.1:8000/ws/ticks/${symbol}`); }
       catch { if (!cancelled) reconnectTimer = setTimeout(connectWs, 1000); return; }
+      wsRef.current = ws;
+
+      ws.onopen = () => { connectedAtRef.current = Date.now(); };
 
       ws.onmessage = (e) => {
         try {
@@ -433,7 +450,7 @@ export default function Chart({ symbol, patterns, aiLevels }) {
               liveBarRef.current = bar;
               seriesRef.current.update(bar);
             }
-            priceLineRef.current?.applyOptions({ price });
+            ensurePriceLine(priceLineRef, seriesRef.current, price);
           }
         } catch {}
       };
@@ -443,9 +460,27 @@ export default function Chart({ symbol, patterns, aiLevels }) {
     };
 
     connectWs();
+
+    // Staleness watchdog: a "zombie" connection (laptop sleep/wake, NAT
+    // timeout, network blip) can go quiet forever without ever firing
+    // onclose/onerror — nothing else would recover it. If we haven't heard
+    // anything in a while, force-close the socket ourselves; the onclose
+    // handler above then reconnects through the normal path. Harmless if
+    // the market is just genuinely quiet — it reconnects and waits again.
+    const STALE_MS = 25_000;
+    const GRACE_MS = 25_000; // don't judge a freshly (re)connected socket too early
+    const watchdog = setInterval(() => {
+      if (cancelled || !wsRef.current) return;
+      const now = Date.now();
+      if (now - connectedAtRef.current > GRACE_MS && now - lastTickRef.current > STALE_MS) {
+        try { wsRef.current.close(); } catch {}
+      }
+    }, 10_000);
+
     return () => {
       cancelled = true;
       clearTimeout(reconnectTimer);
+      clearInterval(watchdog);
       try { ws?.close(); } catch {}
     };
   }, [symbol]);
@@ -459,6 +494,24 @@ export default function Chart({ symbol, patterns, aiLevels }) {
       }
     }, 5_000);
     return () => clearInterval(id);
+  }, []);
+
+  // ── MT5 connection status — so a stalled feed can say WHY ──────
+  // Ticks going quiet is ambiguous on its own: it could be a genuinely
+  // closed market (benign) or MT5/the broker actually dropping (a real
+  // problem). Polling /health lets the badge tell those apart instead of
+  // labelling both "MARKET CLOSED".
+  useEffect(() => {
+    let live = true;
+    const poll = () => {
+      fetch(`${API}/health`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (live && d) setMt5Connected(!!d.mt5_connected); })
+        .catch(() => {});
+    };
+    poll();
+    const id = setInterval(poll, 10_000);
+    return () => { live = false; clearInterval(id); };
   }, []);
 
   // ── Structural patterns are no longer auto-drawn ──────────────
@@ -538,6 +591,7 @@ export default function Chart({ symbol, patterns, aiLevels }) {
   }, [getChartCoords]);
 
   const cursorStyle = { cursor: tool === 'cursor' ? 'default' : tool === 'eraser' ? 'cell' : 'crosshair' };
+  const statusLabel = marketOpen ? 'LIVE' : !mt5Connected ? 'MT5 DISCONNECTED' : 'MARKET CLOSED';
 
   return (
     <>
@@ -600,7 +654,7 @@ export default function Chart({ symbol, patterns, aiLevels }) {
           <div className="flex items-center gap-xs px-sm py-xs border border-white/20 rounded-full bg-white/5 shrink-0">
             <span className={'w-2 h-2 rounded-full ' + (marketOpen ? 'bg-primary-fixed shadow-[0_0_12px_rgba(195,244,0,0.9)] animate-pulse' : 'bg-error')} />
             <span className={'font-label-caps text-[10px] uppercase font-bold ' + (marketOpen ? 'text-primary-fixed' : 'text-error')}>
-              {marketOpen ? 'LIVE' : 'MARKET CLOSED'}
+              {statusLabel}
             </span>
           </div>
         </div>
