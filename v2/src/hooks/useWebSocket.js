@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { playAlert } from '../lib/sound';
 
 const WS_URL = 'ws://127.0.0.1:8000/ws';
 
@@ -31,6 +32,12 @@ export function useWebSocket() {
           // Sage nudge — a one-off unprompted insight, not merged state.
           if (msg.type === 'nudge') {
             setNudge(msg);
+            return;
+          }
+          // A price alert firing — chime, but do NOT merge into `data`
+          // (its `symbol` field would otherwise clobber the active symbol).
+          if (msg.type === 'alert_triggered') {
+            playAlert();
             return;
           }
           // Two message types arrive on different cadences:

@@ -20,6 +20,14 @@ input, button, select, textarea { font-family: inherit; font-size: inherit; }
      that use rem/em follow automatically; see App.css for the px→rem
      base. Electron HiDPI (OS scaling) stacks on top of this cleanly. */
   --res-scale: 1;
+
+  /* Display-density multiplier — set live by the Density control in
+     Settings > Interface Preferences (Compact/Standard/High). */
+  --font-scale: 1;
+
+  /* Neon bloom strength — set live by the Glow Intensity slider. Consumed
+     by the .glow-* utilities in tailwind.css. */
+  --glow-scale: 0.75;
 }
 
 /* 1080p is the baseline (--res-scale: 1). Bump at 2K and 4K. */
@@ -27,8 +35,8 @@ input, button, select, textarea { font-family: inherit; font-size: inherit; }
 @media (min-width: 3200px)  { :root { --res-scale: 1.6;  } }   /* ~4K */
 
 html {
-  /* 16px * res-scale is the rem base for the whole app */
-  font-size: calc(16px * var(--res-scale));
+  /* 16px * res-scale * density is the rem base for the whole app */
+  font-size: calc(16px * var(--res-scale) * var(--font-scale, 1));
 }
 
 html, body, #root {

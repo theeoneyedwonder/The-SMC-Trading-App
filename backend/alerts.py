@@ -1,7 +1,7 @@
 from plyer import notification
 from config import get_active_symbol
 
-APP_NAME = "SMC Bot"
+APP_NAME = "QUANT_CORE"
 
 def _send(title: str, message: str, timeout: int = 8):
     try:

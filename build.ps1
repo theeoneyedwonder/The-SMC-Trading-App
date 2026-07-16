@@ -2,7 +2,7 @@ $ErrorActionPreference = 'Stop'
 
 Write-Host ''
 Write-Host '============================================' -ForegroundColor Cyan
-Write-Host '  The SMC Trading App - Beta Build' -ForegroundColor Cyan
+Write-Host '  QUANT_CORE - Beta Build' -ForegroundColor Cyan
 Write-Host '============================================' -ForegroundColor Cyan
 Write-Host ''
 
@@ -51,7 +51,7 @@ if ($LASTEXITCODE -ne 0) {
     exit 1
 }
 Pop-Location
-Write-Host '  Done -> backend\dist\smc-bot-backend\' -ForegroundColor Green
+Write-Host '  Done -> backend\dist\quant-core-backend\' -ForegroundColor Green
 
 Write-Host ''
 Write-Host '[2/3] Building React frontend...' -ForegroundColor Cyan
@@ -88,9 +88,9 @@ Write-Host ''
 Write-Host '============================================' -ForegroundColor Green
 Write-Host '  BUILD COMPLETE' -ForegroundColor Green
 Write-Host ''
-Write-Host '  Dev/testing  ->  release\The SMC Trading App 0.1.0-beta.1.exe' -ForegroundColor Yellow
+Write-Host '  Dev/testing  ->  release\QUANT_CORE 0.1.0-beta.1.exe' -ForegroundColor Yellow
 Write-Host '                   (portable - just run it, no install needed)' -ForegroundColor DarkYellow
 Write-Host ''
-Write-Host '  Distribution ->  release\The SMC Trading App Setup 0.1.0-beta.1.exe' -ForegroundColor Cyan
+Write-Host '  Distribution ->  release\QUANT_CORE Setup 0.1.0-beta.1.exe' -ForegroundColor Cyan
 Write-Host '                   (NSIS installer for end users)' -ForegroundColor DarkCyan
 Write-Host '============================================' -ForegroundColor Green

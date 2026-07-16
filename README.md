@@ -1,4 +1,4 @@
-# The SMC Trading App
+# QUANT_CORE
 
 > AI-assisted SMC trading workstation for MetaTrader 5 — live charts, automatic pattern detection, and Sage, an AI trading companion.
 
@@ -106,7 +106,7 @@ The production build bundles the Python backend (PyInstaller) with the Electron 
 A GitHub Actions workflow builds the installer on a real Windows runner:
 
 1. Go to the repo's **Actions** tab → **Build Windows Installer** → **Run workflow**
-2. When it finishes, download the `SMC-Trading-App-Windows` artifact — it contains both the Setup installer and the portable `.exe`
+2. When it finishes, download the `QUANT_CORE-Windows` artifact — it contains both the Setup installer and the portable `.exe`
 
 ### Local build (on Windows)
 
@@ -122,7 +122,7 @@ Output goes to `release\`. The **portable** `.exe` runs without installing; the 
 
 ## Configuration
 
-- **MT5 credentials** — entered via the in-app setup wizard; stored in `%APPDATA%\The SMC Trading App\settings.json`
+- **MT5 credentials** — entered via the in-app setup wizard; stored in `%APPDATA%\QUANT_CORE\settings.json`
 - **Groq API key** — added in **Settings → AI Companion**; free at [console.groq.com](https://console.groq.com)
 - **Tavily API key** — added in **Settings → AI Companion** to enable Sage's web search; free at [tavily.com](https://tavily.com)
 

@@ -41,6 +41,8 @@ from notifications import (
 from screener import scan_market
 from sage_memory import REMEMBER_TOOL_SCHEMA, remember, notes_context
 from journal import annotate_trade, get_annotation, list_annotations
+from economic_calendar import get_calendar_events
+from config import get_ai_settings, save_ai_settings
 
 # ─── WebSocket manager ────────────────────────────────────────
 class ConnectionManager:
@@ -94,6 +96,22 @@ def _current_setup(symbol: str) -> dict:
             kind, direction, _ = events[0]
             return {"setup_kind": kind, "setup_direction": direction, "setup_timeframe": tf}
     return {}
+
+# ─── Sage personas (system-prompt modifiers, set in Settings > Sage AI Core) ──
+SAGE_PERSONAS = {
+    "analytical": (
+        "Your current persona is ANALYTICAL: stay measured and data-driven, lead with structural "
+        "breaks, volume, and objective confluence. Avoid hype."
+    ),
+    "aggressive": (
+        "Your current persona is AGGRESSIVE: favor decisive, momentum-driven calls and are comfortable "
+        "flagging setups earlier with a higher risk tolerance — but never fabricate confidence you don't have."
+    ),
+    "conservative": (
+        "Your current persona is CONSERVATIVE: only call a setup active when multiple timeframes align "
+        "and confluence is strong; prefer to say a setup isn't ready yet over forcing one."
+    ),
+}
 
 # ─── Proactive Sage nudges ─────────────────────────────────────
 # Only higher timeframes — M1..M30 recompute too often to be worth
@@ -303,7 +321,7 @@ async def lifespan(app: FastAPI):
 
 
 # ─── App ──────────────────────────────────────────────────────
-app = FastAPI(title="SMC Bot", lifespan=lifespan)
+app = FastAPI(title="QUANT_CORE", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -412,7 +430,7 @@ async def setup(req: SetupRequest):
 # ─── Standard endpoints ───────────────────────────────────────
 @app.get("/")
 def root():
-    return {"status": "SMC Bot running"}
+    return {"status": "QUANT_CORE running"}
 
 @app.get("/health")
 def health():
@@ -685,6 +703,7 @@ async def ai_chat(req: AIChatRequest):
     symbol     = ctx.get("symbol", "unknown")
     indicators = ctx.get("indicators") or {}
     login      = int(acct.get("login") or 0)
+    sage_settings = get_ai_settings()
 
     # ── Personality (broadened: markets + general knowledge) ──────
     system = (
@@ -694,6 +713,7 @@ async def ai_chat(req: AIChatRequest):
         "You communicate naturally, intelligently, and professionally; be concise and precise. "
         "When discussing markets, use SMC terminology (order blocks, fair value gaps, liquidity sweeps, market "
         "structure, premium/discount zones).\n\n"
+        + SAGE_PERSONAS.get(sage_settings.get("persona"), SAGE_PERSONAS["analytical"]) + "\n\n"
         "── Live context ──\n"
         f"Current market: {symbol}\n"
         f"Account balance: {acct.get('currency','USD')} {acct.get('balance', 'N/A')}\n"
@@ -867,6 +887,7 @@ async def ai_analyze(req: AIAnalyzeRequest):
     acct     = ctx.get("account", {})
     trades   = ctx.get("trades", [])
     patterns = ctx.get("patterns", {})
+    sage_settings = get_ai_settings()
 
     pat_lines = []
     for tf, tf_data in (patterns or {}).items():
@@ -889,6 +910,7 @@ async def ai_analyze(req: AIAnalyzeRequest):
         "You are given the raw detected market structure (order blocks, fair value gaps, breaks of structure). "
         "Your job is to CURATE it: pick only the most actionable levels and explain the setups clearly. "
         "The chart is kept clean — only the levels YOU return get drawn, so be selective.\n\n"
+        + SAGE_PERSONAS.get(sage_settings.get("persona"), SAGE_PERSONAS["analytical"]) + "\n\n"
         "IMPORTANT for key_levels: return AT MOST 5 levels — the ones that actually matter "
         "(the nearest valid order block, a key FVG, the most recent break of structure, and the obvious "
         "target/liquidity). Use short, clear labels like 'Bullish OB', 'FVG', 'BOS', 'Daily high', "
@@ -951,6 +973,15 @@ async def ai_analyze(req: AIAnalyzeRequest):
         # model returns more.
         if isinstance(result.get("key_levels"), list):
             result["key_levels"] = result["key_levels"][:5]
+        # Enforce the user's confidence threshold: a setup can still be
+        # reported, but it's only marked "active" (tradeable) above the bar.
+        threshold = sage_settings.get("confidence_threshold", 75)
+        confidence = result.get("confidence")
+        if isinstance(confidence, (int, float)) and confidence < threshold and isinstance(result.get("setup"), dict):
+            result["setup"]["active"] = False
+            note = f"Below your {threshold}% confidence threshold — not flagged as an active setup."
+            result["setup"]["rationale"] = (result["setup"].get("rationale") or "").strip()
+            result["setup"]["rationale"] = (result["setup"]["rationale"] + " " + note).strip()
         return result
     except httpx.HTTPStatusError as e:
         raise HTTPException(status_code=502, detail=f"Groq API error: {e.response.text}")
@@ -1033,6 +1064,32 @@ async def journal_get(ticket: int):
     if result is None:
         raise HTTPException(404, "No journal entry for this ticket")
     return result
+
+# ─── Economic calendar ───────────────────────────────────────────
+@app.get("/settings/calendar-key")
+async def calendar_key_get():
+    from config import get_calendar_api_key
+    return {"configured": bool(get_calendar_api_key())}
+
+@app.post("/settings/calendar-key")
+async def calendar_key_set(req: dict):
+    from config import save_calendar_api_key
+    save_calendar_api_key(req.get("key", ""))
+    return {"ok": True}
+
+@app.get("/economic-calendar")
+async def economic_calendar_endpoint(days: int = 1):
+    return await get_calendar_events(days)
+
+# ─── Sage AI core config ──────────────────────────────────────────
+@app.get("/settings/sage")
+async def sage_settings_get():
+    return get_ai_settings()
+
+@app.post("/settings/sage")
+async def sage_settings_set(data: dict):
+    save_ai_settings(data)
+    return {"ok": True}
 
 # ─── WebSocket (market data) ──────────────────────────────────
 @app.websocket("/ws")

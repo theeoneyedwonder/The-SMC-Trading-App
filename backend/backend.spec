@@ -1,5 +1,5 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec for the SMC Bot backend
+# PyInstaller spec for the QUANT_CORE backend
 # Run from the backend/ directory:
 #   pyinstaller backend.spec --clean --noconfirm
 
@@ -56,7 +56,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='smc-bot-backend',
+    name='quant-core-backend',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -77,5 +77,5 @@ coll = COLLECT(
     strip=False,
     upx=True,
     upx_exclude=[],
-    name='smc-bot-backend',
+    name='quant-core-backend',
 )

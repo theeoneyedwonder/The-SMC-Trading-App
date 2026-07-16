@@ -6,13 +6,15 @@ import { useTheme }       from './contexts/ThemeContext';
 import Setup              from './components/Setup';
 import Settings           from './components/Settings';
 import MarketPanel        from './components/MarketPanel';
-import SageBubble         from './components/SageBubble';
 import AIPanel            from './components/AIPanel';
 import SideRail           from './components/SideRail';
 import Home               from './components/Home';
 import Trades             from './components/Trades';
 import AccountMetrics     from './components/AccountMetrics';
 import Performance        from './components/Performance';
+import AssetScreener      from './components/AssetScreener';
+import Alerts             from './components/Alerts';
+import EconomicCalendar   from './components/EconomicCalendar';
 
 const API              = 'http://127.0.0.1:8000';
 const FALLBACK_SYMBOLS = ['XAUUSDm','XAGUSDm','EURUSDm','GBPUSDm','USDJPYm','BTCUSDm','NAS100m','US30m'];
@@ -20,12 +22,20 @@ const FALLBACK_SYMBOLS = ['XAUUSDm','XAGUSDm','EURUSDm','GBPUSDm','USDJPYm','BTC
 const PAGE_TITLES = {
   home: 'TERMINAL', trades: 'POSITIONS_&_HISTORY',
   account: 'ACCOUNT', performance: 'ANALYTICS', sage: 'SAGE_AI',
-  settings: 'SETTINGS',
+  settings: 'SETTINGS', screener: 'ASSET_SCREENER', alerts: 'ALERTS_&_NOTIFICATIONS',
+  calendar: 'ECONOMIC_CALENDAR',
 };
 
-// Apply persisted font scale immediately (module level — no hook, no lifecycle delay)
+// Apply persisted interface prefs immediately (module level — no hook, no
+// lifecycle delay): display density (font-scale), neon bloom (glow-scale),
+// and UI typography (Inter vs Mono).
 const _savedScale = localStorage.getItem('ui_font_scale');
 if (_savedScale) document.documentElement.style.setProperty('--font-scale', _savedScale);
+const _savedGlow = localStorage.getItem('ui_glow_scale');
+if (_savedGlow) document.documentElement.style.setProperty('--glow-scale', _savedGlow);
+if (localStorage.getItem('ui_font_family') === 'mono') {
+  document.documentElement.style.setProperty('--font-ui', "'JetBrains Mono Variable','JetBrains Mono',ui-monospace,monospace");
+}
 
 function PanelIcon() {
   return (
@@ -128,7 +138,7 @@ export default function App() {
           <div style={{ fontSize:14, fontWeight:700, color:'#ffffff', marginBottom:4 }}>Backend not responding</div>
           <div style={{ fontSize:12, color:'#787878', lineHeight:1.7, maxWidth:380 }}>
             The Python backend failed to start. This is usually caused by antivirus software blocking it.<br/><br/>
-            Open <strong style={{color:'#b0b0b0'}}>Windows Security → Virus &amp; threat protection → Protection history</strong> and check if <code style={{color:'#d4ff3f'}}>smc-bot-backend.exe</code> was blocked, then add an exclusion for the app folder.
+            Open <strong style={{color:'#b0b0b0'}}>Windows Security → Virus &amp; threat protection → Protection history</strong> and check if <code style={{color:'#d4ff3f'}}>quant-core-backend.exe</code> was blocked, then add an exclusion for the app folder.
           </div>
         </>
       )}
@@ -219,8 +229,11 @@ export default function App() {
               {page === 'trades'      && <Trades      trades={data?.trades ?? []} />}
               {page === 'account'     && <AccountMetrics account={data?.account} />}
               {page === 'performance' && <Performance />}
+              {page === 'screener'    && <AssetScreener onSelectSymbol={selectSymbol} onNavigateHome={() => setPage('home')} />}
+              {page === 'alerts'      && <Alerts />}
+              {page === 'calendar'    && <EconomicCalendar onOpenSettings={() => setPage('settings')} />}
               {page === 'sage'        && <AIPanel data={data} nudge={nudge} onClose={() => setPage('home')} onAIAnalysis={levels => setAiLevels(levels)} />}
-              {page === 'settings'    && <Settings account={data?.account} onLogout={disconnect} onNavigateHome={() => setPage('home')} />}
+              {page === 'settings'    && <Settings account={data?.account} onLogout={disconnect} onNavigate={setPage} />}
             </motion.div>
           </AnimatePresence>
         </main>
@@ -246,9 +259,6 @@ export default function App() {
         </AnimatePresence>
       </div>
       </div>{/* /app-shell */}
-
-      {/* ── Floating Sage companion (bottom-right) ── */}
-      <SageBubble data={data} nudge={nudge} hidden={panelOpen} onAIAnalysis={levels => setAiLevels(levels)} />
     </div>
   );
 }

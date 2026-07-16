@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import Button from './Button';
+import { dirClass } from '../lib/smcEvents';
 
 const API = 'http://127.0.0.1:8000';
 
@@ -22,6 +23,23 @@ function riskReward(t) {
 
 function OpenPositions({ trades, filter, setFilter }) {
   const [closing, setClosing] = useState(null); // 'all' | 'profitable' | 'unprofitable' | ticket
+  const [journal, setJournal] = useState({}); // ticket -> annotation, the "why" behind each trade
+
+  useEffect(() => {
+    let live = true;
+    const load = () => fetch(`${API}/journal?limit=200`)
+      .then(r => r.ok ? r.json() : [])
+      .then(list => {
+        if (!live || !Array.isArray(list)) return;
+        const map = {};
+        for (const j of list) map[j.ticket] = j;
+        setJournal(map);
+      })
+      .catch(() => {});
+    load();
+    const id = setInterval(load, 15_000);
+    return () => { live = false; clearInterval(id); };
+  }, []);
 
   const rows = trades.filter(t =>
     !filter.trim() || (t.symbol || '').toLowerCase().includes(filter.trim().toLowerCase())
@@ -64,6 +82,15 @@ function OpenPositions({ trades, filter, setFilter }) {
               <div className="col-span-1 flex flex-col">
                 <span className="text-primary font-bold">{t.symbol}</span>
                 <span className="font-label-caps text-label-caps text-on-surface-variant mt-xs">{fmt(t.lots, 2)} LOTS</span>
+                {journal[t.ticket]?.setup_kind && (
+                  <span
+                    title={`Taken on the ${journal[t.ticket].setup_direction?.toLowerCase()} ${journal[t.ticket].setup_kind} setup detected on ${journal[t.ticket].setup_timeframe}`}
+                    className={'font-label-caps text-label-caps mt-xs flex items-center gap-1 ' + dirClass(journal[t.ticket].setup_direction)}
+                  >
+                    <span className="material-symbols-outlined text-[11px]">psychology</span>
+                    {journal[t.ticket].setup_timeframe} {journal[t.ticket].setup_kind}
+                  </span>
+                )}
               </div>
               {/* Type */}
               <div className={'col-span-1 flex items-center gap-xs ' + (t.direction === 'BUY' ? 'text-primary-fixed-dim' : 'text-error')}>

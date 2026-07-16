@@ -8,7 +8,7 @@ import { reportCrash } from './crash-reporter.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-app.setName('The SMC Trading App');
+app.setName('QUANT_CORE');
 
 const isDev = !app.isPackaged;
 const userDataDir = app.getPath('userData');
@@ -105,7 +105,7 @@ function startBackend() {
   fs.mkdirSync(userDataDir, { recursive: true });
 
   if (!isDev) {
-    const exePath = path.join(process.resourcesPath, 'backend', 'smc-bot-backend.exe');
+    const exePath = path.join(process.resourcesPath, 'backend', 'quant-core-backend.exe');
     if (!fs.existsSync(exePath)) {
       console.error('[App] Backend exe not found:', exePath);
       return;
@@ -264,7 +264,7 @@ function createCrashWindow(error) {
     height: 400,
     resizable: false,
     center: true,
-    title: 'The SMC Trading App - Error Report',
+    title: 'QUANT_CORE - Error Report',
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -296,7 +296,7 @@ async function initUpdater() {
     autoUpdater.on('update-downloaded', async info => {
       const { response } = await dialog.showMessageBox({
         type: 'info',
-        title: 'Update Ready - The SMC Trading App',
+        title: 'Update Ready - QUANT_CORE',
         message: `Version ${info.version} downloaded.\nRestart to install?`,
         buttons: ['Restart Now', 'Later'],
         defaultId: 0,

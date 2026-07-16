@@ -1,7 +1,7 @@
 {
-  "name": "the-smc-trading-app",
+  "name": "quant-core",
   "version": "0.2.0",
-  "description": "The SMC Trading App - Smart Money Concepts Dashboard",
+  "description": "QUANT_CORE - Smart Money Concepts Trading Dashboard",
   "private": true,
   "type": "module",
   "author": "theeoneyedwonder",
@@ -14,8 +14,8 @@
     "dist": "vite build && electron-builder --win"
   },
   "build": {
-    "appId": "com.theeoneyedwonder.smctrading",
-    "productName": "The SMC Trading App",
+    "appId": "com.theeoneyedwonder.quantcore",
+    "productName": "QUANT_CORE",
     "copyright": "Copyright (c) 2026 theeoneyedwonder",
     "icon": "build/icon.png",
     "directories": {
@@ -28,7 +28,7 @@
     ],
     "extraResources": [
       {
-        "from": "../backend/dist/smc-bot-backend",
+        "from": "../backend/dist/quant-core-backend",
         "to": "backend",
         "filter": [
           "**/*"
@@ -56,15 +56,15 @@
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "The SMC Trading App",
-      "uninstallDisplayName": "The SMC Trading App",
+      "shortcutName": "QUANT_CORE",
+      "uninstallDisplayName": "QUANT_CORE",
       "deleteAppDataOnUninstall": false,
       "include": "build/installer.nsh"
     },
     "publish": {
       "provider": "github",
       "owner": "theeoneyedwonder",
-      "repo": "The-SMC-Trading-App"
+      "repo": "QUANT_CORE"
     }
   },
   "dependencies": {

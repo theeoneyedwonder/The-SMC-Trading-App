@@ -1,5 +1,5 @@
 // Crash reporter — submits to GitHub Issues + writes local log
-// Requires a fine-grained GitHub PAT with issues:write on The-SMC-Trading-App
+// Requires a fine-grained GitHub PAT with issues:write on QUANT_CORE
 // Generate one at: https://github.com/settings/tokens?type=beta
 // Then replace the string below with your token.
 
@@ -9,7 +9,7 @@ import { app } from 'electron';
 
 const GITHUB_TOKEN = 'REPLACE_WITH_YOUR_FINE_GRAINED_PAT';
 const GITHUB_OWNER = 'theeoneyedwonder';
-const GITHUB_REPO  = 'The-SMC-Trading-App';
+const GITHUB_REPO  = 'QUANT_CORE';
 
 function logDir() {
   try {
@@ -42,7 +42,7 @@ async function submitToGitHub(title, body) {
           Accept:                 'application/vnd.github+json',
           'Content-Type':         'application/json',
           'X-GitHub-Api-Version': '2022-11-28',
-          'User-Agent':           'SMC-Trading-App-Crash-Reporter/1.0',
+          'User-Agent':           'QUANT_CORE-Crash-Reporter/1.0',
         },
         body: JSON.stringify({ title, body, labels: ['crash-report'] }),
       }

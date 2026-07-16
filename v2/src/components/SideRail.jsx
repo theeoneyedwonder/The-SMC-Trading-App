@@ -16,6 +16,9 @@ const ITEMS = [
   { id: 'home',        label: 'Terminal',  icon: 'terminal' },
   { id: 'performance', label: 'Analytics', icon: 'analytics' },
   { id: 'trades',      label: 'Positions', icon: 'format_list_bulleted' },
+  { id: 'screener',    label: 'Screener',  icon: 'troubleshoot' },
+  { id: 'alerts',      label: 'Alerts',    icon: 'notifications_active' },
+  { id: 'calendar',    label: 'Calendar',  icon: 'event' },
   { id: 'account',     label: 'Account',   icon: 'account_circle' },
 ];
 
@@ -34,7 +37,7 @@ export default function SideRail({ page, setPage, account, connected, onSettings
           <Icon name="query_stats" fill />
         </div>
         <div>
-          <h1 className="font-display-lg text-[20px] font-black text-primary-fixed glow-text-primary tracking-tighter leading-none">SMC_CORE</h1>
+          <h1 className="font-display-lg text-[20px] font-black text-primary-fixed glow-text-primary tracking-tighter leading-none">QUANT_CORE</h1>
           <p className="font-label-caps text-label-caps text-on-surface-variant tracking-widest mt-1">v0.2 // ACTIVE</p>
         </div>
       </div>

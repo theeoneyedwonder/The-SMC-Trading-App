@@ -1,11 +1,11 @@
 @echo off
 setlocal enabledelayedexpansion
 cd /d "%~dp0"
-title The SMC Trading App - Build
+title QUANT_CORE - Build
 
 echo.
 echo ============================================
-echo   The SMC Trading App - Beta Build
+echo   QUANT_CORE - Beta Build
 echo ============================================
 echo.
 
@@ -55,7 +55,7 @@ if errorlevel 1 (
     exit /b 1
 )
 cd ..
-echo   Done -^> backend\dist\smc-bot-backend\
+echo   Done -^> backend\dist\quant-core-backend\
 echo.
 
 echo [2/3] Building React frontend...
@@ -95,7 +95,7 @@ cd ..
 echo.
 echo ============================================
 echo   BUILD COMPLETE
-echo   release\The SMC Trading App Setup 1.0.0-beta.1.exe
+echo   release\QUANT_CORE Setup 1.0.0-beta.1.exe
 echo ============================================
 echo.
 pause

@@ -268,7 +268,7 @@ def execute_market_order(symbol: str, lot: float, order_type: str, sl: float | N
             "price"        : price,
             "deviation"    : 20,
             "magic"        : 234000,
-            "comment"      : "SMC Bot",
+            "comment"      : "QUANT_CORE",
             "type_time"    : mt5.ORDER_TIME_GTC,
             "type_filling" : filling,
         }
@@ -328,7 +328,7 @@ def close_position(ticket: int) -> dict:
             "price"        : price,
             "deviation"    : 20,
             "magic"        : 234000,
-            "comment"      : "SMC Bot close",
+            "comment"      : "QUANT_CORE close",
             "type_time"    : mt5.ORDER_TIME_GTC,
             "type_filling" : filling,
         }

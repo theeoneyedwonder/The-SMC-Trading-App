@@ -107,6 +107,33 @@ function AnalysisCard({ data }) {
   );
 }
 
+// Web-search citation cards — shown under an assistant reply that used the web_search tool
+function CitationCards({ citations }) {
+  return (
+    <div className="flex flex-col gap-xs">
+      <div className="font-label-caps text-label-caps text-on-surface-variant flex items-center gap-xs">
+        <span className="material-symbols-outlined text-[12px]">travel_explore</span>
+        SOURCES
+      </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-xs">
+        {citations.map((c, i) => (
+          <a
+            key={i}
+            href={c.url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col gap-1 p-sm bg-surface border-2 border-outline-variant hover:border-secondary transition-colors"
+          >
+            <span className="font-body-bold text-[12px] text-secondary truncate">{c.title || c.url}</span>
+            {c.snippet && <span className="font-body-base text-[11px] text-on-surface-variant line-clamp-2">{c.snippet}</span>}
+            <span className="font-label-caps text-label-caps text-on-surface-variant truncate">{c.url}</span>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // Strategy document upload panel — slides up above the input bar
 function StrategySheet({ strategy, strategyName, onSave, onClear, onClose }) {
   const [draft, setDraft] = useState(strategy || '');
@@ -305,6 +332,8 @@ export default function AIPanel({ data, nudge, onClose, onAIAnalysis }) {
 
           if (evt.delta) {
             replaceLast(last => ({ ...last, role: 'assistant', content: (last.content || '') + evt.delta }));
+          } else if (evt.citations) {
+            replaceLast(last => ({ ...last, citations: evt.citations }));
           } else if (evt.error) {
             replaceLast({ role: 'error', content: evt.error, time: new Date().toISOString() });
             done = true;
@@ -460,6 +489,7 @@ export default function AIPanel({ data, nudge, onClose, onAIAnalysis }) {
                       {m.content}
                       {m.streaming && <span className="inline-block w-[6px] h-[14px] bg-secondary ml-1 align-middle animate-pulse" />}
                     </div>
+                    {m.citations?.length > 0 && <CitationCards citations={m.citations} />}
                   </div>
                 );
               })}

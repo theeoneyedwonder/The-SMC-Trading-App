@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Chart from './Chart';
 import { recentSmcEvents, dirClass, fmtClock, structureBias } from '../lib/smcEvents';
+import { playOrderFill, playError } from '../lib/sound';
 
 const API = 'http://127.0.0.1:8000';
 const DEFAULT_WATCHLIST = ['XAUUSDm', 'EURUSDm', 'GBPUSDm', 'USDJPYm', 'BTCUSDm', 'NAS100m'];
@@ -251,8 +252,9 @@ function OrderPanel({ symbol, account, patterns }) {
         }),
       });
       const d = await r.json();
-      setResult(r.ok ? { ok: true, msg: `#${d.ticket} filled @ ${d.price}` } : { ok: false, msg: d.detail || 'Trade failed' });
-    } catch { setResult({ ok: false, msg: 'Connection error' }); }
+      if (r.ok) { setResult({ ok: true, msg: `#${d.ticket} filled @ ${d.price}` }); playOrderFill(); }
+      else       { setResult({ ok: false, msg: d.detail || 'Trade failed' }); playError(); }
+    } catch { setResult({ ok: false, msg: 'Connection error' }); playError(); }
     setTrading(null);
     setTimeout(() => setResult(null), 4000);
   };

@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Tailwind Preflight is disabled (corePlugins.preflight=false in
+   tailwind.config.js) so the hand-written App.css keeps working. The
+   downside: with no base reset, any <button> without an explicit resting
+   bg/border falls back to the browser's native chrome (the light-gray
+   "buttonface" box). Preflight normally neutralises this — so we restore
+   just that one piece here, in @layer base, where Preflight itself lives.
+   Being in the base layer, utilities (bg-*, border-*, hover:*) still win,
+   so active/hover states are untouched; only the native chrome is killed. */
+@layer base {
+  button, [type='button'], [type='reset'], [type='submit'] {
+    appearance: none;
+    -webkit-appearance: none;
+    background-color: transparent;
+    background-image: none;
+    border: 0 solid transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+  button:disabled { cursor: default; }
+}
+
 /* ═══════════════════════════════════════════════════════════════
    GLOW / GLASS UTILITIES — ported verbatim from the Stitch mockups
    (trading_terminal_hi_res). The "glowy/glass everywhere" aesthetic.
@@ -31,10 +52,19 @@
 }
 
 @layer utilities {
-  .glow-primary   { box-shadow: 0 0 25px rgba(195, 244, 0, 0.5), inset 0 0 10px rgba(195, 244, 0, 0.3); }
-  .glow-secondary { box-shadow: 0 0 25px rgba(220, 184, 255, 0.5), inset 0 0 10px rgba(220, 184, 255, 0.3); }
-  .glow-text-primary   { text-shadow: 0 0 12px rgba(195, 244, 0, 0.8); }
-  .glow-text-secondary { text-shadow: 0 0 12px rgba(220, 184, 255, 0.8); }
+  /* Bloom strength is driven by --glow-scale (0..~1.4), set live by the
+     Glow Intensity slider in Settings > Interface Preferences. calc() inside
+     the blur radius and the colour alpha scales every glow uniformly. */
+  .glow-primary {
+    box-shadow: 0 0 calc(25px * var(--glow-scale, 1)) rgba(195, 244, 0, calc(0.5 * var(--glow-scale, 1))),
+                inset 0 0 calc(10px * var(--glow-scale, 1)) rgba(195, 244, 0, calc(0.3 * var(--glow-scale, 1)));
+  }
+  .glow-secondary {
+    box-shadow: 0 0 calc(25px * var(--glow-scale, 1)) rgba(220, 184, 255, calc(0.5 * var(--glow-scale, 1))),
+                inset 0 0 calc(10px * var(--glow-scale, 1)) rgba(220, 184, 255, calc(0.3 * var(--glow-scale, 1)));
+  }
+  .glow-text-primary   { text-shadow: 0 0 calc(12px * var(--glow-scale, 1)) rgba(195, 244, 0, calc(0.8 * var(--glow-scale, 1))); }
+  .glow-text-secondary { text-shadow: 0 0 calc(12px * var(--glow-scale, 1)) rgba(220, 184, 255, calc(0.8 * var(--glow-scale, 1))); }
   .brutalist-border { border: 1px solid rgba(255, 255, 255, 0.1); }
 
   /* Ambient radial glow behind a module */

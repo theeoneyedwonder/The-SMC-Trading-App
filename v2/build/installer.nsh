@@ -1,4 +1,4 @@
-; The SMC Trading App - Custom NSIS installer script
+; QUANT_CORE - Custom NSIS installer script
 ; Called by electron-builder before the installer UI is shown.
 ; Checks that MetaTrader 5 is present on this machine.
 
@@ -14,7 +14,7 @@
   ; Not found: warn but do not block installation.
   MessageBox MB_OK|MB_ICONINFORMATION \
     "MetaTrader 5 does not appear to be installed.$\n$\n\
-The SMC Trading App requires MetaTrader 5 to connect to your broker.$\n$\n\
+QUANT_CORE requires MetaTrader 5 to connect to your broker.$\n$\n\
 You can finish installing the app now, but please install MetaTrader 5 \
 from your broker before launching it."
 

@@ -115,7 +115,7 @@ export default function Setup({ onComplete }) {
       <div className="splash-screen">
         <div className="splash-inner">
           <p className="splash-label">Smart Money Concepts</p>
-          <h1 className="splash-title">The SMC<br/>Trading App</h1>
+          <h1 className="splash-title">QUANT_CORE</h1>
           <p className="splash-by">by TheEoneYedWonder</p>
           <div className="splash-dots"><span/><span/><span/></div>
         </div>
@@ -136,7 +136,7 @@ export default function Setup({ onComplete }) {
             <span className="material-symbols-outlined text-on-primary-fixed">terminal</span>
           </div>
           <div>
-            <h1 className="font-display-lg text-[20px] font-black text-primary tracking-tighter glow-text-primary leading-none">SMC_CORE</h1>
+            <h1 className="font-display-lg text-[20px] font-black text-primary tracking-tighter glow-text-primary leading-none">QUANT_CORE</h1>
             <p className="font-label-caps text-label-caps text-on-surface-variant mt-1">INITIALIZATION SEQUENCE</p>
           </div>
         </div>

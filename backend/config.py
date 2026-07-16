@@ -97,6 +97,15 @@ def save_search_api_key(key: str):
     cfg['search_api_key'] = key
     _write(cfg)
 
+# ─── Economic calendar (Finnhub) key ───────────────────────────
+def get_calendar_api_key() -> str:
+    return _read().get('calendar_api_key', os.getenv('FINNHUB_API_KEY', ''))
+
+def save_calendar_api_key(key: str):
+    cfg = _read()
+    cfg['calendar_api_key'] = key
+    _write(cfg)
+
 # ─── Sage durable memory (notes Sage has chosen to remember) ──
 _SAGE_NOTES_CAP = 20
 
@@ -136,6 +145,20 @@ def get_risk_settings() -> dict:
 def save_risk_settings(data: dict):
     cfg = _read()
     cfg['risk'] = {**_RISK_DEFAULTS, **data}
+    _write(cfg)
+
+# ─── Sage AI core config (confidence threshold + persona) ─────
+_AI_SETTINGS_DEFAULTS = {
+    "confidence_threshold": 75,   # setups below this are reported but not marked "active"
+    "persona": "analytical",      # analytical | aggressive | conservative
+}
+
+def get_ai_settings() -> dict:
+    return {**_AI_SETTINGS_DEFAULTS, **_read().get('ai_settings', {})}
+
+def save_ai_settings(data: dict):
+    cfg = _read()
+    cfg['ai_settings'] = {**_AI_SETTINGS_DEFAULTS, **data}
     _write(cfg)
 
 # ─── Active symbol ────────────────────────────────────────────
