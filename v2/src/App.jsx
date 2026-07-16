@@ -12,6 +12,7 @@ import Home               from './components/Home';
 import Trades             from './components/Trades';
 import AccountMetrics     from './components/AccountMetrics';
 import Performance        from './components/Performance';
+import LoadingScreen      from './components/LoadingScreen';
 import AssetScreener      from './components/AssetScreener';
 import Alerts             from './components/Alerts';
 import EconomicCalendar   from './components/EconomicCalendar';
@@ -125,24 +126,17 @@ export default function App() {
   }, [configured]);
 
   if (configured === null) return (
-    <div style={{ height:'100vh', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', background:'#000000', color:'#b0b0b0', fontFamily:"'Aptos','Segoe UI',sans-serif", gap:16, padding:'0 32px', textAlign:'center' }}>
-      <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
-      {!backendTimeout ? (
-        <>
-          <div style={{ width:36, height:36, border:'3px solid #242424', borderTopColor:'#d4ff3f', borderRadius:'50%', animation:'spin .8s linear infinite' }} />
-          <span style={{ fontSize:12 }}>Starting backend…</span>
-        </>
-      ) : (
-        <>
-          <div style={{ fontSize:28, marginBottom:4 }}>⚠️</div>
-          <div style={{ fontSize:14, fontWeight:700, color:'#ffffff', marginBottom:4 }}>Backend not responding</div>
-          <div style={{ fontSize:12, color:'#787878', lineHeight:1.7, maxWidth:380 }}>
+    <LoadingScreen>
+      {backendTimeout ? (
+        <div className="loading-error">
+          <div className="loading-error-title">Backend not responding</div>
+          <div className="loading-error-body">
             The Python backend failed to start. This is usually caused by antivirus software blocking it.<br/><br/>
-            Open <strong style={{color:'#b0b0b0'}}>Windows Security → Virus &amp; threat protection → Protection history</strong> and check if <code style={{color:'#d4ff3f'}}>quant-core-backend.exe</code> was blocked, then add an exclusion for the app folder.
+            Open <strong>Windows Security → Virus &amp; threat protection → Protection history</strong> and check if <code>quant-core-backend.exe</code> was blocked, then add an exclusion for the app folder.
           </div>
-        </>
-      )}
-    </div>
+        </div>
+      ) : undefined}
+    </LoadingScreen>
   );
   if (!configured) return <Setup onComplete={() => setConfigured(true)} />;
 

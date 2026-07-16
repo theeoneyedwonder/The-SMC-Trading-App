@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Button from './Button';
-import { LogoZone } from './Logo';
+import LoadingScreen from './LoadingScreen';
 
 const API = 'http://127.0.0.1:8000';
 const S = { WAIT:'wait', WELCOME:'welcome', NO_MT5:'no_mt5', FORM:'form', CONNECTING:'connecting', SUCCESS:'success', ERROR:'error' };
@@ -112,19 +112,7 @@ export default function Setup({ onComplete }) {
   const canSubmit = form.login.trim() && form.password && form.server.trim();
 
   if (step === S.WAIT) {
-    return (
-      <div className="splash-screen">
-        <div className="splash-inner">
-          <div className="w-16 h-16 bg-primary-fixed glow-primary flex items-center justify-center text-on-primary-fixed mx-auto mb-lg">
-            <LogoZone size={34} />
-          </div>
-          <p className="splash-label">Smart Money Concepts</p>
-          <h1 className="splash-title">QUANT_CORE</h1>
-          <p className="splash-by">by TheEoneYedWonder</p>
-          <div className="splash-dots"><span/><span/><span/></div>
-        </div>
-      </div>
-    );
+    return <LoadingScreen credit="by TheEoneYedWonder" />;
   }
 
   const welcomeState  = step === S.WELCOME ? 'active' : 'done';
