@@ -3,7 +3,7 @@
 // Economic Calendar). Ports module_under_maintenance.html.
 export default function Maintenance({ label, onReturn }) {
   return (
-    <div className="h-full flex items-center justify-center p-xl relative overflow-hidden">
+    <div className="qc-maintenance h-full flex items-center justify-center p-xl relative overflow-hidden">
       <div className="absolute inset-0 z-0 flex items-center justify-center opacity-10 pointer-events-none">
         <span className="material-symbols-outlined text-[30vw] text-secondary">engineering</span>
       </div>

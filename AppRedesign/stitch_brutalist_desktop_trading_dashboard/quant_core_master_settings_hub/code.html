@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Trading Terminal - Settings</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"on-primary-container": "#556d00", surface: "#131313", "error-container": "#93000a", outline: "#8e9379", "surface-bright": "#3a3939", "tertiary-container": "#ffdad6", "primary-fixed": "#c3f400", "surface-container-lowest": "#0e0e0e", "on-secondary-fixed": "#2c0051", "on-secondary": "#480081", "on-background": "#e5e2e1", "secondary-container": "#7701d0", "primary-container": "#c3f400", "surface-container-low": "#1c1b1b", background: "#131313", "surface-tint": "#abd600", "on-tertiary-container": "#c90e1e", "on-primary-fixed-variant": "#3c4d00", primary: "#ffffff", "inverse-primary": "#506600", "inverse-surface": "#e5e2e1", "surface-variant": "#353534", "on-tertiary-fixed": "#410003", "on-secondary-container": "#dcb7ff", "on-primary-fixed": "#161e00", "on-tertiary-fixed-variant": "#930010", "on-tertiary": "#680008", "surface-container-highest": "#353534", "tertiary-fixed-dim": "#ffb3ad", "outline-variant": "#444933", error: "#ffb4ab", "surface-container-high": "#2a2a2a", tertiary: "#ffffff", secondary: "#dcb8ff", "on-surface": "#e5e2e1", "on-primary": "#283500", "secondary-fixed-dim": "#dcb8ff", "on-error": "#690005", "secondary-fixed": "#efdbff", "on-surface-variant": "#c4c9ac", "on-error-container": "#ffdad6", "tertiary-fixed": "#ffdad6", "on-secondary-fixed-variant": "#6700b5", "inverse-on-surface": "#313030", "surface-dim": "#131313", "surface-container": "#201f1f", "primary-fixed-dim": "#abd600"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {xl: "32px", unit: "4px", "margin-mobile": "16px", xs: "4px", md: "16px", sm: "8px", lg: "24px", gutter: "16px", "margin-desktop": "24px"}, fontFamily: {"body-bold": ["Inter"], "stat-lg": ["JetBrains Mono"], "headline-md": ["JetBrains Mono"], "display-lg": ["JetBrains Mono"], "headline-lg-mobile": ["JetBrains Mono"], "body-base": ["Inter"], "label-caps": ["JetBrains Mono"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"body-bold": ["14px", {lineHeight: "20px", fontWeight: "700"}], "stat-lg": ["24px", {lineHeight: "30px", fontWeight: "800"}], "headline-md": ["20px", {lineHeight: "28px", letterSpacing: "0", fontWeight: "700"}], "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "800"}], "headline-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "800"}], "body-base": ["14px", {lineHeight: "20px", fontWeight: "400"}], "label-caps": ["11px", {lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700"}]}}}};</script>
+<style>
+        body {
+            background-color: theme('colors.surface');
+            color: theme('colors.on-surface');
+            margin: 0;
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        .brutalist-border {
+            border: 2px solid #1a1a1a;
+        }
+        
+        .glass-panel {
+            background-color: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(14px);
+            border: 2px solid #1a1a1a;
+        }
+
+        .hard-shadow {
+            box-shadow: 3px 3px 0px 0px #000000;
+        }
+        
+        .hard-shadow-active:active {
+            transform: translate(1px, 1px);
+            box-shadow: 0px 0px 0px 0px #000000;
+        }
+
+        .sage-border {
+            border: 2px solid theme('colors.secondary-container');
+        }
+
+        .custom-toggle {
+            appearance: none;
+            width: 40px;
+            height: 20px;
+            background-color: theme('colors.surface-container-high');
+            border: 2px solid #1a1a1a;
+            position: relative;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        .custom-toggle::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            left: -2px;
+            width: 20px;
+            height: 20px;
+            background-color: theme('colors.on-surface');
+            border: 2px solid #1a1a1a;
+            transition: all 0.2s ease;
+        }
+
+        .custom-toggle:checked {
+            background-color: theme('colors.primary-fixed-dim');
+        }
+
+        .custom-toggle:checked::after {
+            left: 18px;
+            background-color: #1a1a1a;
+        }
+
+        /* Input styling */
+        input[type="text"], input[type="password"], input[type="number"], select {
+            background-color: #141414;
+            border: 2px solid #1a1a1a;
+            color: theme('colors.on-surface');
+            padding: theme('spacing.sm') theme('spacing.md');
+            border-radius: 0;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px;
+        }
+        select {
+            appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 0.5rem center;
+            background-size: 1em;
+        }
+
+        input[type="text"]:focus, input[type="password"]:focus, input[type="number"]:focus, select:focus {
+            outline: none;
+            border-color: theme('colors.primary-fixed-dim');
+            box-shadow: none;
+        }
+
+        /* Range slider styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 10px;
+            background: theme('colors.primary-fixed-dim');
+            border: 2px solid #1a1a1a;
+            cursor: pointer;
+            margin-top: -8px;
+        }
+
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: theme('colors.surface-container-high');
+            border: 1px solid #1a1a1a;
+        }
+    </style>
+</head>
+<body class="bg-surface text-on-surface flex flex-col md:flex-row h-screen overflow-hidden">
+<!-- TopNavBar (Web) -->
+<nav class="hidden md:flex fixed top-0 right-0 left-[280px] z-40 items-center justify-between px-md h-12 border-b-2 border-outline-variant bg-surface-container dark:bg-surface-container text-primary-fixed-dim dark:text-primary-fixed-dim font-label-caps text-label-caps">
+<div class="flex items-center gap-md h-full">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary mr-lg">QUANT_CORE v1.0</span>
+<div class="flex gap-sm h-full"><!-- Navigation Links -->
+<a class="flex items-center h-full px-sm text-on-surface-variant hover:text-primary-fixed transition-colors" href="#">BTC/USDT</a>
+<a class="flex items-center h-full px-sm text-on-surface-variant hover:text-primary-fixed transition-colors" href="#">ETH/USDT</a>
+<a class="flex items-center h-full px-sm text-on-surface-variant hover:text-primary-fixed transition-colors" href="#">SOL/USDT</a></div>
+</div>
+<div class="flex items-center gap-md h-full"><!-- Trailing Actions -->
+<div class="flex items-center gap-sm h-full pl-sm border-l-2 border-outline-variant">
+<button class="h-full px-xs text-on-surface-variant hover:text-primary-fixed transition-colors"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">notifications</span></button>
+<button class="h-full px-xs text-on-surface-variant hover:text-primary-fixed transition-colors"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">account_balance_wallet</span></button>
+<button class="h-full px-xs text-on-surface-variant hover:text-primary-fixed transition-colors"><span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">person</span></button>
+</div></div>
+</nav>
+<!-- SideNavBar -->
+<aside class="fixed left-0 top-0 h-full z-50 w-[280px] border-r-2 border-outline-variant bg-surface dark:bg-surface text-primary-fixed-dim dark:text-primary-fixed-dim font-body-base text-body-base flex flex-col hidden md:flex">
+<div class="p-lg border-b-2 border-outline-variant flex items-center gap-md">
+<div class="w-10 h-10 bg-surface-container-high border-2 border-outline-variant hard-shadow flex items-center justify-center overflow-hidden">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A gritty, high-contrast digital avatar portrait of a cyberpunk trader, featuring neon green ambient lighting and harsh shadows. The style is strictly 2D graphic illustration, brutalist, with visible pixelation artifacts." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCT2VM2hv7Dd6tsolmkgyOlvfQ6z_VvEaSD_ogklhA0XOzCf0rbKC0cjk1OCPesDH-B_1P5deZ74IzID0FZH8X0RU68sipt7hiWoGhJqRlOkHyMfmmo8ay3GLOIzi7jMw47ySxUrsgXoE6zXZnVgP9aJ41bIeWny2f8OvNLww86d1lV2RoR_LwEKxrS3ZTSAtX9AhhMblxp9hSjrKCV0_9fadLPE5EgCDvOPjtj1S2GuWVERsUAP4AMorhTdVftE0K2G4q9g7uKFgxo"/>
+</div>
+<div class="flex flex-col">
+<span class="font-headline-md text-headline-md font-bold text-primary dark:text-primary">TRADER_01</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">PRO_ACCOUNT</span>
+</div>
+</div>
+<nav class="flex-1 py-md flex flex-col gap-xs">
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-100" href="{{DATA:SCREEN:SCREEN_14}}">
+<span class="material-symbols-outlined">query_stats</span>
+<span class="font-body-bold text-body-bold">Terminal</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-100" href="{{DATA:SCREEN:SCREEN_24}}">
+<span class="material-symbols-outlined">analytics</span>
+<span class="font-body-bold text-body-bold">Analytics</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-100" href="{{DATA:SCREEN:SCREEN_2}}">
+<span class="material-symbols-outlined">auto_awesome</span>
+<span class="font-body-bold text-body-bold">Sage AI</span>
+</a>
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-100" href="{{DATA:SCREEN:SCREEN_26}}">
+<span class="material-symbols-outlined">receipt_long</span>
+<span class="font-body-bold text-body-bold">History</span>
+</a>
+<!-- Active Tab -->
+<a class="flex items-center gap-sm px-md py-sm border-l-4 border-primary-fixed-dim bg-surface-container-highest text-primary-fixed-dim hover:bg-surface-container-high transition-colors duration-100" href="{{DATA:SCREEN:SCREEN_16}}">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-bold text-body-bold">Settings</span>
+</a>
+</nav>
+<div class="p-md border-t-2 border-outline-variant flex flex-col gap-sm">
+<button class="w-full py-sm bg-primary-fixed-dim text-[#1a1a1a] font-label-caps text-label-caps brutalist-border hard-shadow hard-shadow-active transition-all">UPGRADE</button>
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-100" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-body-bold text-body-bold">Support</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full md:ml-[280px] md:mt-12 p-md md:p-lg overflow-y-auto bg-surface relative">
+<header class="mb-lg pb-sm border-b-2 border-outline-variant flex justify-between items-end">
+<div>
+<h1 class="font-display-lg text-display-lg font-black text-primary uppercase tracking-tighter">System Configuration</h1>
+<p class="font-body-base text-body-base text-on-surface-variant mt-xs">Manage API connections, risk parameters, and interface preferences.</p>
+</div>
+<button class="px-md py-sm bg-surface-container-high text-primary-fixed-dim font-label-caps text-label-caps brutalist-border hard-shadow hard-shadow-active transition-all flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">save</span>
+                SAVE CHANGES
+            </button>
+</header>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-md h-full pb-xl">
+<!-- Left Column: Navigation / Tabs within Settings -->
+<div class="lg:col-span-3 flex flex-col gap-unit">
+<button class="w-full text-left px-md py-sm bg-surface-container-highest border-l-4 border-primary-fixed-dim text-primary-fixed-dim font-label-caps text-label-caps tracking-widest uppercase flex justify-between items-center group">
+<span class="">Account &amp; API</span>
+<span class="material-symbols-outlined text-[16px] opacity-100">chevron_right</span>
+</button>
+<button class="w-full text-left px-md py-sm bg-surface-container border-l-4 border-transparent text-on-surface-variant font-label-caps text-label-caps tracking-widest uppercase flex justify-between items-center hover:bg-surface-container-high hover:text-primary transition-colors group">
+<span class="">Risk Management</span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</button>
+<button class="w-full text-left px-md py-sm bg-surface-container border-l-4 border-transparent text-on-surface-variant font-label-caps text-label-caps tracking-widest uppercase flex justify-between items-center hover:bg-surface-container-high hover:text-primary transition-colors group">
+<span class="">Interface Preferences</span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</button>
+<button class="w-full text-left px-md py-sm bg-surface-container border-l-4 border-transparent text-on-surface-variant font-label-caps text-label-caps tracking-widest uppercase flex justify-between items-center hover:bg-surface-container-high hover:text-primary transition-colors group">
+<span class="">Asset Screener</span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</button>
+<button class="w-full text-left px-md py-sm bg-surface-container border-l-4 border-transparent text-on-surface-variant font-label-caps text-label-caps tracking-widest uppercase flex justify-between items-center hover:bg-surface-container-high hover:text-primary transition-colors group">
+<span class="">Alerts &amp; Notifications</span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</button>
+<button class="w-full text-left px-md py-sm bg-surface-container border-l-4 border-transparent text-on-surface-variant font-label-caps text-label-caps tracking-widest uppercase flex justify-between items-center hover:bg-surface-container-high hover:text-primary transition-colors group">
+<span class="">Analytics Prefs</span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</button>
+<button class="w-full text-left px-md py-sm bg-surface-container border-l-4 border-transparent text-on-surface-variant font-label-caps text-label-caps tracking-widest uppercase flex justify-between items-center hover:bg-surface-container-high hover:text-primary transition-colors group">
+<span class="">Economic Calendar</span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity">chevron_right</span>
+</button>
+<button class="w-full text-left px-md py-sm bg-surface-container border-l-4 border-transparent text-secondary-container font-label-caps text-label-caps tracking-widest uppercase flex justify-between items-center hover:bg-surface-container-high hover:text-secondary-fixed transition-colors group relative overflow-hidden">
+<span class="relative z-10 flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+                        Sage AI Core
+                    </span>
+<span class="material-symbols-outlined text-[16px] opacity-0 group-hover:opacity-100 transition-opacity relative z-10">chevron_right</span>
+<div class="absolute inset-0 bg-secondary-container opacity-[0.05]"></div>
+</button>
+</div>
+<!-- Right Column: Active Settings Panel -->
+<div class="lg:col-span-9 flex flex-col gap-md">
+<!-- Account Panel -->
+<section class="glass-panel p-md flex flex-col gap-md relative">
+<div class="flex items-center gap-sm mb-sm border-b-2 border-outline-variant pb-xs">
+<span class="material-symbols-outlined text-primary-fixed-dim">key</span>
+<h2 class="font-headline-md text-headline-md font-bold text-primary">Exchange API Connection</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant">API KEY</label>
+<input class="w-full" type="password" value="********************************"/>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant">API SECRET</label>
+<input class="w-full" type="password" value="********************************"/>
+</div>
+</div>
+<div class="flex justify-between items-center mt-sm p-sm bg-surface-container-low brutalist-border">
+<div class="flex items-center gap-sm">
+<div class="w-2 h-2 rounded-full bg-primary-fixed-dim shadow-[0_0_8px_theme('colors.primary-fixed-dim')]"></div>
+<span class="font-stat-lg text-stat-lg text-primary-fixed-dim">CONNECTED</span>
+</div>
+<div class="flex gap-sm">
+<button class="px-md py-xs border-2 border-outline-variant text-on-surface-variant font-label-caps hover:bg-surface-container-high transition-colors">TEST</button>
+<button class="px-md py-xs bg-error-container text-tertiary-fixed font-label-caps brutalist-border hard-shadow hover:-translate-y-px transition-transform">DISCONNECT</button>
+</div>
+</div>
+</section>
+<!-- Risk Management Preview -->
+<section class="glass-panel p-md flex flex-col gap-md">
+<div class="flex items-center gap-sm mb-sm border-b-2 border-outline-variant pb-xs">
+<span class="material-symbols-outlined text-error">warning</span>
+<h2 class="font-headline-md text-headline-md font-bold text-primary">Risk Parameters</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<div class="flex flex-col gap-sm p-sm bg-surface-container-low brutalist-border relative group">
+<div class="flex justify-between items-center">
+<label class="font-label-caps text-label-caps text-on-surface-variant">MAX DAILY LOSS</label>
+<span class="material-symbols-outlined text-[16px] text-on-surface-variant">info</span>
+</div>
+<div class="flex items-end gap-xs">
+<input class="w-20 text-right font-stat-lg" type="number" value="5.0"/>
+<span class="font-stat-lg text-stat-lg text-on-surface-variant mb-[2px]">%</span>
+</div>
+<div class="mt-xs">
+<input class="w-full" max="20" min="1" type="range" value="5"/>
+</div>
+</div>
+<div class="flex flex-col gap-sm p-sm bg-surface-container-low brutalist-border">
+<div class="flex justify-between items-center">
+<label class="font-label-caps text-label-caps text-on-surface-variant">AUTO BREAKEVEN</label>
+<input checked="" class="custom-toggle" type="checkbox"/>
+</div>
+<div class="flex flex-col gap-xs mt-auto">
+<label class="font-label-caps text-label-caps text-on-surface-variant text-[9px]">TRIGGER AT (%)</label>
+<input class="w-full text-right font-stat-lg text-[18px] p-xs" type="number" value="1.5"/>
+</div>
+</div>
+<div class="flex flex-col gap-sm p-sm bg-surface-container-low brutalist-border">
+<div class="flex justify-between items-center">
+<label class="font-label-caps text-label-caps text-on-surface-variant">MAX LEVERAGE</label>
+</div>
+<div class="flex items-end gap-xs mt-auto">
+<span class="font-stat-lg text-stat-lg text-on-surface-variant mb-[2px]">x</span>
+<input class="w-full text-right font-stat-lg" type="number" value="10"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Sage AI Settings Panel -->
+<section class="glass-panel p-md flex flex-col gap-md sage-border relative overflow-hidden">
+<div class="absolute inset-0 bg-secondary-container opacity-[0.02] pointer-events-none"></div>
+<div class="flex items-center gap-sm mb-sm border-b-2 border-secondary-container pb-xs relative z-10">
+<div class="w-6 h-6 border-2 border-secondary-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[16px] text-secondary-container">auto_awesome</span>
+</div>
+<h2 class="font-headline-md text-headline-md font-bold text-secondary-container">Sage AI Core Config</h2>
+<div class="ml-auto flex items-center gap-xs">
+<span class="font-label-caps text-label-caps text-on-surface-variant">STATUS:</span>
+<span class="font-label-caps text-label-caps text-secondary-container">ACTIVE</span>
+<input checked="" class="custom-toggle ml-sm" style="background-color: theme('colors.secondary-container');" type="checkbox"/>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg relative z-10">
+<div class="flex flex-col gap-md">
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<label class="font-label-caps text-label-caps text-on-surface-variant">CONFIDENCE THRESHOLD</label>
+<span class="font-stat-lg text-stat-lg text-primary">85%</span>
+</div>
+<input class="w-full" max="99" min="50" style="accent-color: theme('colors.secondary-container');" type="range" value="85"/>
+<p class="font-body-base text-body-base text-on-surface-variant text-xs mt-xs">Minimum AI confidence required to generate an actionable signal.</p>
+</div>
+<div class="flex justify-between items-center p-sm bg-surface-container-low brutalist-border">
+<div class="flex flex-col">
+<span class="font-body-bold text-body-bold text-primary">Auto-Execution</span>
+<span class="font-body-base text-body-base text-on-surface-variant text-xs">Allow Sage to execute high-conviction trades automatically.</span>
+</div>
+<input class="custom-toggle" type="checkbox"/>
+</div>
+</div>
+<div class="p-sm border-2 border-outline-variant bg-[#0D0D0D] flex flex-col gap-sm">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">DATA SOURCES</span>
+<label class="flex items-center gap-sm cursor-pointer group">
+<input checked="" class="w-4 h-4 bg-transparent border-2 border-outline-variant appearance-none checked:bg-secondary-container relative before:content-[''] before:absolute before:inset-0 before:m-auto before:w-2 before:h-2 before:bg-surface before:hidden checked:before:block" type="checkbox"/>
+<span class="font-body-base text-body-base text-primary group-hover:text-secondary-fixed transition-colors">Order Book Imbalance</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group">
+<input checked="" class="w-4 h-4 bg-transparent border-2 border-outline-variant appearance-none checked:bg-secondary-container relative before:content-[''] before:absolute before:inset-0 before:m-auto before:w-2 before:h-2 before:bg-surface before:hidden checked:before:block" type="checkbox"/>
+<span class="font-body-base text-body-base text-primary group-hover:text-secondary-fixed transition-colors">Social Sentiment (X/Reddit)</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group">
+<input class="w-4 h-4 bg-transparent border-2 border-outline-variant appearance-none checked:bg-secondary-container relative before:content-[''] before:absolute before:inset-0 before:m-auto before:w-2 before:h-2 before:bg-surface before:hidden checked:before:block" type="checkbox"/>
+<span class="font-body-base text-body-base text-on-surface-variant group-hover:text-secondary-fixed transition-colors">On-Chain Whale Tracking</span>
+</label>
+</div>
+</div>
+</section>
+<!-- Asset Screener Config -->
+<section class="glass-panel p-md flex flex-col gap-md">
+<div class="flex items-center gap-sm mb-sm border-b-2 border-outline-variant pb-xs">
+<span class="material-symbols-outlined text-primary-fixed-dim">troubleshoot</span>
+<h2 class="font-headline-md text-headline-md font-bold text-primary">Asset Screener Config</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="flex flex-col gap-xs p-sm bg-surface-container-low brutalist-border">
+<div class="flex justify-between items-center mb-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant">SIGNAL SENSITIVITY (FVG/BOS)</label>
+<span class="font-stat-lg text-stat-lg text-primary-fixed-dim">HIGH</span>
+</div>
+<input class="w-full" max="100" min="0" type="range" value="80"/>
+</div>
+<div class="flex flex-col gap-xs p-sm bg-surface-container-low brutalist-border">
+<label class="font-label-caps text-label-caps text-on-surface-variant">PAIR REFRESH RATE</label>
+<select class="w-full bg-[#141414] border-2 border-[#1a1a1a] text-on-surface p-sm font-body-base focus:border-primary-fixed-dim focus:outline-none">
+<option value="1">1 Second (Ultra Fast)</option>
+<option selected="" value="5">5 Seconds (Normal)</option>
+<option value="15">15 Seconds (Eco)</option>
+</select>
+</div>
+</div>
+<div class="p-sm border-2 border-outline-variant bg-[#0D0D0D] flex flex-col gap-sm">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">CUSTOM SCANNER FILTERS</span>
+<div class="flex gap-md">
+<label class="flex items-center gap-sm cursor-pointer group">
+<input checked="" class="w-4 h-4 bg-transparent border-2 border-outline-variant appearance-none checked:bg-primary-fixed-dim relative before:content-[''] before:absolute before:inset-0 before:m-auto before:w-2 before:h-2 before:bg-[#1a1a1a] before:hidden checked:before:block" type="checkbox"/>
+<span class="font-body-base text-body-base text-primary">Min Volume $10M</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group">
+<input checked="" class="w-4 h-4 bg-transparent border-2 border-outline-variant appearance-none checked:bg-primary-fixed-dim relative before:content-[''] before:absolute before:inset-0 before:m-auto before:w-2 before:h-2 before:bg-[#1a1a1a] before:hidden checked:before:block" type="checkbox"/>
+<span class="font-body-base text-body-base text-primary">Exclude Stablecoins</span>
+</label>
+</div>
+</div>
+</section>
+<!-- Alerts & Notifications -->
+<section class="glass-panel p-md flex flex-col gap-md">
+<div class="flex items-center gap-sm mb-sm border-b-2 border-outline-variant pb-xs">
+<span class="material-symbols-outlined text-primary-fixed-dim">notifications_active</span>
+<h2 class="font-headline-md text-headline-md font-bold text-primary">Alerts &amp; Notifications</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-md">
+<div class="flex justify-between items-center p-sm bg-surface-container-low brutalist-border">
+<label class="font-label-caps text-label-caps text-on-surface-variant">SOUND ALERTS</label>
+<input checked="" class="custom-toggle" type="checkbox"/>
+</div>
+<div class="flex justify-between items-center p-sm bg-surface-container-low brutalist-border">
+<label class="font-label-caps text-label-caps text-on-surface-variant">DESKTOP NOTIFS</label>
+<input checked="" class="custom-toggle" type="checkbox"/>
+</div>
+<div class="flex justify-between items-center p-sm bg-surface-container-low brutalist-border">
+<label class="font-label-caps text-label-caps text-on-surface-variant">WEBHOOK/TELEGRAM</label>
+<input class="custom-toggle" type="checkbox"/>
+</div>
+</div>
+</section>
+<!-- Analytics Preferences -->
+<section class="glass-panel p-md flex flex-col gap-md">
+<div class="flex items-center gap-sm mb-sm border-b-2 border-outline-variant pb-xs">
+<span class="material-symbols-outlined text-primary-fixed-dim">analytics</span>
+<h2 class="font-headline-md text-headline-md font-bold text-primary">Analytics Preferences</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="flex flex-col gap-xs p-sm bg-surface-container-low brutalist-border">
+<label class="font-label-caps text-label-caps text-on-surface-variant">DEFAULT LOOKBACK PERIOD</label>
+<select class="w-full bg-[#141414] border-2 border-[#1a1a1a] text-on-surface p-sm font-body-base focus:border-primary-fixed-dim focus:outline-none">
+<option value="7d">7 Days</option>
+<option selected="" value="30d">30 Days</option>
+<option value="90d">90 Days</option>
+<option value="ytd">Year to Date</option>
+</select>
+</div>
+<div class="p-sm bg-surface-container-low brutalist-border flex flex-col gap-sm">
+<span class="font-label-caps text-label-caps text-on-surface-variant mb-xs block">CUSTOM METRICS</span>
+<div class="flex flex-col gap-xs">
+<label class="flex items-center gap-sm cursor-pointer group">
+<input checked="" class="w-4 h-4 bg-transparent border-2 border-outline-variant appearance-none checked:bg-primary-fixed-dim relative before:content-[''] before:absolute before:inset-0 before:m-auto before:w-2 before:h-2 before:bg-[#1a1a1a] before:hidden checked:before:block" type="checkbox"/>
+<span class="font-body-base text-body-base text-primary">Sharpe Ratio</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group">
+<input checked="" class="w-4 h-4 bg-transparent border-2 border-outline-variant appearance-none checked:bg-primary-fixed-dim relative before:content-[''] before:absolute before:inset-0 before:m-auto before:w-2 before:h-2 before:bg-[#1a1a1a] before:hidden checked:before:block" type="checkbox"/>
+<span class="font-body-base text-body-base text-primary">Maximum Drawdown</span>
+</label>
+</div>
+</div>
+</div>
+</section>
+<!-- Economic Calendar -->
+<section class="glass-panel p-md flex flex-col gap-md">
+<div class="flex items-center gap-sm mb-sm border-b-2 border-outline-variant pb-xs">
+<span class="material-symbols-outlined text-primary-fixed-dim">event</span>
+<h2 class="font-headline-md text-headline-md font-bold text-primary">Economic Calendar Config</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-md">
+<div class="flex justify-between items-center p-sm bg-surface-container-low brutalist-border">
+<label class="font-label-caps text-label-caps text-on-surface-variant">HIGH-IMPACT EVENTS ONLY</label>
+<input checked="" class="custom-toggle" type="checkbox"/>
+</div>
+<div class="flex flex-col gap-xs p-sm bg-surface-container-low brutalist-border">
+<label class="font-label-caps text-label-caps text-on-surface-variant">TIMEZONE OVERRIDE</label>
+<select class="w-full bg-[#141414] border-2 border-[#1a1a1a] text-on-surface p-sm font-body-base focus:border-primary-fixed-dim focus:outline-none">
+<option selected="" value="local">Use Local System Time</option>
+<option value="utc">UTC (+00:00)</option>
+<option value="est">EST (-05:00)</option>
+</select>
+</div>
+</div>
+</section>
+</div>
+</div>
+</main>
+</body></html>

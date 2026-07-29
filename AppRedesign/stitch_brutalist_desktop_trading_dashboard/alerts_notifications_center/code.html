@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Quant Core - Alerts &amp; Notifications</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"on-tertiary-fixed": "#410003", "on-secondary": "#480081", "on-primary": "#283500", error: "#ffb4ab", "on-secondary-container": "#dcb7ff", primary: "#ffffff", surface: "#131313", "on-background": "#e5e2e1", "surface-tint": "#abd600", "surface-container-low": "#1c1b1b", "error-container": "#93000a", tertiary: "#ffffff", "secondary-container": "#7701d0", "outline-variant": "#444933", "on-tertiary-fixed-variant": "#930010", "on-tertiary-container": "#c90e1e", "on-error-container": "#ffdad6", "tertiary-container": "#ffdad6", "surface-dim": "#131313", "on-secondary-fixed": "#2c0051", "on-error": "#690005", outline: "#8e9379", background: "#131313", "on-primary-fixed": "#161e00", "inverse-on-surface": "#313030", "tertiary-fixed": "#ffdad6", "surface-container-high": "#2a2a2a", "inverse-primary": "#506600", secondary: "#dcb8ff", "primary-fixed": "#c3f400", "on-secondary-fixed-variant": "#6700b5", "primary-fixed-dim": "#abd600", "inverse-surface": "#e5e2e1", "primary-container": "#c3f400", "surface-container-lowest": "#0e0e0e", "secondary-fixed-dim": "#dcb8ff", "on-surface-variant": "#c4c9ac", "surface-container-highest": "#353534", "secondary-fixed": "#efdbff", "surface-variant": "#353534", "tertiary-fixed-dim": "#ffb3ad", "on-primary-fixed-variant": "#3c4d00", "on-primary-container": "#556d00", "on-tertiary": "#680008", "surface-bright": "#3a3939", "on-surface": "#e5e2e1", "surface-container": "#201f1f"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {"margin-desktop": "24px", lg: "24px", xl: "32px", xs: "4px", gutter: "16px", unit: "4px", md: "16px", sm: "8px", "margin-mobile": "16px"}, fontFamily: {"headline-lg-mobile": ["JetBrains Mono"], "body-bold": ["Inter"], "stat-lg": ["JetBrains Mono"], "label-caps": ["JetBrains Mono"], "body-base": ["Inter"], "headline-md": ["JetBrains Mono"], "display-lg": ["JetBrains Mono"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"headline-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "800"}], "body-bold": ["14px", {lineHeight: "20px", fontWeight: "700"}], "stat-lg": ["24px", {lineHeight: "30px", fontWeight: "800"}], "label-caps": ["11px", {lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700"}], "body-base": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-md": ["20px", {lineHeight: "28px", letterSpacing: "0", fontWeight: "700"}], "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "800"}]}}}};</script>
+<style>
+        body {
+            background-color: #0D0D0D;
+            color: #e5e2e1;
+        }
+        
+        .hud-glass {
+            background-color: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(14px);
+            border: 2px solid #1C1C1C;
+        }
+        
+        .brutalist-button {
+            border: 2px solid #000000;
+            box-shadow: 3px 3px 0px 0px #000000;
+            transition: all 0.1s ease;
+        }
+        
+        .brutalist-button:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0px 0px #000000;
+        }
+        
+        .brutalist-button:active {
+            transform: translate(1px, 1px);
+            box-shadow: 0px 0px 0px 0px #000000;
+        }
+
+        .brutalist-button-neon {
+            border: 2px solid #1C1C1C;
+            box-shadow: 3px 3px 0px 0px #c3f400;
+        }
+        
+        .brutalist-button-neon:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 5px 5px 0px 0px #c3f400;
+        }
+        
+        .brutalist-button-neon:active {
+            transform: translate(1px, 1px);
+            box-shadow: 0px 0px 0px 0px #c3f400;
+        }
+
+        .sage-insight {
+            background-color: #141414;
+            border: 2px solid #7701d0;
+        }
+
+        .log-row {
+            border-left: 3px solid transparent;
+        }
+        
+        .log-row.active {
+            border-left: 3px solid #c3f400;
+            background-color: rgba(195, 244, 0, 0.05);
+        }
+        
+        .log-row:hover {
+            background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        .input-brutalist {
+            background-color: #141414;
+            border: 2px solid #353534;
+            border-radius: 0;
+            color: #e5e2e1;
+        }
+        
+        .input-brutalist:focus {
+            outline: none;
+            border-color: #c3f400;
+            box-shadow: none;
+        }
+
+        /* Scrollbar styles for dark terminal look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0D0D0D; 
+            border-left: 1px solid #1C1C1C;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #353534; 
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #c4c9ac; 
+        }
+    </style>
+</head>
+<body class="h-screen w-screen overflow-hidden flex font-body-base antialiased">
+<!-- SideNavBar (from JSON) -->
+<nav class="fixed left-0 top-0 h-full flex flex-col z-[60] bg-surface-container-lowest docked left-0 h-full w-[280px] shadow-[4px_0px_0px_0px_rgba(0,0,0,1)] border-r-2 border-outline-variant hidden md:flex">
+<!-- Header -->
+<div class="px-md py-lg border-b-2 border-outline-variant flex items-center gap-md">
+<!-- Placeholder for avatar -->
+<div class="w-10 h-10 bg-surface-variant flex items-center justify-center border-2 border-outline">
+<span class="material-symbols-outlined text-on-surface-variant">person</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tighter">QUANT_CORE</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">v1.0.0-PRO</p>
+</div>
+</div>
+<!-- Main Tabs -->
+<div class="flex-1 overflow-y-auto py-md flex flex-col gap-xs">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="{{DATA:SCREEN:SCREEN_14}}">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-label-caps text-label-caps">Terminal</span>
+</a>
+<a class="flex items-center gap-md bg-secondary-container/15 text-secondary border-l-4 border-secondary px-md py-sm active:scale-95 duration-75" href="{{DATA:SCREEN:SCREEN_24}}">
+<span class="material-symbols-outlined">insights</span>
+<span class="font-label-caps text-label-caps">Analytics</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="{{DATA:SCREEN:SCREEN_2}}">
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="font-label-caps text-label-caps">Sage AI</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="{{DATA:SCREEN:SCREEN_26}}">
+<span class="material-symbols-outlined">history</span>
+<span class="font-label-caps text-label-caps">History</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="{{DATA:SCREEN:SCREEN_16}}">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+</div>
+<!-- Footer Tabs & CTA -->
+<div class="p-md border-t-2 border-outline-variant flex flex-col gap-sm">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">help</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined">sensors</span>
+<span class="font-label-caps text-label-caps">Status</span>
+</a>
+<button class="mt-sm bg-primary-container text-on-primary-container font-headline-md text-headline-md font-bold py-sm px-md brutalist-button-neon w-full flex justify-center items-center gap-sm">
+                EXECUTE
+                <span class="material-symbols-outlined">bolt</span>
+</button>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col md:ml-[280px] w-full h-full relative">
+<!-- TopNavBar (from JSON) -->
+<header class="flex justify-between items-center w-full px-lg h-[48px] z-50 bg-surface/70 backdrop-blur-xl docked full-width top-0 border-b-2 border-outline-variant flat no shadows">
+<!-- Mobile Menu / Brand -->
+<div class="flex items-center gap-md md:hidden">
+<button class="text-primary-fixed dark:text-primary-fixed-dim p-xs active:translate-x-0.5 active:translate-y-0.5 transition-transform">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<span class="font-display-lg text-display-lg font-black text-primary-fixed dark:text-primary-fixed-dim tracking-tighter">QUANT_CORE v1.0</span>
+</div>
+<!-- Desktop Nav Links -->
+<nav class="hidden md:flex items-center h-full">
+<a class="text-on-surface-variant font-medium h-full flex items-center px-md hover:bg-surface-container-high transition-colors font-headline-md text-headline-md text-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">BTC/USDT</a>
+<a class="text-on-surface-variant font-medium h-full flex items-center px-md hover:bg-surface-container-high transition-colors font-headline-md text-headline-md text-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">ETH/USDT</a>
+<a class="text-on-surface-variant font-medium h-full flex items-center px-md hover:bg-surface-container-high transition-colors font-headline-md text-headline-md text-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">SOL/USDT</a>
+<div class="h-6 w-px bg-outline-variant mx-sm"></div>
+<a class="text-on-surface-variant font-medium h-full flex items-center px-md hover:bg-surface-container-high transition-colors font-headline-md text-headline-md text-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">1M</a>
+<a class="text-on-surface-variant font-medium h-full flex items-center px-md hover:bg-surface-container-high transition-colors font-headline-md text-headline-md text-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">5M</a>
+<a class="text-on-surface-variant font-medium h-full flex items-center px-md hover:bg-surface-container-high transition-colors font-headline-md text-headline-md text-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">15M</a>
+<a class="text-on-surface-variant font-medium h-full flex items-center px-md hover:bg-surface-container-high transition-colors font-headline-md text-headline-md text-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">1H</a>
+</nav>
+<!-- Trailing Actions -->
+<div class="flex items-center gap-sm h-full">
+<button class="text-primary-fixed dark:text-primary-fixed-dim h-full px-sm flex items-center justify-center hover:bg-surface-container-high transition-colors active:translate-x-0.5 active:translate-y-0.5 transition-transform">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</button>
+<button class="text-primary-fixed font-bold border-b-2 border-primary-fixed h-full px-sm flex items-center justify-center hover:bg-surface-container-high transition-colors active:translate-x-0.5 active:translate-y-0.5 transition-transform relative">
+<span class="material-symbols-outlined" data-weight="fill" style="font-variation-settings: 'FILL' 1;">notifications</span>
+<span class="absolute top-2 right-2 w-2 h-2 rounded-full bg-error"></span>
+</button>
+<button class="text-primary-fixed dark:text-primary-fixed-dim h-full px-sm flex items-center justify-center hover:bg-surface-container-high transition-colors active:translate-x-0.5 active:translate-y-0.5 transition-transform">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Dashboard Area -->
+<div class="flex-1 overflow-hidden flex flex-col lg:flex-row p-md gap-md relative">
+<!-- Backgroun Shader (Subtle atmospheric effect) -->
+<div class="absolute inset-0 pointer-events-none opacity-20 mix-blend-screen">
+<!-- Placeholder for subtle background shader -->
+<div class="w-full h-full bg-surface-dim"></div>
+</div>
+<!-- Alerts Log Panel (Main Center) -->
+<section class="flex-1 flex flex-col bg-surface-container-low border-2 border-outline-variant relative z-10">
+<!-- Panel Header -->
+<div class="px-md py-sm border-b-2 border-outline-variant flex justify-between items-center bg-surface-container-highest">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary-fixed-dim">format_list_bulleted</span>
+<h2 class="font-headline-md text-headline-md text-primary">SYSTEM_LOG</h2>
+</div>
+<div class="flex gap-sm">
+<button class="bg-surface-variant text-on-surface-variant font-label-caps text-label-caps px-sm py-xs border-2 border-outline hover:text-primary hover:border-primary-fixed-dim transition-colors">
+                             FILTER
+                         </button>
+<button class="bg-primary-container text-on-primary-container font-label-caps text-label-caps px-sm py-xs brutalist-button-neon flex items-center gap-xs" id="createAlertBtn">
+<span class="material-symbols-outlined text-[14px]">add</span>
+                             CREATE ALERT
+                         </button>
+</div>
+</div>
+<!-- Log List -->
+<div class="flex-1 overflow-y-auto">
+<table class="w-full text-left font-body-base">
+<thead class="sticky top-0 bg-surface-container-lowest border-b-2 border-outline-variant z-10 font-label-caps text-label-caps text-on-surface-variant">
+<tr>
+<th class="py-sm px-md w-24">TIME</th>
+<th class="py-sm px-md w-16">TYPE</th>
+<th class="py-sm px-md">EVENT / MESSAGE</th>
+<th class="py-sm px-md w-32 text-right">VALUE</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-outline-variant/30">
+<!-- AI Trigger Row (Sage) -->
+<tr class="log-row active cursor-pointer group">
+<td class="py-md px-md text-on-surface-variant font-stat-lg text-stat-lg text-sm">14:02:15</td>
+<td class="py-md px-md">
+<div class="w-8 h-8 flex items-center justify-center bg-secondary-container/20 border-2 border-secondary-container">
+<span class="material-symbols-outlined text-secondary" data-weight="fill" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+</td>
+<td class="py-md px-md">
+<div class="flex flex-col">
+<span class="font-body-bold text-secondary">SAGE AI: Pattern Detected</span>
+<span class="text-on-surface text-sm">Bullish Divergence on BTC/USDT 15M timeframe. High confidence setup.</span>
+</div>
+</td>
+<td class="py-md px-md text-right font-stat-lg text-stat-lg text-primary">
+                                    92% CONF
+                                </td>
+</tr>
+<!-- Execution Row (Buy) -->
+<tr class="log-row cursor-pointer group">
+<td class="py-md px-md text-on-surface-variant font-stat-lg text-stat-lg text-sm">13:45:00</td>
+<td class="py-md px-md">
+<div class="w-8 h-8 flex items-center justify-center bg-primary-container/20 border-2 border-primary-container">
+<span class="material-symbols-outlined text-primary-fixed-dim">bolt</span>
+</div>
+</td>
+<td class="py-md px-md">
+<div class="flex flex-col">
+<span class="font-body-bold text-primary-fixed-dim">EXECUTION: Limit Buy Filled</span>
+<span class="text-on-surface text-sm">ETH/USDT Limit order filled completely.</span>
+</div>
+</td>
+<td class="py-md px-md text-right font-stat-lg text-stat-lg text-primary">
+                                    2.5 ETH
+                                </td>
+</tr>
+<!-- Price Alert Row -->
+<tr class="log-row cursor-pointer group">
+<td class="py-md px-md text-on-surface-variant font-stat-lg text-stat-lg text-sm">12:30:22</td>
+<td class="py-md px-md">
+<div class="w-8 h-8 flex items-center justify-center bg-surface-variant border-2 border-outline">
+<span class="material-symbols-outlined text-on-surface">notifications</span>
+</div>
+</td>
+<td class="py-md px-md">
+<div class="flex flex-col">
+<span class="font-body-bold text-on-surface">PRICE ALERT: Cross Below</span>
+<span class="text-on-surface-variant text-sm">SOL/USDT crossed below target threshold.</span>
+</div>
+</td>
+<td class="py-md px-md text-right font-stat-lg text-stat-lg text-error">
+                                    $95.40
+                                </td>
+</tr>
+<!-- Execution Row (Sell/Error-ish color for contrast) -->
+<tr class="log-row cursor-pointer group">
+<td class="py-md px-md text-on-surface-variant font-stat-lg text-stat-lg text-sm">11:15:05</td>
+<td class="py-md px-md">
+<div class="w-8 h-8 flex items-center justify-center bg-error-container/20 border-2 border-error-container">
+<span class="material-symbols-outlined text-error">bolt</span>
+</div>
+</td>
+<td class="py-md px-md">
+<div class="flex flex-col">
+<span class="font-body-bold text-error">EXECUTION: Stop Loss Triggered</span>
+<span class="text-on-surface text-sm">BTC/USDT Long position closed via Stop Loss.</span>
+</div>
+</td>
+<td class="py-md px-md text-right font-stat-lg text-stat-lg text-error">
+                                    -0.5 BTC
+                                </td>
+</tr>
+<!-- System Message -->
+<tr class="log-row cursor-pointer group">
+<td class="py-md px-md text-on-surface-variant font-stat-lg text-stat-lg text-sm">09:00:00</td>
+<td class="py-md px-md">
+<div class="w-8 h-8 flex items-center justify-center bg-surface-variant border-2 border-outline-variant">
+<span class="material-symbols-outlined text-on-surface-variant">info</span>
+</div>
+</td>
+<td class="py-md px-md">
+<div class="flex flex-col">
+<span class="font-body-bold text-on-surface-variant">SYSTEM: Session Start</span>
+<span class="text-on-surface-variant text-sm">Quant Core v1.0.0-PRO initialized successfully. API connections stable.</span>
+</div>
+</td>
+<td class="py-md px-md text-right font-stat-lg text-stat-lg text-on-surface-variant">
+                                    ---
+                                </td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<!-- Secondary Panel (AI Overview / Context) -->
+<aside class="w-full lg:w-[320px] flex flex-col gap-md z-10">
+<!-- Active Sage Insights Mini -->
+<div class="sage-insight flex flex-col">
+<div class="p-sm bg-secondary-container/20 border-b-2 border-secondary-container flex items-center justify-between">
+<div class="flex items-center gap-xs text-secondary">
+<span class="material-symbols-outlined text-[16px]" data-weight="fill" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+<span class="font-label-caps text-label-caps">SAGE AI ACTIVE INTEL</span>
+</div>
+</div>
+<div class="p-md flex flex-col gap-sm">
+<p class="font-body-bold text-sm text-primary">Bullish Setup BTC/USDT</p>
+<div class="grid grid-cols-3 gap-xs text-center font-stat-lg text-stat-lg text-xs">
+<div class="flex flex-col bg-surface-container-lowest p-xs border-2 border-outline-variant">
+<span class="text-on-surface-variant text-[9px] mb-xs">ENTRY</span>
+<span class="text-primary-fixed-dim">64.5K</span>
+</div>
+<div class="flex flex-col bg-surface-container-lowest p-xs border-2 border-outline-variant">
+<span class="text-on-surface-variant text-[9px] mb-xs">SL</span>
+<span class="text-error">63.2K</span>
+</div>
+<div class="flex flex-col bg-surface-container-lowest p-xs border-2 border-outline-variant">
+<span class="text-on-surface-variant text-[9px] mb-xs">TP</span>
+<span class="text-primary-fixed-dim">68.0K</span>
+</div>
+</div>
+<!-- Confidence Bar -->
+<div class="mt-xs">
+<div class="flex justify-between text-[9px] text-on-surface-variant mb-1 font-label-caps">
+<span class="">CONFIDENCE</span>
+<span class="">92%</span>
+</div>
+<div class="h-2 w-full bg-surface-container-highest border-2 border-outline-variant">
+<div class="h-full bg-primary-fixed-dim w-[92%]"></div>
+</div>
+</div>
+</div>
+</div>
+<!-- Quick Stats / Status -->
+<div class="bg-surface-container-low border-2 border-outline-variant flex-1 flex flex-col">
+<div class="px-md py-sm border-b-2 border-outline-variant bg-surface-container-highest">
+<span class="font-label-caps text-label-caps text-on-surface-variant">NODE STATUS</span>
+</div>
+<div class="p-md flex flex-col gap-md">
+<div class="flex items-center justify-between">
+<span class="font-body-base text-sm text-on-surface-variant">API Latency</span>
+<span class="font-stat-lg text-stat-lg text-sm text-primary-fixed-dim">12ms</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-body-base text-sm text-on-surface-variant">Executions (24h)</span>
+<span class="font-stat-lg text-stat-lg text-sm text-primary">142</span>
+</div>
+<div class="flex items-center justify-between">
+<span class="font-body-base text-sm text-on-surface-variant">Active Alerts</span>
+<span class="font-stat-lg text-stat-lg text-sm text-primary">7</span>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</main>
+<!-- Glassy Overlay Form for 'Create Alert' (Hidden by default, shown via JS) -->
+<div class="fixed inset-0 z-[100] flex items-center justify-center hidden" id="alertOverlay">
+<!-- Backdrop -->
+<div class="absolute inset-0 bg-surface-container-lowest/80 backdrop-blur-sm cursor-pointer" id="overlayBackdrop"></div>
+<!-- Modal Content -->
+<div class="hud-glass w-[400px] max-w-[90vw] flex flex-col relative z-10 shadow-[10px_10px_0px_0px_rgba(0,0,0,1)]">
+<div class="p-md border-b-2 border-[#1C1C1C] flex justify-between items-center">
+<h3 class="font-headline-md text-headline-md text-primary">CONFIGURE ALERT</h3>
+<button class="text-on-surface-variant hover:text-error transition-colors" id="closeOverlayBtn">
+<span class="material-symbols-outlined">close</span>
+</button>
+</div>
+<form class="p-md flex flex-col gap-md">
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant">SYMBOL</label>
+<input class="input-brutalist p-sm font-stat-lg text-stat-lg text-sm w-full" type="text" value="BTC/USDT"/>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant">CONDITION</label>
+<div class="grid grid-cols-2 gap-sm">
+<button class="bg-surface-variant border-2 border-primary-fixed-dim text-primary-fixed-dim p-sm font-body-bold text-sm" type="button">CROSS ABOVE</button>
+<button class="bg-surface-container-lowest border-2 border-outline-variant text-on-surface-variant p-sm font-body-bold text-sm hover:border-outline transition-colors" type="button">CROSS BELOW</button>
+</div>
+</div>
+<div class="flex flex-col gap-xs">
+<label class="font-label-caps text-label-caps text-on-surface-variant">TARGET PRICE</label>
+<div class="relative">
+<span class="absolute left-sm top-1/2 -translate-y-1/2 text-on-surface-variant font-stat-lg text-stat-lg text-sm">$</span>
+<input class="input-brutalist p-sm pl-8 font-stat-lg text-stat-lg text-sm w-full text-right" placeholder="65000.00" type="text"/>
+</div>
+</div>
+<div class="flex flex-col gap-xs mt-sm">
+<label class="font-label-caps text-label-caps text-secondary flex items-center gap-xs">
+<span class="material-symbols-outlined text-[14px]">auto_awesome</span>
+                         ENABLE SAGE VERIFICATION
+                     </label>
+<div class="flex items-center gap-sm">
+<input class="w-5 h-5 bg-surface-container-lowest border-2 border-secondary text-secondary focus:ring-0 focus:ring-offset-0 rounded-none cursor-pointer" type="checkbox"/>
+<span class="font-body-base text-sm text-on-surface-variant">Only trigger if AI confidence &gt; 80%</span>
+</div>
+</div>
+<button class="mt-md bg-primary-container text-on-primary-container font-headline-md text-headline-md font-bold py-sm px-md brutalist-button-neon w-full" type="button">
+                    SET ALERT
+                </button>
+</form>
+</div>
+</div>
+<script>
+        // Simple JS to handle the overlay
+        const createAlertBtn = document.getElementById('createAlertBtn');
+        const alertOverlay = document.getElementById('alertOverlay');
+        const closeOverlayBtn = document.getElementById('closeOverlayBtn');
+        const overlayBackdrop = document.getElementById('overlayBackdrop');
+
+        function toggleOverlay() {
+            alertOverlay.classList.toggle('hidden');
+        }
+
+        createAlertBtn.addEventListener('click', toggleOverlay);
+        closeOverlayBtn.addEventListener('click', toggleOverlay);
+        overlayBackdrop.addEventListener('click', toggleOverlay);
+    </script>
+</body></html>

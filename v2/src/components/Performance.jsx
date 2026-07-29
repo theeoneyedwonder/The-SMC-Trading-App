@@ -67,10 +67,13 @@ export default function Performance() {
     Math.max(stats.today, stats.week) === stats.week ? 'THIS WEEK' : 'TODAY';
 
   return (
-    <div className="flex-1 flex flex-col gap-md p-md overflow-y-auto min-h-0">
+    <div className="qc-page qc-performance flex-1 flex flex-col gap-md p-md overflow-y-auto min-h-0">
       {/* Header */}
       <div className="flex items-center justify-between border-b-2 border-outline-variant pb-xs flex-wrap gap-sm shrink-0">
-        <h1 className="font-display-lg text-[32px] font-black text-primary uppercase glow-text-primary tracking-tighter">Analytics</h1>
+        <div>
+          <h1 className="font-display-lg text-[32px] font-black text-primary uppercase tracking-tighter">Performance Analytics</h1>
+          <p className="font-body-base text-body-base text-on-surface-variant mt-xs">Execution performance and account telemetry.</p>
+        </div>
         <div className="flex items-center gap-xs px-sm py-xs bg-surface-container border-2 border-outline-variant">
           <span className="w-2 h-2 rounded-full bg-primary-fixed-dim shadow-[0_0_8px_#abd600] animate-pulse" />
           <span className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">LIVE DATA</span>

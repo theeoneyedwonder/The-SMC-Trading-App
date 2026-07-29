@@ -10,7 +10,15 @@ const __dirname = path.dirname(__filename);
 
 app.setName('QUANT_CORE');
 
-const isDev = !app.isPackaged;
+// Some distro-packaged Electron binaries report app.isPackaged=true even when
+// they are executing a source checkout. QUANT_CORE_DIST explicitly means
+// "source runtime + built frontend", so it must still use the Python source
+// backend rather than looking for a bundled Windows executable.
+const isSourceCheckout = process.env.QUANT_CORE_DIST === '1';
+const isDev = process.env.NODE_ENV === 'development' || !app.isPackaged || isSourceCheckout;
+// A source checkout can launch either through Vite (npm development) or from
+// the already-built dist folder (Linux desktop shortcut / direct launcher).
+const useDevServer = isDev && process.env.QUANT_CORE_DIST !== '1';
 const userDataDir = app.getPath('userData');
 const configPath = path.join(userDataDir, 'settings.json');
 // Separate from settings.json (which the Python backend also reads/writes) —
@@ -120,6 +128,8 @@ function startBackend() {
   } else {
     const candidates = [
       process.env.PYTHON,
+      path.resolve(__dirname, '..', '..', '.venv-mock', 'bin', 'python'),
+      path.resolve(__dirname, '..', '..', '.venv', 'bin', 'python'),
       `${process.env.LOCALAPPDATA}\\Python\\bin\\python.exe`,
       `${process.env.LOCALAPPDATA}\\Programs\\Python\\Python314\\python.exe`,
       `${process.env.LOCALAPPDATA}\\Programs\\Python\\Python313\\python.exe`,
@@ -180,7 +190,7 @@ function createMain() {
     },
   });
 
-  if (isDev) {
+  if (useDevServer) {
     mainWin.loadURL('http://localhost:5175');
   } else {
     mainWin.loadFile(path.join(__dirname, '..', 'dist', 'index.html'));
@@ -232,7 +242,7 @@ function createSageWindow() {
   // Real, independent top-level window (not a panel drawn inside mainWin) —
   // window managers like Hyprland can tile it, move it to another monitor,
   // or float it, instead of it being an overlay stuck on top of the chart.
-  if (isDev) {
+  if (useDevServer) {
     sageWin.loadURL('http://localhost:5175/#sage');
   } else {
     sageWin.loadFile(path.join(__dirname, '..', 'dist', 'index.html'), { hash: 'sage' });

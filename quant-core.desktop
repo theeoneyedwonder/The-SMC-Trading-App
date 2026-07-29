@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=QUANT_CORE
+Comment=Smart Money Concepts trading dashboard
+Exec=/home/henry/Documents/QUANT_CORE/launch-quant-core.sh
+Icon=/home/henry/Documents/QUANT_CORE/v2/build/icon.png
+Terminal=false
+Categories=Office;Finance;
+StartupNotify=true
+StartupWMClass=QUANT_CORE

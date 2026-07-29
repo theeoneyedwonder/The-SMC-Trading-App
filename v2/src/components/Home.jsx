@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import Chart from './Chart';
+import TradingViewResearch from './TradingViewResearch';
 import { recentSmcEvents, dirClass, fmtClock, structureBias } from '../lib/smcEvents';
 import { playOrderFill, playError } from '../lib/sound';
 
@@ -206,7 +207,7 @@ function StructureDonut({ bullPct, bearPct }) {
   );
 }
 
-function OrderPanel({ symbol, account, patterns }) {
+function OrderPanel({ symbol, account, patterns, analysisProvider, analysisSymbol, executionProvider }) {
   const [lot, setLot]         = useState('0.10');
   const [risk, setRisk]       = useState('1.00');
   const [sl, setSl]           = useState('');
@@ -263,19 +264,40 @@ function OrderPanel({ symbol, account, patterns }) {
   const marginUsedPct = account?.equity > 0 ? ((account.margin ?? 0) / account.equity) * 100 : 0;
   const profitUp      = (account?.profit ?? 0) >= 0;
   const dominant       = bias.total === 0 ? 'NEUTRAL' : bias.bullPct >= bias.bearPct ? 'BULLISH' : 'BEARISH';
+  const simulated      = executionProvider === 'simulated';
+  const sourceDiffers  = analysisProvider !== executionProvider || analysisSymbol !== symbol;
 
   return (
-    <aside className="w-72 shrink-0 flex flex-col gap-sm h-full overflow-y-auto min-h-0">
+    <aside className="qc-order-panel w-80 shrink-0 flex flex-col gap-sm h-full overflow-y-auto min-h-0 bg-[#101010] border-l-2 border-outline-variant p-sm">
+      <div className="qc-order-header shrink-0 flex items-center justify-between border-2 border-outline-variant bg-surface-container-lowest px-sm py-xs shadow-[3px_3px_0_#000]">
+        <div>
+          <div className="font-headline-md text-[13px] font-bold text-primary tracking-wider">EXECUTION_TICKET</div>
+          <div className="font-label-caps text-[9px] text-on-surface-variant mt-1">MARKET ORDER · {symbol}</div>
+        </div>
+        <div className={'font-label-caps text-[9px] border px-xs py-1 flex items-center gap-xs ' + (simulated ? 'qc-execution-simulated' : 'text-primary-fixed border-primary-fixed')}>
+          <span className={'w-1.5 h-1.5 animate-pulse ' + (simulated ? 'bg-error' : 'bg-primary-fixed')} /> {simulated ? 'SIMULATED' : 'MT5 ARMED'}
+        </div>
+      </div>
+
+      {(sourceDiffers || simulated) && (
+        <div className={'qc-feed-boundary ' + (simulated ? 'is-simulated' : '')}>
+          <div><span>CHART</span><strong>{analysisProvider?.toUpperCase()}:{analysisSymbol}</strong></div>
+          <div><span>EXECUTION</span><strong>{executionProvider?.toUpperCase()}:{symbol}</strong></div>
+          <p>{simulated
+            ? 'Development runtime — no live broker order is sent.'
+            : 'Chart prices are analysis-only. This ticket uses the MT5 broker quote.'}</p>
+        </div>
+      )}
+
       {/* Balance card */}
-      <div className="glass-panel module-glow p-md shrink-0 relative overflow-hidden">
-        <div className="font-label-caps text-[10px] font-bold uppercase mb-xs text-white/70">BALANCE</div>
-        <div className="text-2xl font-black tracking-tighter font-mono text-white">
+      <div className="qc-order-balance p-md shrink-0 relative overflow-hidden border-2 border-outline-variant bg-surface-container-lowest shadow-[3px_3px_0_#000]">
+        <div className="font-label-caps text-[10px] font-bold uppercase mb-xs text-on-surface-variant">ACCOUNT BALANCE</div>
+        <div className="text-2xl font-black tracking-tighter font-mono text-primary">
           {account?.currency ?? ''} {fmt(account?.balance)}
         </div>
-        <div className="absolute bottom-0 right-0 left-0 h-8 flex items-end gap-[2px] opacity-40 px-2 pb-1 pointer-events-none">
-          {[40, 70, 50, 90, 100].map((h, i) => (
-            <div key={i} className="flex-1 bg-primary-fixed shadow-[0_0_12px_rgba(195,244,0,0.8)]" style={{ height: `${h}%` }} />
-          ))}
+        <div className="grid grid-cols-2 gap-sm mt-sm pt-sm border-t-2 border-outline-variant">
+          <div><div className="font-label-caps text-[9px] text-on-surface-variant">EQUITY</div><div className="font-mono text-[12px] text-primary">{fmt(account?.equity)}</div></div>
+          <div className="text-right"><div className="font-label-caps text-[9px] text-on-surface-variant">FREE MARGIN</div><div className="font-mono text-[12px] text-primary-fixed">{fmt(account?.free_margin)}</div></div>
         </div>
       </div>
 
@@ -284,14 +306,14 @@ function OrderPanel({ symbol, account, patterns }) {
         <button
           onClick={() => executeTrade('SELL')}
           disabled={!!trading}
-          className="flex-1 h-12 bg-white/5 border border-white/20 text-white font-bold tracking-wider hover:bg-error/20 hover:border-error hover:text-error hover:shadow-[0_0_20px_rgba(255,180,171,0.6)] transition-all text-sm flex items-center justify-center disabled:opacity-50"
+          className="qc-order-action qc-order-sell flex-1 h-12 bg-surface-container-high border-2 border-error text-error font-bold tracking-wider shadow-[3px_3px_0_#000] transition-all text-sm flex items-center justify-center disabled:opacity-50"
         >
           {trading === 'SELL' ? '…' : 'SELL'}
         </button>
         <button
           onClick={() => executeTrade('BUY')}
           disabled={!!trading}
-          className="flex-1 h-12 bg-primary-fixed border border-primary-fixed text-black font-bold tracking-wider hover:brightness-110 transition-all text-sm flex items-center justify-center glow-primary shadow-[0_0_25px_rgba(195,244,0,0.8)] disabled:opacity-50"
+          className="qc-order-action qc-order-buy flex-1 h-12 bg-primary-fixed border-2 border-black text-on-primary-fixed font-bold tracking-wider shadow-[3px_3px_0_#000] transition-all text-sm flex items-center justify-center disabled:opacity-50"
         >
           {trading === 'BUY' ? '…' : 'BUY'}
         </button>
@@ -305,38 +327,39 @@ function OrderPanel({ symbol, account, patterns }) {
 
       {/* Live bid/ask */}
       <div className="flex gap-sm shrink-0 font-mono text-xs">
-        <div className="flex-1 text-center py-xs border border-white/10 bg-white/5">
+        <div className="qc-order-quote flex-1 text-center py-xs border-2 border-outline-variant bg-surface-container-lowest">
           <div className="text-[9px] text-on-surface-variant">BID</div>
           <div className="text-error">{tick?.bid ? fmt(tick.bid, tick.bid > 100 ? 2 : 5) : '—'}</div>
         </div>
-        <div className="flex-1 text-center py-xs border border-white/10 bg-white/5">
+        <div className="qc-order-quote flex-1 text-center py-xs border-2 border-outline-variant bg-surface-container-lowest">
           <div className="text-[9px] text-on-surface-variant">ASK</div>
           <div className="text-primary-fixed">{tick?.ask ? fmt(tick.ask, tick.ask > 100 ? 2 : 5) : '—'}</div>
         </div>
       </div>
 
       {/* Inputs */}
-      <div className="p-sm space-y-sm shrink-0 glass-panel">
+      <div className="qc-order-parameters p-sm space-y-sm shrink-0 border-2 border-outline-variant bg-surface-container-lowest shadow-[3px_3px_0_#000]">
+        <div className="font-headline-md text-[12px] font-bold text-primary border-b-2 border-outline-variant pb-xs mb-sm">ORDER PARAMETERS</div>
         <FieldRow label="VOLUME">
           <input type="number" step="0.01" min="0.01" value={lot} onChange={e => setLot(e.target.value)}
-            className="w-24 bg-white/5 border border-white/10 text-right text-xs p-xs text-white outline-none font-mono focus:border-primary-fixed transition-colors" />
+            className="w-28 bg-[#141414] border-2 border-outline-variant text-right text-xs p-xs text-primary outline-none font-mono focus:border-primary-fixed transition-colors" />
         </FieldRow>
         <FieldRow label="RISK %">
           <input type="number" step="0.1" min="0" value={risk} onChange={e => setRisk(e.target.value)}
-            className="w-24 bg-white/5 border border-white/10 text-right text-xs p-xs text-white outline-none font-mono focus:border-primary-fixed transition-colors" />
+            className="w-28 bg-[#141414] border-2 border-outline-variant text-right text-xs p-xs text-primary outline-none font-mono focus:border-primary-fixed transition-colors" />
         </FieldRow>
         <FieldRow label="STOP LOSS">
           <input type="number" step="0.00001" value={sl} onChange={e => setSl(e.target.value)} placeholder="—"
-            className="w-24 bg-white/5 border border-white/10 text-right text-xs p-xs text-white outline-none font-mono focus:border-error transition-colors placeholder:text-on-surface-variant" />
+            className="w-28 bg-[#141414] border-2 border-outline-variant text-right text-xs p-xs text-primary outline-none font-mono focus:border-error transition-colors placeholder:text-on-surface-variant" />
         </FieldRow>
         <FieldRow label="TAKE PROFIT">
           <input type="number" step="0.00001" value={tp} onChange={e => setTp(e.target.value)} placeholder="—"
-            className="w-24 bg-white/5 border border-white/10 text-right text-xs p-xs text-white outline-none font-mono focus:border-primary-fixed transition-colors placeholder:text-on-surface-variant" />
+            className="w-28 bg-[#141414] border-2 border-outline-variant text-right text-xs p-xs text-primary outline-none font-mono focus:border-primary-fixed transition-colors placeholder:text-on-surface-variant" />
         </FieldRow>
       </div>
 
       {/* Account summary */}
-      <div className="p-sm border border-white/10 grid grid-cols-2 gap-sm bg-white/5 shrink-0">
+      <div className="qc-order-summary p-sm border-2 border-outline-variant grid grid-cols-2 gap-sm bg-surface-container-lowest shrink-0 shadow-[3px_3px_0_#000]">
         <div>
           <div className="text-[10px] text-on-surface-variant uppercase mb-xs">OPEN P/L</div>
           <div className={'font-bold text-sm font-mono ' + (profitUp ? 'text-primary-fixed glow-text-primary' : 'text-error')}>
@@ -345,13 +368,13 @@ function OrderPanel({ symbol, account, patterns }) {
         </div>
         <div className="text-right">
           <div className="text-[10px] text-on-surface-variant uppercase mb-xs">MARGIN USED</div>
-          <div className="text-white font-bold text-sm font-mono">{fmt(marginUsedPct, 1)}%</div>
+          <div className="text-primary font-bold text-sm font-mono">{fmt(marginUsedPct, 1)}%</div>
         </div>
       </div>
 
       {/* Structure bias donut */}
-      <div className="glass-panel flex flex-col shrink-0">
-        <div className="p-sm border-b border-white/10 shrink-0">
+      <div className="qc-order-structure border-2 border-outline-variant bg-surface-container-lowest shadow-[3px_3px_0_#000] flex flex-col shrink-0">
+        <div className="p-sm border-b-2 border-outline-variant shrink-0">
           <h3 className="text-xs font-bold uppercase tracking-widest font-headline-md">STRUCTURE BIAS</h3>
         </div>
         <div className="flex-1 p-sm flex items-center gap-md">
@@ -367,7 +390,7 @@ function OrderPanel({ symbol, account, patterns }) {
             </div>
           </div>
         </div>
-        <div className="p-xs border-t border-white/10 flex justify-between items-center shrink-0 bg-white/5">
+        <div className="p-xs border-t-2 border-outline-variant flex justify-between items-center shrink-0 bg-surface-container-high">
           <div className="flex flex-col">
             <span className="text-[8px] text-on-surface-variant uppercase">{symbol}</span>
             <span className={'text-xs font-bold uppercase ' + (dominant === 'BULLISH' ? 'text-primary-fixed glow-text-primary' : dominant === 'BEARISH' ? 'text-error' : 'text-on-surface-variant')}>
@@ -384,19 +407,54 @@ function OrderPanel({ symbol, account, patterns }) {
 }
 
 // ── Terminal dashboard ───────────────────────────────────────────────
-export default function Home({ symbol, data, aiLevels, nudge, onSelectSymbol, onOpenSage }) {
+export default function Home({
+  executionSymbol,
+  chartSymbol,
+  chartProvider,
+  marketCatalog,
+  onChangeMarket,
+  data,
+  aiLevels,
+  onNavigate,
+}) {
+  const executionProvider = marketCatalog?.execution_provider || 'mt5';
+  const sourceMatchesExecution = chartProvider === executionProvider && chartSymbol === executionSymbol;
+  const providers = marketCatalog?.providers || [];
+
   return (
-    <div className="flex-1 flex gap-sm p-sm overflow-hidden min-h-0">
-      <div className="flex-1 flex flex-col gap-sm min-w-0 min-h-0">
-        <Chart symbol={symbol} patterns={data?.patterns} aiLevels={aiLevels} />
-        <div className="h-56 shrink-0 grid grid-cols-4 gap-sm">
-          <PositionsWidget trades={data?.trades ?? []} />
-          <WatchlistWidget symbol={symbol} onSelectSymbol={onSelectSymbol} />
-          <SageWidget nudge={nudge} onOpen={onOpenSage} />
-          <EventsWidget patterns={data?.patterns} />
-        </div>
+    <div className="qc-page qc-terminal flex-1 flex gap-md p-md overflow-hidden min-h-0">
+      <div className="qc-terminal-chart flex-1 flex flex-col min-w-0 min-h-0 border-2 border-outline-variant bg-surface-container-lowest shadow-[4px_4px_0_#000] overflow-hidden">
+        {chartProvider === 'tradingview' ? (
+          <TradingViewResearch
+            symbol={chartSymbol}
+            providers={providers}
+            executionProvider={executionProvider}
+            executionSymbol={executionSymbol}
+            onChangeMarket={onChangeMarket}
+            onOpenSettings={() => onNavigate?.('settings')}
+          />
+        ) : (
+          <Chart
+            provider={chartProvider}
+            symbol={chartSymbol}
+            providers={providers}
+            executionProvider={executionProvider}
+            patterns={sourceMatchesExecution ? data?.patterns : null}
+            aiLevels={sourceMatchesExecution ? aiLevels : []}
+            onChangeMarket={onChangeMarket}
+            onOpenMarketSettings={() => onNavigate?.('settings')}
+            onOpenAlerts={() => onNavigate?.('alerts')}
+          />
+        )}
       </div>
-      <OrderPanel symbol={symbol} account={data?.account} patterns={data?.patterns} />
+      <OrderPanel
+        symbol={executionSymbol}
+        account={data?.account}
+        patterns={data?.patterns}
+        analysisProvider={chartProvider}
+        analysisSymbol={chartSymbol}
+        executionProvider={executionProvider}
+      />
     </div>
   );
 }

@@ -120,7 +120,7 @@ export default function Setup({ onComplete }) {
   const readyState    = step === S.SUCCESS ? 'active' : 'upcoming';
 
   return (
-    <div className="min-h-screen w-full flex flex-col font-body-base">
+    <div className="qc-setup min-h-screen w-full flex flex-col font-body-base">
       {/* Progress header */}
       <header className="fixed top-0 left-0 w-full h-20 glass-panel z-50 flex items-center justify-between px-lg md:px-xl shrink-0">
         <div className="flex items-center gap-md">

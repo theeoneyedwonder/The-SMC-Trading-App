@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Interface Preferences - QUANT_CORE</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&amp;family=Inter:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {secondary: "#dcb8ff", "on-primary-fixed-variant": "#3c4d00", "on-tertiary-fixed": "#410003", "surface-tint": "#abd600", tertiary: "#ffffff", "surface-container-high": "#2a2a2a", "secondary-fixed-dim": "#dcb8ff", "on-secondary-fixed-variant": "#6700b5", "on-error-container": "#ffdad6", "on-surface": "#e5e2e1", "inverse-on-surface": "#313030", "outline-variant": "#444933", "on-primary-fixed": "#161e00", "on-primary": "#283500", "primary-container": "#c3f400", background: "#131313", "tertiary-container": "#ffdad6", "surface-container": "#201f1f", "on-surface-variant": "#c4c9ac", error: "#ffb4ab", "inverse-surface": "#e5e2e1", "surface-dim": "#131313", "tertiary-fixed-dim": "#ffb3ad", primary: "#ffffff", "on-error": "#690005", "on-tertiary-fixed-variant": "#930010", "inverse-primary": "#506600", "on-background": "#e5e2e1", "surface-variant": "#353534", "surface-container-highest": "#353534", "secondary-fixed": "#efdbff", "on-tertiary-container": "#c90e1e", surface: "#131313", "on-secondary-container": "#dcb7ff", "tertiary-fixed": "#ffdad6", "on-secondary": "#480081", "surface-container-lowest": "#0e0e0e", "secondary-container": "#7701d0", "on-tertiary": "#680008", "on-primary-container": "#556d00", "surface-container-low": "#1c1b1b", outline: "#8e9379", "primary-fixed-dim": "#abd600", "error-container": "#93000a", "surface-bright": "#3a3939", "primary-fixed": "#c3f400", "on-secondary-fixed": "#2c0051"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {xl: "32px", md: "16px", "margin-mobile": "16px", gutter: "16px", xs: "4px", sm: "8px", lg: "24px", "margin-desktop": "24px", unit: "4px"}, fontFamily: {"headline-lg-mobile": ["JetBrains Mono"], "label-caps": ["JetBrains Mono"], "stat-lg": ["JetBrains Mono"], "body-bold": ["Inter"], "body-base": ["Inter"], "headline-md": ["JetBrains Mono"], "display-lg": ["JetBrains Mono"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"headline-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "800"}], "label-caps": ["11px", {lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700"}], "stat-lg": ["24px", {lineHeight: "30px", fontWeight: "800"}], "body-bold": ["14px", {lineHeight: "20px", fontWeight: "700"}], "body-base": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-md": ["20px", {lineHeight: "28px", letterSpacing: "0", fontWeight: "700"}], "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "800"}]}}}};</script>
+<style>
+        body {
+            background-color: theme('colors.background');
+            color: theme('colors.on-background');
+        }
+        
+        /* Brutalist Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: theme('colors.surface-container-lowest');
+            border-left: 2px solid theme('colors.surface-container-highest');
+        }
+        ::-webkit-scrollbar-thumb {
+            background: theme('colors.outline');
+            border: 2px solid theme('colors.surface-container-lowest');
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: theme('colors.primary-fixed');
+        }
+
+        /* Custom Range Slider Styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            background: theme('colors.primary-fixed');
+            border: 2px solid #000;
+            cursor: pointer;
+            margin-top: -6px;
+            box-shadow: 2px 2px 0px 0px #000;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: theme('colors.surface-container-highest');
+            border: 1px solid #000;
+        }
+        
+        /* Custom Checkbox / Toggle Styling */
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+        .toggle-switch input { 
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: theme('colors.surface-container-highest');
+            border: 2px solid #000;
+            transition: .4s;
+        }
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: theme('colors.on-surface');
+            transition: .4s;
+            border: 1px solid #000;
+        }
+        input:checked + .toggle-slider {
+            background-color: theme('colors.primary-fixed');
+        }
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+            background-color: #000;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-background text-on-background selection:bg-primary-fixed selection:text-black">
+<!-- SideNavBar (Docked Left) -->
+<nav class="fixed left-0 top-0 h-full flex flex-col z-[60] bg-surface-container-lowest docked left-0 h-full w-[280px] shadow-[4px_0px_0px_0px_rgba(0,0,0,1)] border-r-2 border-outline-variant hidden md:flex">
+<!-- Header -->
+<div class="p-lg border-b-2 border-outline-variant">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">QUANT_CORE</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-xs">v1.0.0-PRO</p>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto py-md flex flex-col gap-xs">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">terminal</span>
+<span class="font-label-caps text-label-caps">Terminal</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">insights</span>
+<span class="font-label-caps text-label-caps">Analytics</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">auto_awesome</span>
+<span class="font-label-caps text-label-caps">Sage AI</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">history</span>
+<span class="font-label-caps text-label-caps">History</span>
+</a>
+<!-- Active State -->
+<a class="flex items-center gap-md bg-secondary-container/15 text-secondary border-l-4 border-secondary px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+</div>
+<!-- CTA & Footer -->
+<div class="p-md border-t-2 border-outline-variant flex flex-col gap-sm">
+<button class="w-full bg-primary-fixed text-on-primary-fixed font-headline-md text-headline-md font-bold py-sm border-2 border-black shadow-[3px_3px_0px_0px_#000] hover:-translate-y-[2px] hover:-translate-x-[2px] hover:shadow-[5px_5px_0px_0px_#000] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none transition-all uppercase tracking-tight">EXECUTE</button>
+<div class="flex flex-col gap-xs mt-sm">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">help</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">sensors</span>
+<span class="font-label-caps text-label-caps">Status</span>
+</a>
+</div>
+<div class="flex items-center gap-sm mt-sm px-md">
+<img alt="User Profile" class="w-8 h-8 border-2 border-black object-cover rounded-none" data-alt="A small, stylized profile avatar of a trader, rendered in a harsh, high-contrast brutalist style with vibrant neon green accents against a deep black background, conveying a professional algorithmic trading environment." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBpc40-pAA-B513bQfs3VwfkB5YE5VM4v8_SvNZz-3rHt2A5LF3ABVaUN6uZIwFyjF7EfhyvoYTva-fgx6YzeYFZcRvsQtV0ZdIRGH-7-S3Px4H8pGTGReU2Zz77X_Ot6GN3v20Dqy7ikYWLd_Mh4hsFMt9X9Vcr5m0j0rREYgvJJr4-EA0-gc-43evoAX5Wh8THtTdIcBCyE2okvtgIx1z-52Bi9kiMDFJPvghf4XQ_6o4jcHLMChiNg2uHsG4iAtYUJsd3d-Oc0uw"/>
+<span class="font-label-caps text-label-caps text-on-surface">OPERATOR_01</span>
+</div>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col md:ml-[280px] h-screen bg-background relative overflow-hidden">
+<!-- TopNavBar (Docked Top) -->
+<header class="flex justify-between items-center w-full px-lg h-[48px] z-50 bg-surface/70 backdrop-blur-xl docked full-width top-0 border-b-2 border-outline-variant shadow-none">
+<div class="flex items-center gap-lg">
+<span class="font-display-lg text-display-lg font-black text-primary-fixed tracking-tighter md:hidden">QUANT_CORE</span>
+<!-- Navigation Links (Left) -->
+<nav class="hidden md:flex items-center gap-md">
+<a class="text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors active:translate-x-0.5 active:translate-y-0.5 transition-transform px-sm py-xs font-label-caps text-label-caps" href="#">BTC/USDT</a>
+<a class="text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors active:translate-x-0.5 active:translate-y-0.5 transition-transform px-sm py-xs font-label-caps text-label-caps" href="#">ETH/USDT</a>
+<a class="text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors active:translate-x-0.5 active:translate-y-0.5 transition-transform px-sm py-xs font-label-caps text-label-caps" href="#">SOL/USDT</a>
+</nav>
+</div>
+<!-- Trailing Icons -->
+<div class="flex items-center gap-sm">
+<button class="p-xs text-primary-fixed hover:bg-surface-container-high transition-colors active:translate-x-0.5 active:translate-y-0.5">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_balance_wallet</span>
+</button>
+<button class="p-xs text-primary-fixed hover:bg-surface-container-high transition-colors active:translate-x-0.5 active:translate-y-0.5 relative">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">notifications</span>
+<span class="absolute top-1 right-1 w-2 h-2 bg-error rounded-full border border-black"></span>
+</button>
+<button class="p-xs text-primary-fixed hover:bg-surface-container-high transition-colors active:translate-x-0.5 active:translate-y-0.5">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 0;">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Page Content -->
+<div class="flex-1 overflow-y-auto p-gutter md:p-margin-desktop bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSA0MCAwIEwgMCAwIDAgNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzFDMUMxQyIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9wYXR0ZXJuPjwvZGVmcz48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSJ1cmwoI2dyaWQpIi8+PC9zdmc+')]">
+<div class="max-w-5xl mx-auto">
+<div class="mb-lg border-b-2 border-outline-variant pb-md flex justify-between items-end">
+<div>
+<h2 class="font-display-lg text-display-lg font-black text-primary uppercase tracking-tighter">Interface Preferences</h2>
+<p class="font-body-base text-body-base text-on-surface-variant mt-xs">Configure visual telemetry and auditory alerts for optimal execution.</p>
+</div>
+<button class="bg-surface-container-high text-primary border-2 border-black px-md py-sm font-label-caps text-label-caps hover:-translate-y-[2px] hover:-translate-x-[2px] shadow-[3px_3px_0px_0px_#000] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none transition-all">
+                        RESET DEFAULTS
+                    </button>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-md">
+<!-- Visual Settings Panel -->
+<div class="lg:col-span-8 flex flex-col gap-md">
+<!-- Theme & Typography -->
+<div class="bg-surface-container/70 backdrop-blur-xl border-2 border-outline-variant p-md relative overflow-hidden group">
+<!-- Decorative Corner Element -->
+<div class="absolute top-0 right-0 w-8 h-8 border-l-2 border-b-2 border-outline-variant bg-surface-container-highest group-hover:bg-primary-fixed transition-colors"></div>
+<h3 class="font-headline-md text-headline-md font-bold text-primary mb-md flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary">palette</span>
+                                Visual Identity
+                            </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- Color Theme -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant">COLOR THEME</label>
+<div class="flex gap-sm">
+<button class="flex-1 bg-surface-container-highest border-2 border-black p-sm text-center shadow-[2px_2px_0px_0px_#000] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none transition-all">
+<span class="font-body-bold text-body-bold text-on-surface">DARK</span>
+</button>
+<button class="flex-1 bg-surface-container border-2 border-outline-variant p-sm text-center text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="font-body-bold text-body-bold">LIGHT</span>
+</button>
+<button class="flex-1 bg-surface-container border-2 border-outline-variant p-sm text-center text-secondary hover:bg-surface-container-highest hover:border-secondary transition-colors">
+<span class="font-body-bold text-body-bold">GLOW</span>
+</button>
+</div>
+</div>
+<!-- Typography -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant">TYPOGRAPHY</label>
+<div class="flex gap-sm">
+<button class="flex-1 bg-surface-container border-2 border-outline-variant p-sm text-center text-on-surface-variant hover:bg-surface-container-highest transition-colors">
+<span class="font-body-base text-body-base font-[Inter]">Inter</span>
+</button>
+<button class="flex-1 bg-surface-container-highest border-2 border-black p-sm text-center shadow-[2px_2px_0px_0px_#000] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none transition-all">
+<span class="font-label-caps text-label-caps text-primary-fixed">MONO</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Density & FX -->
+<div class="bg-surface-container/70 backdrop-blur-xl border-2 border-outline-variant p-md">
+<h3 class="font-headline-md text-headline-md font-bold text-primary mb-md flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary">grid_view</span>
+                                Layout &amp; FX
+                            </h3>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+<!-- Display Density -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-caps text-label-caps text-on-surface-variant">DISPLAY DENSITY</label>
+<div class="flex flex-col gap-xs">
+<label class="flex items-center gap-md p-sm border-2 border-outline-variant bg-surface-container hover:bg-surface-container-highest cursor-pointer transition-colors">
+<input class="w-4 h-4 text-primary-fixed bg-surface border-black focus:ring-primary-fixed focus:ring-offset-background" name="density" type="radio"/>
+<span class="font-body-bold text-body-bold text-on-surface">Compact</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant ml-auto">MAX DATA</span>
+</label>
+<label class="flex items-center gap-md p-sm border-2 border-black bg-surface-container-highest cursor-pointer shadow-[2px_2px_0px_0px_#000]">
+<input checked="" class="w-4 h-4 text-primary-fixed bg-surface border-black focus:ring-primary-fixed focus:ring-offset-background" name="density" type="radio"/>
+<span class="font-body-bold text-body-bold text-primary-fixed">Standard</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant ml-auto">BALANCED</span>
+</label>
+<label class="flex items-center gap-md p-sm border-2 border-outline-variant bg-surface-container hover:bg-surface-container-highest cursor-pointer transition-colors">
+<input class="w-4 h-4 text-primary-fixed bg-surface border-black focus:ring-primary-fixed focus:ring-offset-background" name="density" type="radio"/>
+<span class="font-body-bold text-body-bold text-on-surface">High</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant ml-auto">SPACIOUS</span>
+</label>
+</div>
+</div>
+<!-- Glow Intensity -->
+<div class="flex flex-col gap-sm justify-center">
+<label class="font-label-caps text-label-caps text-on-surface-variant flex justify-between">
+<span class="">GLOW INTENSITY</span>
+<span class="text-primary-fixed">75%</span>
+</label>
+<div class="py-sm">
+<input class="w-full" max="100" min="0" type="range" value="75"/>
+</div>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-xs">Controls the bloom effect on neon accents and AI confidence bars.</p>
+</div>
+</div>
+</div>
+</div>
+<!-- Audio Settings Panel -->
+<div class="lg:col-span-4 flex flex-col gap-md">
+<div class="bg-surface-container/70 backdrop-blur-xl border-2 border-outline-variant p-md h-full">
+<div class="flex justify-between items-center mb-md border-b-2 border-outline-variant pb-sm">
+<h3 class="font-headline-md text-headline-md font-bold text-primary flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary">volume_up</span>
+                                    Sound Alerts
+                                </h3>
+<label class="toggle-switch">
+<input checked="" type="checkbox"/>
+<span class="toggle-slider"></span>
+</label>
+</div>
+<div class="flex flex-col gap-lg mt-md">
+<!-- Order Fill Volume -->
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<label class="font-body-bold text-body-bold text-on-surface">Order Fill</label>
+<span class="font-label-caps text-label-caps text-primary-fixed">VOL 80</span>
+</div>
+<input max="100" min="0" type="range" value="80"/>
+</div>
+<!-- Alert Triggered Volume -->
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<label class="font-body-bold text-body-bold text-on-surface">Alert Triggered</label>
+<span class="font-label-caps text-label-caps text-primary-fixed">VOL 100</span>
+</div>
+<input max="100" min="0" type="range" value="100"/>
+</div>
+<!-- System Error Volume -->
+<div class="flex flex-col gap-xs">
+<div class="flex justify-between items-center">
+<label class="font-body-bold text-body-bold text-error">System Error</label>
+<span class="font-label-caps text-label-caps text-error">VOL MAX</span>
+</div>
+<input max="100" min="0" style="--slider-color: theme('colors.error');" type="range" value="100"/>
+</div>
+<div class="mt-auto pt-md border-t-2 border-outline-variant">
+<button class="w-full bg-surface-container border-2 border-outline-variant py-sm font-label-caps text-label-caps text-on-surface-variant hover:bg-surface-container-highest hover:text-primary transition-colors flex items-center justify-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">play_arrow</span> TEST ALL AUDIO
+                                    </button>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Action Bar -->
+<div class="mt-md flex justify-end gap-md">
+<button class="bg-surface border-2 border-outline-variant px-lg py-sm font-body-bold text-body-bold text-on-surface hover:bg-surface-container transition-colors">
+                        CANCEL
+                    </button>
+<button class="bg-primary-fixed text-on-primary-fixed border-2 border-black px-lg py-sm font-body-bold text-body-bold shadow-[3px_3px_0px_0px_#000] hover:-translate-y-[2px] hover:-translate-x-[2px] hover:shadow-[5px_5px_0px_0px_#000] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none transition-all">
+                        APPLY SETTINGS
+                    </button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

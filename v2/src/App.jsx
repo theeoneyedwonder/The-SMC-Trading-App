@@ -1,11 +1,9 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import './App.css';
 import { useWebSocket }   from './hooks/useWebSocket';
-import { useTheme }       from './contexts/ThemeContext';
 import Setup              from './components/Setup';
 import Settings           from './components/Settings';
-import MarketPanel        from './components/MarketPanel';
 import AIPanel            from './components/AIPanel';
 import SideRail           from './components/SideRail';
 import Home               from './components/Home';
@@ -19,13 +17,21 @@ import EconomicCalendar   from './components/EconomicCalendar';
 
 const API              = 'http://127.0.0.1:8000';
 const FALLBACK_SYMBOLS = ['XAUUSDm','XAGUSDm','EURUSDm','GBPUSDm','USDJPYm','BTCUSDm','NAS100m','US30m'];
-
-const PAGE_TITLES = {
-  home: 'TERMINAL', trades: 'POSITIONS_&_HISTORY',
-  account: 'ACCOUNT', performance: 'ANALYTICS', sage: 'SAGE_AI',
-  settings: 'SETTINGS', screener: 'ASSET_SCREENER', alerts: 'ALERTS_&_NOTIFICATIONS',
-  calendar: 'ECONOMIC_CALENDAR',
+const MARKET_SYMBOL_DEFAULTS = {
+  simulated: 'XAUUSDm',
+  mt5: 'XAUUSDm',
+  oanda: 'XAU_USD',
+  tradingview: 'OANDA:XAUUSD',
 };
+
+function loadChartSymbols() {
+  try {
+    const value = JSON.parse(localStorage.getItem('qc_chart_symbols') || '{}');
+    return value && typeof value === 'object' ? value : {};
+  } catch {
+    return {};
+  }
+}
 
 // Apply persisted interface prefs immediately (module level — no hook, no
 // lifecycle delay): display density (font-scale), neon bloom (glow-scale),
@@ -38,19 +44,10 @@ if (localStorage.getItem('ui_font_family') === 'mono') {
   document.documentElement.style.setProperty('--font-ui', "'JetBrains Mono Variable','JetBrains Mono',ui-monospace,monospace");
 }
 
-function PanelIcon() {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <rect x="3" y="3" width="18" height="18" rx="2"/>
-      <line x1="15" y1="3" x2="15" y2="21"/>
-      <line x1="18" y1="8" x2="21" y2="8" opacity="0"/>
-    </svg>
-  );
-}
-
-
 export default function App() {
-  const { vars, mode, toggleMode } = useTheme();
+  const compactQuery = '(max-width: 1279px)';
+  const [compactLayout, setCompactLayout] = useState(() => window.matchMedia(compactQuery).matches);
+  const [railOpen, setRailOpen] = useState(() => !window.matchMedia(compactQuery).matches);
 
   const [configured, setConfigured] = useState(null);
   const [page, setPage]             = useState('home');
@@ -58,12 +55,85 @@ export default function App() {
   const symbolRef                   = useRef('XAUUSDm');
   const [symbols, setSymbols]       = useState(FALLBACK_SYMBOLS);
   const [changingSymbol, setChangingSymbol] = useState(false);
-  const [panelOpen, setPanelOpen]           = useState(false);
   const [aiLevels, setAiLevels]             = useState([]);
   const { data, connected, nudge }          = useWebSocket();
+  const [marketCatalog, setMarketCatalog]   = useState(null);
+  const [chartProvider, setChartProvider]   = useState(() => localStorage.getItem('qc_chart_provider') || 'simulated');
+  const [chartSymbols, setChartSymbols]     = useState(loadChartSymbols);
+
+  // Preserve usable workspace width: below the desktop breakpoint the nav
+  // becomes an overlay drawer instead of squeezing the terminal columns.
+  useEffect(() => {
+    const query = window.matchMedia(compactQuery);
+    const syncLayout = event => {
+      setCompactLayout(event.matches);
+      setRailOpen(!event.matches);
+    };
+    query.addEventListener('change', syncLayout);
+    return () => query.removeEventListener('change', syncLayout);
+  }, []);
+
+  useEffect(() => {
+    const closeOnEscape = event => {
+      if (event.key !== 'Escape') return;
+      if (compactLayout) setRailOpen(false);
+    };
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [compactLayout]);
 
   // Keep ref in sync so the symbol load effect can read current value without a closure stale
   useEffect(() => { symbolRef.current = symbol; }, [symbol]);
+
+  const loadMarketCatalog = useCallback(async () => {
+    try {
+      const response = await fetch(`${API}/market/providers`);
+      if (!response.ok) return;
+      const catalog = await response.json();
+      setMarketCatalog(catalog);
+      setChartProvider(current => {
+        const selected = catalog.providers?.find(item => item.id === current);
+        const next = selected?.available ? current : catalog.default_chart_provider;
+        localStorage.setItem('qc_chart_provider', next);
+        return next;
+      });
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    loadMarketCatalog();
+    const refresh = () => loadMarketCatalog();
+    window.addEventListener('qc-market-providers-changed', refresh);
+    return () => window.removeEventListener('qc-market-providers-changed', refresh);
+  }, [loadMarketCatalog]);
+
+  useEffect(() => {
+    if (!marketCatalog) return;
+    const localProvider = marketCatalog.default_chart_provider;
+    if (chartProvider !== localProvider) return;
+    setChartSymbols(previous => {
+      const next = { ...previous, [localProvider]: symbol };
+      localStorage.setItem('qc_chart_symbols', JSON.stringify(next));
+      return next;
+    });
+  }, [chartProvider, marketCatalog, symbol]);
+
+  const selectChartMarket = useCallback((provider, selectedSymbol) => {
+    const item = marketCatalog?.providers?.find(candidate => candidate.id === provider);
+    if (item && !item.available) return;
+    const nextSymbol = selectedSymbol
+      || chartSymbols[provider]
+      || ((provider === 'mt5' || provider === 'simulated') ? symbol : MARKET_SYMBOL_DEFAULTS[provider]);
+    setChartProvider(provider);
+    localStorage.setItem('qc_chart_provider', provider);
+    if (nextSymbol) {
+      setChartSymbols(previous => {
+        const next = { ...previous, [provider]: nextSymbol };
+        localStorage.setItem('qc_chart_symbols', JSON.stringify(next));
+        return next;
+      });
+    }
+  }, [chartSymbols, marketCatalog, symbol]);
 
   // ── Poll setup status ─────────────────────────────────────────
   useEffect(() => {
@@ -141,12 +211,8 @@ export default function App() {
   if (!configured) return <Setup onComplete={() => setConfigured(true)} />;
 
   const activeSymbol = symbol;
-
-  const topbarInitials = data?.account?.name
-    ? data.account.name.slice(0, 2).toUpperCase()
-    : data?.account?.login
-    ? String(data.account.login).slice(-2)
-    : null;
+  const chartSymbol = chartSymbols[chartProvider]
+    || ((chartProvider === 'mt5' || chartProvider === 'simulated') ? activeSymbol : MARKET_SYMBOL_DEFAULTS[chartProvider]);
 
   const disconnect = async () => {
     try { await fetch(`${API}/setup/logout`, { method: 'POST' }); } catch {}
@@ -155,7 +221,15 @@ export default function App() {
 
   return (
     <div className="app">
-      {/* ── Persistent left rail (always-visible nav) ── */}
+      {compactLayout && railOpen && (
+        <button
+          className="nav-drawer-backdrop"
+          onClick={() => setRailOpen(false)}
+          aria-label="Close navigation"
+        />
+      )}
+
+      {/* ── Persistent desktop rail / compact overlay drawer ── */}
       <SideRail
         page={page}
         setPage={setPage}
@@ -163,49 +237,22 @@ export default function App() {
         connected={connected}
         onSettingsClick={() => setPage('settings')}
         onLogout={disconnect}
+        compact={compactLayout}
+        open={railOpen}
+        onClose={() => setRailOpen(false)}
       />
 
-      {/* ── Everything right of the rail: topbar + body ── */}
+      {/* ── Full-height workspace with one floating navigation control ── */}
       <div className="app-shell">
-      {/* ── Top Bar ── */}
-      <header className="h-12 shrink-0 flex items-center justify-between px-md border-b-2 border-outline-variant bg-surface-container relative z-40">
-        <div className="flex items-center gap-md h-full">
-          <div className="flex items-center gap-xs pr-md border-r-2 border-outline-variant h-full">
-            <span className="font-label-caps text-label-caps text-on-surface-variant tracking-widest">ASSET</span>
-            <span className="font-headline-md text-headline-md font-bold text-primary-fixed glow-text-primary">{activeSymbol}</span>
-          </div>
-          <span className="font-label-caps text-label-caps text-on-surface-variant tracking-[0.2em]">{PAGE_TITLES[page] ?? ''}</span>
-        </div>
-
-        <div className="flex items-center gap-sm h-full">
-          <button
-            onClick={() => setPanelOpen(o => !o)}
-            title="Watchlist"
-            className={
-              'w-8 h-8 flex items-center justify-center border-2 transition-colors ' +
-              (panelOpen
-                ? 'border-primary-fixed-dim text-primary-fixed-dim bg-primary-fixed/10'
-                : 'border-outline-variant text-on-surface-variant hover:text-primary-fixed-dim')
-            }
-          >
-            <span className="material-symbols-outlined text-[18px]">list_alt</span>
-          </button>
-          <button
-            className="w-8 h-8 flex items-center justify-center border-2 border-outline-variant text-on-surface-variant hover:text-primary-fixed-dim transition-colors relative"
-            title="Notifications"
-          >
-            <span className="material-symbols-outlined text-[18px]">notifications</span>
-          </button>
-          {topbarInitials && (
-            <div
-              className="w-8 h-8 flex items-center justify-center bg-secondary/20 border-2 border-secondary text-secondary glow-secondary font-stat-lg text-[11px] font-bold"
-              title={data.account.name || `#${data.account.login}`}
-            >
-              {topbarInitials}
-            </div>
-          )}
-        </div>
-      </header>
+      <button
+        className="floating-hamburger-btn"
+        onClick={() => setRailOpen(open => !open)}
+        aria-label={railOpen ? 'Collapse navigation' : 'Open navigation'}
+        aria-expanded={railOpen}
+        title={railOpen ? 'Collapse navigation' : 'Open navigation'}
+      >
+        <span /><span /><span />
+      </button>
 
       {/* ── Body ── */}
       <div className="app-body">
@@ -219,7 +266,16 @@ export default function App() {
               transition={{ duration: 0.14, ease: 'easeOut' }}
               style={{ display: 'flex', flexDirection: 'column', flex: 1, overflow: 'hidden' }}
             >
-              {page === 'home'        && <Home        symbol={activeSymbol} data={data} aiLevels={aiLevels} nudge={nudge} onSelectSymbol={selectSymbol} onOpenSage={() => setPage('sage')} />}
+              {page === 'home'        && <Home
+                executionSymbol={activeSymbol}
+                chartSymbol={chartSymbol}
+                chartProvider={chartProvider}
+                marketCatalog={marketCatalog}
+                onChangeMarket={selectChartMarket}
+                data={data}
+                aiLevels={aiLevels}
+                onNavigate={setPage}
+              />}
               {page === 'trades'      && <Trades      trades={data?.trades ?? []} />}
               {page === 'account'     && <AccountMetrics account={data?.account} />}
               {page === 'performance' && <Performance />}
@@ -232,25 +288,6 @@ export default function App() {
           </AnimatePresence>
         </main>
 
-        <AnimatePresence>
-          {panelOpen && (
-            <motion.div
-              initial={{ width: 0, opacity: 0 }}
-              animate={{ width: 360, opacity: 1 }}
-              exit={{ width: 0, opacity: 0 }}
-              transition={{ type: 'spring', damping: 26, stiffness: 260 }}
-              style={{ flexShrink: 0, overflow: 'hidden' }}
-            >
-              <div style={{ width: 360, height: '100%' }}>
-                <MarketPanel
-                  symbol={activeSymbol}
-                  onSelectSymbol={selectSymbol}
-                  onClose={() => setPanelOpen(false)}
-                />
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
       </div>{/* /app-shell */}
     </div>

@@ -15,15 +15,26 @@ from config import (
     get_active_symbol, save_active_symbol,
     save_mt5_credentials, clear_mt5_credentials,
     get_risk_settings, save_risk_settings,
+    get_oanda_settings, oanda_is_configured,
+    save_oanda_settings, clear_oanda_settings,
 )
 from database import init_db
 from mt5_client import (
     connect, disconnect, get_open_trades, get_account_info,
-    is_connected, select_symbol,
+    is_connected,
     get_symbol_tick, execute_market_order, close_position, close_positions,
     get_account_snapshot, get_quote, modify_position_sltp, _mt5_lock,
 )
-from data import get_all_timeframes, get_candles
+from data import MarketDataError, get_all_timeframes, get_candle_page, get_candles, resolve_symbol
+from market_providers import (
+    MarketProviderError,
+    get_oanda_candle_page,
+    get_oanda_tick,
+    oanda_status,
+    search_oanda_symbols,
+    stream_oanda_prices,
+    validate_oanda_credentials,
+)
 from history_sync import sync_deal_history, get_history, get_performance
 from chat_memory import save_message, get_recent_messages, get_all_messages, clear_messages
 from web_search import web_search, search_enabled, TOOL_SCHEMA
@@ -335,6 +346,66 @@ class SetupRequest(BaseModel):
     password: str
     server:   str
 
+
+class OandaSettingsRequest(BaseModel):
+    account_id: str
+    access_token: str
+    environment: str = "practice"
+
+
+def _local_market_provider() -> str:
+    return "simulated" if os.environ.get("SMC_MOCK") == "1" else "mt5"
+
+
+def _market_provider_catalog() -> dict:
+    local = _local_market_provider()
+    return {
+        "default_chart_provider": local,
+        "execution_provider": local,
+        "providers": [
+            {
+                "id": "simulated",
+                "label": "QUANT_CORE Chart",
+                "short_label": "QUANT_CORE Chart",
+                "available": local == "simulated",
+                "configured": local == "simulated",
+                "mode": "analysis",
+                "supports_sage": True,
+                "description": "Native QUANT_CORE chart with Sage integration.",
+            },
+            {
+                "id": "mt5",
+                "label": "MetaTrader 5 Chart",
+                "short_label": "MetaTrader 5 Chart",
+                "available": local == "mt5" and is_configured(),
+                "configured": local == "mt5" and is_configured(),
+                "mode": "analysis",
+                "supports_sage": True,
+                "description": "Requires MetaTrader 5 on this platform to be accessed.",
+            },
+            {
+                "id": "oanda",
+                "label": "OANDA Chart",
+                "short_label": "OANDA Chart",
+                "available": oanda_is_configured(),
+                "configured": oanda_is_configured(),
+                "mode": "analysis",
+                "supports_sage": False,
+                "description": "Direct OANDA market data. Requires configuration.",
+            },
+            {
+                "id": "tradingview",
+                "label": "TradingView Port",
+                "short_label": "TradingView",
+                "available": True,
+                "configured": True,
+                "mode": "research",
+                "supports_sage": False,
+                "description": "Official TradingView-hosted research chart with TradingView data and tools; isolated from Sage and order execution.",
+            },
+        ],
+    }
+
 @app.get("/setup/check-mt5")
 def check_mt5_installed():
     """Detect whether MT5 terminal is installed on this machine."""
@@ -427,6 +498,135 @@ async def setup(req: SetupRequest):
         _wake_loop.set()  # wake bot loop so it broadcasts right away
     return {"success": True, "account": account}
 
+
+# ─── Analysis market sources ──────────────────────────────────
+@app.get("/market/providers")
+def market_providers_endpoint():
+    """Advertise analysis feeds without conflating them with order routing."""
+    return _market_provider_catalog()
+
+
+@app.get("/settings/market/oanda")
+def oanda_settings_endpoint():
+    """Return only non-secret OANDA settings. The token is never echoed."""
+    return oanda_status()
+
+
+@app.post("/settings/market/oanda")
+async def save_oanda_settings_endpoint(req: OandaSettingsRequest):
+    candidate = {
+        "account_id": req.account_id.strip(),
+        "access_token": req.access_token.strip(),
+        "environment": req.environment.strip().lower(),
+    }
+    try:
+        account = await validate_oanda_credentials(candidate)
+    except MarketProviderError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    save_oanda_settings(**candidate)
+    return {"ok": True, "configured": True, **account}
+
+
+@app.delete("/settings/market/oanda")
+def clear_oanda_settings_endpoint():
+    clear_oanda_settings()
+    return {"ok": True, "configured": False}
+
+
+@app.get("/market/search/{provider}")
+async def market_symbol_search(provider: str, q: str = "", limit: int = 40):
+    provider = provider.strip().lower()
+    if provider == "oanda":
+        try:
+            symbols = await search_oanda_symbols(q, limit)
+        except MarketProviderError as exc:
+            raise HTTPException(status_code=502, detail=str(exc)) from exc
+        return {"provider": provider, "symbols": symbols}
+    if provider == "tradingview":
+        return {
+            "provider": provider,
+            "symbols": [],
+            "detail": "TradingView symbol search is built into Research Mode.",
+        }
+    if provider not in ("mt5", "simulated"):
+        raise HTTPException(status_code=404, detail=f"Unknown market provider: {provider}")
+    actual = _local_market_provider()
+    if provider != actual:
+        raise HTTPException(status_code=409, detail=f"{provider.upper()} is not active in this runtime")
+
+    import importlib
+    local_mt5 = importlib.import_module("mt5_mock" if actual == "simulated" else "MetaTrader5")
+    if not is_connected():
+        return {"provider": provider, "symbols": []}
+    with _mt5_lock:
+        raw = local_mt5.symbols_get()
+    needle = q.strip().casefold()
+    names = [item.name for item in raw or []]
+    if needle:
+        names = sorted(names, key=lambda name: (
+            not name.casefold().startswith(needle),
+            name.casefold(),
+        ))
+        names = [name for name in names if needle in name.casefold()]
+    else:
+        names.sort()
+    symbols = [
+        {"symbol": name, "display_symbol": name, "name": name, "type": "BROKER"}
+        for name in names[: max(1, min(limit, 100))]
+    ]
+    return {"provider": provider, "symbols": symbols}
+
+
+@app.get("/market/bars/{provider}/{symbol}/{timeframe}")
+async def provider_bars_endpoint(
+    provider: str,
+    symbol: str,
+    timeframe: str,
+    limit: int = 1000,
+    before: int | None = None,
+):
+    provider = provider.strip().lower()
+    if timeframe not in TIMEFRAMES:
+        raise HTTPException(status_code=400, detail=f"Unknown timeframe: {timeframe}")
+    try:
+        if provider == "oanda":
+            return await get_oanda_candle_page(symbol, timeframe, limit, before)
+        if provider not in ("mt5", "simulated"):
+            raise HTTPException(status_code=404, detail=f"Unknown candle provider: {provider}")
+        actual = _local_market_provider()
+        if provider != actual:
+            raise HTTPException(status_code=409, detail=f"{provider.upper()} is not active in this runtime")
+        page = get_candle_page(
+            symbol=symbol,
+            timeframe_minutes=TIMEFRAMES[timeframe],
+            limit=limit,
+            before=before,
+        )
+        return {**page, "provider": actual, "display_symbol": page["symbol"]}
+    except HTTPException:
+        raise
+    except MarketDataError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+@app.get("/market/tick/{provider}/{symbol}")
+async def provider_tick_endpoint(provider: str, symbol: str):
+    provider = provider.strip().lower()
+    try:
+        if provider == "oanda":
+            return await get_oanda_tick(symbol)
+        actual = _local_market_provider()
+        if provider != actual:
+            raise HTTPException(status_code=409, detail=f"{provider.upper()} is not active in this runtime")
+        tick = get_symbol_tick(symbol)
+        if not tick:
+            raise HTTPException(status_code=502, detail=f"No live price for {symbol}")
+        return {**tick, "provider": actual, "symbol": symbol}
+    except HTTPException:
+        raise
+    except MarketProviderError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+
 # ─── Standard endpoints ───────────────────────────────────────
 @app.get("/")
 def root():
@@ -479,11 +679,14 @@ def symbols_available():
 
 @app.post("/symbol/{symbol}")
 def set_symbol(symbol: str):
-    select_symbol(symbol)
-    save_active_symbol(symbol)
+    try:
+        resolved = resolve_symbol(symbol)
+    except MarketDataError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    save_active_symbol(resolved)
     if _wake_loop:
         _wake_loop.set()
-    return {"symbol": symbol}
+    return {"symbol": resolved, "requested_symbol": symbol}
 
 @app.get("/symbols/search")
 def symbols_search(q: str = "", limit: int = 40):
@@ -543,6 +746,22 @@ def candles_endpoint(symbol: str, timeframe: str, offset: int = 0):
         }
         for _, row in df.iterrows()
     ]
+
+
+@app.get("/bars/{symbol}/{timeframe}")
+def bars_endpoint(symbol: str, timeframe: str, limit: int = 1000, before: int | None = None):
+    """Stable UTC cursor pagination used by the interactive chart."""
+    if timeframe not in TIMEFRAMES:
+        raise HTTPException(status_code=400, detail=f"Unknown timeframe: {timeframe}")
+    try:
+        return get_candle_page(
+            symbol=symbol,
+            timeframe_minutes=TIMEFRAMES[timeframe],
+            limit=limit,
+            before=before,
+        )
+    except MarketDataError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
 
 # ─── Tick & Trade ─────────────────────────────────────────────
 @app.get("/tick/{symbol}")
@@ -1138,7 +1357,10 @@ async def tick_broadcaster():
         clients = _tick_clients.get(symbol, set())
         if not clients:
             continue
-        msg  = json.dumps(tick)
+        # Tag every tick with the exact provider and subscription symbol. The
+        # chart rejects untagged/mismatched ticks to prevent cross-feed price
+        # contamination after a fast source switch.
+        msg = json.dumps({**tick, "provider": _local_market_provider(), "symbol": symbol})
         dead = set()
         for ws in list(clients):
             try:
@@ -1158,6 +1380,33 @@ async def tick_ws(websocket: WebSocket, symbol: str):
             await websocket.receive_text()
     except (WebSocketDisconnect, Exception):
         _tick_clients.get(symbol, set()).discard(websocket)
+
+
+@app.websocket("/ws/market/oanda/{symbol}")
+async def oanda_tick_ws(websocket: WebSocket, symbol: str):
+    """Relay the read-only OANDA pricing stream to the chart.
+
+    This route is intentionally OANDA-specific. Local MT5 execution quotes
+    continue to use /ws/ticks so the two identities cannot be swapped by a
+    loose provider parameter.
+    """
+    await websocket.accept()
+    try:
+        async for tick in stream_oanda_prices(symbol):
+            await websocket.send_text(json.dumps(tick))
+    except WebSocketDisconnect:
+        return
+    except MarketProviderError as exc:
+        try:
+            await websocket.send_text(json.dumps({
+                "type": "error",
+                "provider": "oanda",
+                "symbol": symbol,
+                "detail": str(exc),
+            }))
+            await websocket.close(code=1011)
+        except Exception:
+            pass
 
 # ─── Entry point ──────────────────────────────────────────────
 if __name__ == "__main__":

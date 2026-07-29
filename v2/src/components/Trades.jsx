@@ -272,7 +272,7 @@ export default function Trades({ trades }) {
   const [filter, setFilter] = useState('');
 
   return (
-    <div className="flex-1 flex flex-col gap-md p-md overflow-hidden min-h-0">
+    <div className="qc-page qc-trades flex-1 flex flex-col gap-md p-md overflow-hidden min-h-0">
       {/* Section Header & Controls */}
       <div className="flex flex-col gap-sm shrink-0">
         <h1 className="font-display-lg text-[32px] font-black text-primary uppercase border-b-2 border-outline-variant pb-xs w-max pr-lg glow-text-primary tracking-tighter">

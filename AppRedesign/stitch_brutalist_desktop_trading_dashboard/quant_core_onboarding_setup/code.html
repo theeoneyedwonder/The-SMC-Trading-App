@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Quant Core - Onboarding</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&amp;family=Inter:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"on-tertiary-fixed": "#410003", "on-secondary": "#480081", "on-primary": "#283500", error: "#ffb4ab", "on-secondary-container": "#dcb7ff", primary: "#ffffff", surface: "#131313", "on-background": "#e5e2e1", "surface-tint": "#abd600", "surface-container-low": "#1c1b1b", "error-container": "#93000a", tertiary: "#ffffff", "secondary-container": "#7701d0", "outline-variant": "#444933", "on-tertiary-fixed-variant": "#930010", "on-tertiary-container": "#c90e1e", "on-error-container": "#ffdad6", "tertiary-container": "#ffdad6", "surface-dim": "#131313", "on-secondary-fixed": "#2c0051", "on-error": "#690005", outline: "#8e9379", background: "#131313", "on-primary-fixed": "#161e00", "inverse-on-surface": "#313030", "tertiary-fixed": "#ffdad6", "surface-container-high": "#2a2a2a", "inverse-primary": "#506600", secondary: "#dcb8ff", "primary-fixed": "#c3f400", "on-secondary-fixed-variant": "#6700b5", "primary-fixed-dim": "#abd600", "inverse-surface": "#e5e2e1", "primary-container": "#c3f400", "surface-container-lowest": "#0e0e0e", "secondary-fixed-dim": "#dcb8ff", "on-surface-variant": "#c4c9ac", "surface-container-highest": "#353534", "secondary-fixed": "#efdbff", "surface-variant": "#353534", "tertiary-fixed-dim": "#ffb3ad", "on-primary-fixed-variant": "#3c4d00", "on-primary-container": "#556d00", "on-tertiary": "#680008", "surface-bright": "#3a3939", "on-surface": "#e5e2e1", "surface-container": "#201f1f"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {"margin-desktop": "24px", lg: "24px", xl: "32px", xs: "4px", gutter: "16px", unit: "4px", md: "16px", sm: "8px", "margin-mobile": "16px"}, fontFamily: {"headline-lg-mobile": ["JetBrains Mono"], "body-bold": ["Inter"], "stat-lg": ["JetBrains Mono"], "label-caps": ["JetBrains Mono"], "body-base": ["Inter"], "headline-md": ["JetBrains Mono"], "display-lg": ["JetBrains Mono"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"headline-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "800"}], "body-bold": ["14px", {lineHeight: "20px", fontWeight: "700"}], "stat-lg": ["24px", {lineHeight: "30px", fontWeight: "800"}], "label-caps": ["11px", {lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700"}], "body-base": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-md": ["20px", {lineHeight: "28px", letterSpacing: "0", fontWeight: "700"}], "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "800"}]}}}};</script>
+<style>
+        body {
+            background-color: #0D0D0D;
+            color: theme('colors.primary');
+            margin: 0;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .brutalist-border {
+            border: 2px solid #1C1C1C;
+        }
+        
+        .brutalist-shadow {
+            box-shadow: 4px 4px 0px 0px #000000;
+        }
+        
+        .brutalist-shadow-accent {
+            box-shadow: 4px 4px 0px 0px theme('colors.primary-fixed');
+        }
+
+        .glass-panel {
+            background-color: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(14px);
+            border: 2px solid #1C1C1C;
+        }
+
+        .step-indicator.active {
+            background-color: theme('colors.primary-fixed');
+            border-color: theme('colors.primary-fixed');
+        }
+        
+        .step-indicator.active .material-symbols-outlined {
+            color: theme('colors.on-primary-fixed');
+            font-variation-settings: 'FILL' 1;
+        }
+        
+        .step-indicator {
+            background-color: #141414;
+            border: 2px solid #1C1C1C;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: theme('colors.primary-fixed');
+            box-shadow: none;
+        }
+        
+        .btn-hover:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 4px 4px 0px 0px theme('colors.primary-fixed');
+        }
+        
+        .btn-hover:active {
+            transform: translate(1px, 1px);
+            box-shadow: none;
+        }
+
+        /* Hide scrollbar for clean look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0D0D0D;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1C1C1C;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="bg-[#0D0D0D] font-body-base">
+<!-- Progress Header -->
+<header class="fixed top-0 left-0 w-full h-[80px] glass-panel z-50 flex items-center justify-between px-xl">
+<div class="flex items-center gap-md">
+<div class="w-10 h-10 bg-primary-fixed flex items-center justify-center brutalist-shadow">
+<span class="material-symbols-outlined text-on-primary-fixed" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div>
+<h1 class="font-display-lg text-display-lg text-primary tracking-tighter">QUANT_CORE</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">INITIALIZATION SEQUENCE</p>
+</div>
+</div>
+<!-- Steps -->
+<div class="hidden md:flex items-center gap-lg">
+<div class="flex flex-col items-center gap-sm">
+<div class="w-8 h-8 rounded-none step-indicator flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-size: 16px;">check</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">WELCOME</span>
+</div>
+<div class="w-12 h-[2px] bg-outline-variant"></div>
+<div class="flex flex-col items-center gap-sm">
+<div class="w-8 h-8 rounded-none step-indicator active flex items-center justify-center">
+<span class="material-symbols-outlined" style="font-size: 16px;">key</span>
+</div>
+<span class="font-label-caps text-label-caps text-primary-fixed">API SETUP</span>
+</div>
+<div class="w-12 h-[2px] bg-outline-variant"></div>
+<div class="flex flex-col items-center gap-sm">
+<div class="w-8 h-8 rounded-none step-indicator flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-size: 16px;">warning</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">RISK</span>
+</div>
+<div class="w-12 h-[2px] bg-outline-variant"></div>
+<div class="flex flex-col items-center gap-sm">
+<div class="w-8 h-8 rounded-none step-indicator flex items-center justify-center">
+<span class="material-symbols-outlined text-primary" style="font-size: 16px;">psychology</span>
+</div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">SAGE AI</span>
+</div>
+</div>
+</header>
+<!-- Main Content Canvas -->
+<main class="flex-grow flex items-center justify-center pt-[80px] p-md md:p-xl">
+<div class="w-full max-w-3xl glass-panel p-xl brutalist-shadow flex flex-col gap-xl">
+<!-- Step Header -->
+<div class="border-b-2 border-outline-variant pb-md flex justify-between items-end">
+<div>
+<h2 class="font-headline-md text-headline-md text-primary mb-sm">Exchange API Connection</h2>
+<p class="font-body-base text-body-base text-on-surface-variant">Provide secure read/trade access keys for your primary execution venue.</p>
+</div>
+<div class="bg-[#141414] border-2 border-outline-variant px-md py-sm flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary-fixed" style="font-size: 18px;">lock</span>
+<span class="font-label-caps text-label-caps text-primary-fixed">ENCRYPTED LOCALLY</span>
+</div>
+</div>
+<!-- Form Area -->
+<div class="grid grid-cols-1 md:grid-cols-2 gap-xl">
+<!-- Left Col: Inputs -->
+<div class="flex flex-col gap-lg">
+<!-- Exchange Select -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-caps text-label-caps text-primary">SELECT VENUE</label>
+<div class="relative">
+<select class="w-full bg-[#141414] border-2 border-outline-variant p-md font-body-bold text-primary appearance-none cursor-pointer">
+<option>Binance</option>
+<option>Bybit</option>
+<option>Kraken Pro</option>
+<option>OKX</option>
+</select>
+<span class="material-symbols-outlined absolute right-md top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none">expand_more</span>
+</div>
+</div>
+<!-- API Key -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-caps text-label-caps text-primary">API KEY</label>
+<input class="w-full bg-[#141414] border-2 border-outline-variant p-md font-stat-lg text-stat-lg text-primary placeholder:text-on-surface-variant/50 transition-colors" placeholder="Paste your API Key..." type="text"/>
+</div>
+<!-- Secret Key -->
+<div class="flex flex-col gap-sm">
+<label class="font-label-caps text-label-caps text-primary">SECRET KEY</label>
+<div class="relative">
+<input class="w-full bg-[#141414] border-2 border-outline-variant p-md font-stat-lg text-stat-lg text-primary placeholder:text-on-surface-variant/50 transition-colors pr-[50px]" placeholder="Paste your Secret Key..." type="password"/>
+<button class="absolute right-md top-1/2 -translate-y-1/2 text-on-surface-variant hover:text-primary transition-colors">
+<span class="material-symbols-outlined">visibility_off</span>
+</button>
+</div>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-xs">* Ensure 'Enable Trading' is checked. Disable 'Withdrawals'.</p>
+</div>
+</div>
+<!-- Right Col: Info / Status -->
+<div class="flex flex-col justify-between">
+<div class="bg-[#141414] border-2 border-[#1C1C1C] p-md flex flex-col gap-md">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary" style="font-variation-settings: 'FILL' 1;">info</span>
+<span class="font-label-caps text-label-caps text-secondary">SECURITY PROTOCOL</span>
+</div>
+<ul class="font-body-base text-body-base text-on-surface-variant space-y-sm list-disc pl-md">
+<li>Keys are stored locally in your browser's encrypted vault.</li>
+<li>Quant Core never transmits secrets to our servers.</li>
+<li>IP whitelisting is recommended on your exchange.</li>
+</ul>
+</div>
+<div class="mt-lg">
+<img class="w-full h-32 object-cover border-2 border-[#1C1C1C] filter grayscale hover:grayscale-0 transition-all opacity-70" data-alt="A highly abstract, dark geometric brutalist server rack illustration with glowing neon green and deep violet lines indicating secure data transmission. The background is a solid #0D0D0D, providing a high-contrast, technical aesthetic suitable for a financial security context." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA0RG8Vv9B7omjGIzF48aOpUUCaIOBMpD6bKHoHAsvKIFQ9b8CgqKtU_c_LKfMmDrRn_DuldYw3l6MbDFLS2eWW7KNvCvmkvGYZrDVojDKKqDny7F5qkFmy2MhP7mMSICtuDpyUyLvTOPw4XDrzeissRSvl3xBdYkCeXMePz5SEnV625ZFEcFhs4n8NZzE2J2NolKe_Q94e4_G8P4AahwOgzLQIYHqq4Y-JrhTz4dlBStVf9I_2ehVqFcNWI54vgGOhkkYm38pZ2MJK"/>
+</div>
+</div>
+</div>
+<!-- Footer Actions -->
+<div class="mt-xl flex justify-between items-center pt-md border-t-2 border-outline-variant">
+<button class="font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors flex items-center gap-xs">
+<span class="material-symbols-outlined" style="font-size: 16px;">arrow_back</span> BACK
+                </button>
+<div class="flex gap-md">
+<button class="bg-[#141414] border-2 border-outline-variant text-primary px-xl py-sm font-label-caps text-label-caps hover:bg-surface-container-high transition-colors">
+                        TEST CONNECTION
+                    </button>
+<button class="bg-primary-fixed border-2 border-on-primary-fixed text-on-primary-fixed px-xl py-sm font-label-caps text-label-caps btn-hover flex items-center gap-xs transition-all">
+                        CONTINUE <span class="material-symbols-outlined" style="font-size: 16px;">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</main>
+</body></html>

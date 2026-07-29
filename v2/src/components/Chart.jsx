@@ -1,10 +1,116 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { createChart, CandlestickSeries, ColorType, LineStyle } from 'lightweight-charts';
 import { useTheme } from '../contexts/ThemeContext';
+import MarketSourcePicker from './MarketSourcePicker';
 
 const API = 'http://127.0.0.1:8000';
-const TFS = ['M1','M5','M15','M30','H1','H4','D1'];
-const TF_SECONDS = { M1:60, M5:300, M15:900, M30:1800, H1:3600, H4:14400, D1:86400, W1:604800 };
+const TFS = ['M1','M5','M15','M30','H1','H4','D1','W1','MN1'];
+const TF_LABELS = { M1:'1m', M5:'5m', M15:'15m', M30:'30m', H1:'1h', H4:'4h', D1:'D', W1:'W', MN1:'M' };
+const TF_SECONDS = { M1:60, M5:300, M15:900, M30:1800, H1:3600, H4:14400, D1:86400, W1:604800, MN1:2592000 };
+const INITIAL_BAR_LIMIT = 1000;
+const MAX_CACHED_BARS = 50000;
+const candleCache = new Map();
+
+function candleKey(provider, symbol, timeframe) {
+  return `${provider}::${symbol}::${timeframe}`;
+}
+
+function compatiblePrices(left, right) {
+  if (!(left > 0) || !(right > 0)) return false;
+  const ratio = left / right;
+  return ratio >= 0.25 && ratio <= 4;
+}
+
+function barBucketTime(timestamp, timeframe) {
+  if (timeframe === 'W1') {
+    const mondayEpoch = 4 * 86400;
+    return Math.floor((timestamp - mondayEpoch) / 604800) * 604800 + mondayEpoch;
+  }
+  if (timeframe === 'MN1') {
+    const value = new Date(timestamp * 1000);
+    return Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), 1) / 1000;
+  }
+  const seconds = TF_SECONDS[timeframe] ?? 3600;
+  return Math.floor(timestamp / seconds) * seconds;
+}
+
+function validateCandlePage(payload, expectedProvider, expectedSymbol, expectedTf) {
+  if (!payload || typeof payload !== 'object' || !Array.isArray(payload.bars)) {
+    throw new Error('Market-data provider returned a malformed response');
+  }
+  if (payload.provider !== expectedProvider) {
+    throw new Error(`Rejected ${payload.provider || 'unidentified'} provider data`);
+  }
+  if (payload.requested_symbol !== expectedSymbol) {
+    throw new Error(`Rejected stale ${payload.requested_symbol || 'unknown'} data`);
+  }
+  if (Number(payload.timeframe_minutes) !== TF_SECONDS[expectedTf] / 60) {
+    throw new Error(`Rejected stale ${expectedTf} timeframe data`);
+  }
+  if (!payload.symbol || typeof payload.symbol !== 'string') {
+    throw new Error('Market-data provider did not identify its symbol');
+  }
+
+  let previousTime = 0;
+  let previousClose = null;
+  const bars = payload.bars.map((raw) => {
+    const bar = {
+      time: Number(raw.time), open: Number(raw.open), high: Number(raw.high),
+      low: Number(raw.low), close: Number(raw.close), volume: Number(raw.volume || 0),
+    };
+    if (!Object.values(bar).every(Number.isFinite) || bar.time <= previousTime ||
+        bar.open <= 0 || bar.high <= 0 || bar.low <= 0 || bar.close <= 0 ||
+        bar.high < Math.max(bar.open, bar.close) || bar.low > Math.min(bar.open, bar.close) ||
+        bar.high < bar.low) {
+      throw new Error('Rejected invalid or unordered OHLC history');
+    }
+    if (previousClose != null && !compatiblePrices(bar.close, previousClose)) {
+      throw new Error('Rejected mixed price regimes in candle history');
+    }
+    previousTime = bar.time;
+    previousClose = bar.close;
+    return bar;
+  });
+  return { ...payload, bars };
+}
+
+async function readJsonResponse(response) {
+  let payload = null;
+  try { payload = await response.json(); } catch {}
+  if (!response.ok) {
+    throw new Error(payload?.detail || `Market-data request failed (${response.status})`);
+  }
+  return payload;
+}
+
+function retryDelay(milliseconds, signal) {
+  return new Promise((resolve, reject) => {
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException('Request aborted', 'AbortError'));
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener('abort', onAbort);
+      resolve();
+    }, milliseconds);
+    signal.addEventListener('abort', onAbort, { once: true });
+  });
+}
+
+async function fetchCandlePage(url, signal) {
+  let lastError;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const response = await fetch(url, { signal });
+      return await readJsonResponse(response);
+    } catch (error) {
+      if (error.name === 'AbortError') throw error;
+      lastError = error;
+      if (attempt < 2) await retryDelay(250 * (attempt + 1), signal);
+    }
+  }
+  throw lastError || new Error('Market-data request failed');
+}
 
 // ── Zone primitive (OB / FVG overlay) ────────────────────────────
 class ZonePrimitive {
@@ -42,13 +148,37 @@ class ZoneRenderer {
 
 // ── Drawing helpers ───────────────────────────────────────────────
 const TOOLS = [
-  { id:'cursor',    label:'Select',      icon:'↖' },
-  { id:'hline',     label:'H-Line',      icon:'—' },
-  { id:'trendline', label:'Trend Line',  icon:'╱' },
-  { id:'rect',      label:'Rectangle',   icon:'▭' },
-  { id:'fib',       label:'Fibonacci',   icon:'Φ' },
-  { id:'eraser',    label:'Eraser',      icon:'⌦' },
+  { id:'cursor',    label:'Select',             icon:'cursor' },
+  { id:'trendline', label:'Trend line',         icon:'trendline' },
+  { id:'rect',      label:'Rectangle',          icon:'rectangle' },
+  { id:'hline',     label:'Horizontal line',    icon:'hline' },
+  { id:'fib',       label:'Fibonacci retrace',  icon:'fib' },
+  { id:'eraser',    label:'Erase drawing',      icon:'eraser' },
 ];
+
+function ChartIcon({ name, size = 18 }) {
+  const common = { width:size, height:size, viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:1.6, strokeLinecap:'round', strokeLinejoin:'round', 'aria-hidden':true };
+  const shapes = {
+    plus: <><path d="M12 5v14M5 12h14" /></>,
+    cursor: <><path d="M6 3l11 9-5 .8-2.8 4.4L6 3z" /></>,
+    trendline: <><path d="M5 18L19 5" /><circle cx="5" cy="18" r="1.5" /><circle cx="19" cy="5" r="1.5" /></>,
+    rectangle: <><rect x="5" y="5" width="14" height="14" /><circle cx="5" cy="5" r="1" fill="currentColor" /><circle cx="19" cy="5" r="1" fill="currentColor" /><circle cx="5" cy="19" r="1" fill="currentColor" /><circle cx="19" cy="19" r="1" fill="currentColor" /></>,
+    hline: <><path d="M3 12h18" /><circle cx="12" cy="12" r="1.8" fill="currentColor" /></>,
+    fib: <><path d="M4 5h16M4 9h16M4 14h16M4 19h16" /><path d="M7 3v18M17 3v18" strokeDasharray="2 2" /></>,
+    eraser: <><path d="M7.2 18.5h10.4M5.3 13.8l7.7-8a2 2 0 012.8 0l2.3 2.2a2 2 0 010 2.8l-7.4 7.7H8.4l-3.1-3a1.2 1.2 0 010-1.7z" /><path d="M10 9l5 5" /></>,
+    trash: <><path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13M10 11v5M14 11v5" /></>,
+    candle: <><path d="M8 3v4M8 15v6M5.5 7h5v8h-5zM16 3v7M16 18v3M13.5 10h5v8h-5z" /></>,
+    indicators: <><path d="M4 19V9M10 19V5M16 19v-7M22 19H2" /><path d="M3 7l6-4 6 6 6-5" /></>,
+    alert: <><circle cx="12" cy="13" r="7" /><path d="M12 9v4l3 2M5 4L3 6M19 4l2 2" /></>,
+    replay: <><path d="M7 7H3v-4M4 7a9 9 0 11-1 8" /><path d="M10 9l6 4-6 4z" /></>,
+    undo: <><path d="M9 7L4 12l5 5M5 12h8a6 6 0 016 6" /></>,
+    redo: <><path d="M15 7l5 5-5 5M19 12h-8a6 6 0 00-6 6" /></>,
+    camera: <><path d="M4 7h4l1.5-2h5L16 7h4v12H4z" /><circle cx="12" cy="13" r="4" /></>,
+    fullscreen: <><path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" /></>,
+    chevron: <><path d="M8 10l4 4 4-4" /></>,
+  };
+  return <svg {...common}>{shapes[name] || shapes.cursor}</svg>;
+}
 
 function drawColor() { return localStorage.getItem('draw_color') || '#d4ff3f'; }
 function drawWidth() { return Number(localStorage.getItem('draw_width') || 2); }
@@ -208,8 +338,20 @@ function ensurePriceLine(ref, series, price) {
 // (The order ticket used to float here as an overlay; it now lives as the
 // full right-hand Order Execution Panel in Home.jsx, matching the mockup's
 // dedicated ticket column instead of a floating widget over the chart.)
-export default function Chart({ symbol, patterns, aiLevels }) {
+export default function Chart({
+  provider,
+  symbol,
+  providers,
+  executionProvider,
+  patterns,
+  aiLevels,
+  onChangeMarket,
+  onOpenMarketSettings,
+  onOpenAlerts,
+}) {
   const containerRef  = useRef(null);
+  const chartAreaRef  = useRef(null);
+  const paletteRef    = useRef(null);
   const chartRef      = useRef(null);
   const seriesRef     = useRef(null);
   const zoneRef       = useRef(null);
@@ -222,16 +364,14 @@ export default function Chart({ symbol, patterns, aiLevels }) {
   const wsRef          = useRef(null);
   const connectedAtRef = useRef(0);
   const marketOpenRef  = useRef(true);
-  const tfSecRef       = useRef(TF_SECONDS['H1']);  // kept in sync below via tf effect
   const { vars } = useTheme();
 
   const [tf, setTf]           = useState('H1');
   const [loading, setLoading] = useState(false);
   const [tool, setTool]       = useState('cursor');
-  const [lastPrice, setLastPrice] = useState(null);
 
   const [drawings, setDrawings] = useState(() => {
-    try { return JSON.parse(localStorage.getItem(`drawings_${symbol}`) || '[]'); } catch { return []; }
+    try { return JSON.parse(localStorage.getItem(`drawings_${provider}_${symbol}`) || '[]'); } catch { return []; }
   });
   const [activeDraw, setActive] = useState(null);
 
@@ -243,25 +383,83 @@ export default function Chart({ symbol, patterns, aiLevels }) {
   const aiLevelsRef    = useRef([]);
   const allCandlesRef  = useRef([]);
   const loadingMoreRef = useRef(false);
+  const requestGenerationRef = useRef(0);
+  const initialAbortRef = useRef(null);
+  const historyAbortRef = useRef(null);
+  const datasetKeyRef = useRef('');
+  const historyRef = useRef({ nextBefore: null, hasMore: false });
+  const undoStackRef = useRef([]);
+  const redoStackRef = useRef([]);
+  const paletteDragRef = useRef(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [chartReady,  setChartReady]  = useState(false);
   const [marketOpen,  setMarketOpen]  = useState(true);
-  const [mt5Connected, setMt5Connected] = useState(true);
+  const [feedConnected, setFeedConnected] = useState(true);
+  const [feedSymbol, setFeedSymbol] = useState(null);
+  const [chartError, setChartError] = useState('');
+  const [canUndo, setCanUndo] = useState(false);
+  const [canRedo, setCanRedo] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [palettePosition, setPalettePosition] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('qc_chart_tool_position') || 'null');
+      if (Number.isFinite(saved?.x) && Number.isFinite(saved?.y)) return saved;
+    } catch {}
+    return { x: 16, y: 16 };
+  });
 
   useEffect(() => { drawingsRef.current = drawings; },             [drawings]);
   useEffect(() => { activeRef.current   = activeDraw; },           [activeDraw]);
   useEffect(() => { toolRef.current     = tool; },                  [tool]);
   useEffect(() => { aiLevelsRef.current = aiLevels ?? []; },        [aiLevels]);
-  useEffect(() => { tfSecRef.current    = TF_SECONDS[tf] ?? 3600; }, [tf]);
+
+  const syncHistoryState = useCallback(() => {
+    setCanUndo(undoStackRef.current.length > 0);
+    setCanRedo(redoStackRef.current.length > 0);
+  }, []);
+
+  const commitDrawings = useCallback((change) => {
+    setDrawings(previous => {
+      const next = typeof change === 'function' ? change(previous) : change;
+      if (next === previous) return previous;
+      undoStackRef.current = [...undoStackRef.current.slice(-99), previous];
+      redoStackRef.current = [];
+      queueMicrotask(syncHistoryState);
+      return next;
+    });
+  }, [syncHistoryState]);
+
+  const undoDrawing = useCallback(() => {
+    setDrawings(current => {
+      const previous = undoStackRef.current.pop();
+      if (!previous) return current;
+      redoStackRef.current = [...redoStackRef.current.slice(-99), current];
+      queueMicrotask(syncHistoryState);
+      return previous;
+    });
+  }, [syncHistoryState]);
+
+  const redoDrawing = useCallback(() => {
+    setDrawings(current => {
+      const next = redoStackRef.current.pop();
+      if (!next) return current;
+      undoStackRef.current = [...undoStackRef.current.slice(-99), current];
+      queueMicrotask(syncHistoryState);
+      return next;
+    });
+  }, [syncHistoryState]);
 
   // Persist drawings per symbol
-  useEffect(() => { localStorage.setItem(`drawings_${symbol}`, JSON.stringify(drawings)); }, [drawings, symbol]);
+  useEffect(() => { localStorage.setItem(`drawings_${provider}_${symbol}`, JSON.stringify(drawings)); }, [drawings, provider, symbol]);
 
   // Reload drawings when symbol changes
   useEffect(() => {
-    try { setDrawings(JSON.parse(localStorage.getItem(`drawings_${symbol}`) || '[]')); }
+    try { setDrawings(JSON.parse(localStorage.getItem(`drawings_${provider}_${symbol}`) || '[]')); }
     catch { setDrawings([]); }
-  }, [symbol]);
+    undoStackRef.current = [];
+    redoStackRef.current = [];
+    syncHistoryState();
+  }, [provider, symbol, syncHistoryState]);
 
   // ── Chart init ────────────────────────────────────────────────
   useEffect(() => {
@@ -351,64 +549,164 @@ export default function Chart({ symbol, patterns, aiLevels }) {
   // ── Symbol / tf change: clear zones / price lines / live bar ──
   useEffect(() => {
     liveBarRef.current = null;
+    lastTickRef.current = 0;
     zoneRef.current?.setZones([]);
     priceLinesRef.current.forEach(pl => { try { seriesRef.current?.removePriceLine(pl); } catch {} });
     priceLinesRef.current = [];
-  }, [symbol, tf]);
+    if (priceLineRef.current) {
+      try { seriesRef.current?.removePriceLine(priceLineRef.current); } catch {}
+      priceLineRef.current = null;
+    }
+    marketOpenRef.current = true;
+    setMarketOpen(true);
+  }, [provider, symbol, tf]);
 
-  // ── Candle fetch ──────────────────────────────────────────────
-  const fetchCandles = useCallback(async () => {
-    if (!symbol || !seriesRef.current) return;
-    setLoading(true);
-    try {
-      const res  = await fetch(`${API}/candles/${symbol}/${tf}`);
-      const data = await res.json();
-      if (Array.isArray(data) && data.length && seriesRef.current) {
-        allCandlesRef.current = data;
-        liveBarRef.current = null;                          // clear before setData to avoid race
-        seriesRef.current.setData(data);
-        liveBarRef.current = { ...data[data.length - 1] }; // seed live bar from latest candle
-        lastPriceRef.current = data[data.length - 1].close;
-        setLastPrice(data[data.length - 1].close);
-        ensurePriceLine(priceLineRef, seriesRef.current, data[data.length - 1].close);
-        chartRef.current?.timeScale().fitContent();
-        syncOverlayRef.current?.();
-      }
-    } catch {}
-    finally { setLoading(false); }
-  }, [symbol, tf]);
-
+  // ── Initial candle page ───────────────────────────────────────
   useEffect(() => {
-    fetchCandles();
-    const id = setInterval(fetchCandles, 5 * 60_000); // safety sync every 5 min; live ticks handle intrabar
-    return () => clearInterval(id);
-  }, [fetchCandles]);
+    if (!chartReady || !symbol || !seriesRef.current) return undefined;
+
+    const generation = ++requestGenerationRef.current;
+    const key = candleKey(provider, symbol, tf);
+    const controller = new AbortController();
+    initialAbortRef.current?.abort();
+    historyAbortRef.current?.abort();
+    initialAbortRef.current = controller;
+    datasetKeyRef.current = key;
+    allCandlesRef.current = [];
+    historyRef.current = { nextBefore: null, hasMore: false };
+    loadingMoreRef.current = false;
+    setLoadingMore(false);
+    setFeedSymbol(null);
+    setChartError('');
+    setLoading(true);
+    seriesRef.current.setData([]);
+
+    const applyPage = (page, preserveRange = false) => {
+      if (generation !== requestGenerationRef.current || datasetKeyRef.current !== key || !seriesRef.current) return;
+      if (!page.bars.length) throw new Error(`No ${tf} history is available for ${symbol}`);
+      const oldRange = preserveRange ? chartRef.current?.timeScale().getVisibleRange() : null;
+      allCandlesRef.current = page.bars;
+      historyRef.current = { nextBefore: page.next_before, hasMore: !!page.has_more };
+      liveBarRef.current = { ...page.bars[page.bars.length - 1] };
+      const close = liveBarRef.current.close;
+      lastPriceRef.current = close;
+      seriesRef.current.setData(page.bars);
+      ensurePriceLine(priceLineRef, seriesRef.current, close);
+      setFeedSymbol(page.symbol);
+      if (oldRange) {
+        chartRef.current?.timeScale().setVisibleRange(oldRange);
+      } else {
+        const length = page.bars.length;
+        chartRef.current?.timeScale().setVisibleLogicalRange({ from: Math.max(0, length - 180), to: length + 5 });
+      }
+      syncOverlayRef.current?.();
+    };
+
+    const cached = candleCache.get(key);
+    if (cached?.bars?.length) applyPage(cached);
+
+    (async () => {
+      try {
+        const payload = await fetchCandlePage(
+          `${API}/market/bars/${encodeURIComponent(provider)}/${encodeURIComponent(symbol)}/${tf}?limit=${INITIAL_BAR_LIMIT}`,
+          controller.signal,
+        );
+        let page = validateCandlePage(payload, provider, symbol, tf);
+        if (generation !== requestGenerationRef.current || datasetKeyRef.current !== key) return;
+        if (cached?.bars?.length) {
+          const byTime = new Map(cached.bars.map(bar => [bar.time, bar]));
+          page.bars.forEach(bar => byTime.set(bar.time, bar));
+          const merged = [...byTime.values()].sort((a, b) => a.time - b.time).slice(-MAX_CACHED_BARS);
+          if (merged.every((bar, index) => index === 0 || compatiblePrices(bar.close, merged[index - 1].close))) {
+            page = {
+              ...page,
+              bars: merged,
+              next_before: cached.next_before ?? page.next_before,
+              has_more: cached.has_more ?? page.has_more,
+            };
+          }
+        }
+        candleCache.set(key, page);
+        applyPage(page, !!cached?.bars?.length);
+      } catch (error) {
+        if (error.name !== 'AbortError' && generation === requestGenerationRef.current) {
+          setChartError(error.message || 'Unable to load chart history');
+        }
+      } finally {
+        if (generation === requestGenerationRef.current) setLoading(false);
+      }
+    })();
+
+    return () => controller.abort();
+  }, [chartReady, provider, symbol, tf]);
 
   const loadMoreCandles = useCallback(async () => {
-    if (loadingMoreRef.current || !seriesRef.current) return;
+    if (loadingMoreRef.current || !seriesRef.current || !historyRef.current.hasMore) return;
     const current = allCandlesRef.current;
-    if (!current.length) return;
+    const before = historyRef.current.nextBefore;
+    if (!current.length || !before) return;
+    if (current.length >= MAX_CACHED_BARS) {
+      historyRef.current.hasMore = false;
+      setChartError(`Local history limit reached (${MAX_CACHED_BARS.toLocaleString()} bars)`);
+      return;
+    }
+    const generation = requestGenerationRef.current;
+    const key = candleKey(provider, symbol, tf);
+    const controller = new AbortController();
+    historyAbortRef.current?.abort();
+    historyAbortRef.current = controller;
     loadingMoreRef.current = true;
     setLoadingMore(true);
     try {
-      const res = await fetch(`${API}/candles/${symbol}/${tf}?offset=${current.length}`);
-      const older = await res.json();
-      if (Array.isArray(older) && older.length) {
-        const existingTimes = new Set(current.map(c => c.time));
-        const fresh = older.filter(c => !existingTimes.has(c.time));
-        if (fresh.length) {
-          const merged = [...fresh, ...current].sort((a, b) => a.time - b.time);
-          allCandlesRef.current = merged;
-          seriesRef.current.setData(merged);
+      const payload = await fetchCandlePage(
+        `${API}/market/bars/${encodeURIComponent(provider)}/${encodeURIComponent(symbol)}/${tf}?limit=${INITIAL_BAR_LIMIT}&before=${before}`,
+        controller.signal,
+      );
+      const page = validateCandlePage(payload, provider, symbol, tf);
+      if (generation !== requestGenerationRef.current || datasetKeyRef.current !== key || !seriesRef.current) return;
+
+      const firstCurrentTime = current[0].time;
+      const fresh = page.bars.filter(bar => bar.time < firstCurrentTime);
+      if (fresh.length) {
+        if (!compatiblePrices(fresh[fresh.length - 1].close, current[0].open)) {
+          throw new Error('Rejected incompatible historical price regime');
         }
+        const visibleRange = chartRef.current?.timeScale().getVisibleRange();
+        const available = MAX_CACHED_BARS - current.length;
+        const accepted = fresh.slice(-available);
+        const merged = [...accepted, ...current];
+        allCandlesRef.current = merged;
+        seriesRef.current.setData(merged);
+        if (visibleRange) chartRef.current?.timeScale().setVisibleRange(visibleRange);
+        const atLimit = merged.length >= MAX_CACHED_BARS;
+        const nextBefore = accepted[0]?.time ?? page.next_before;
+        const cachePage = { ...page, bars: merged, next_before: nextBefore, has_more: page.has_more && !atLimit };
+        candleCache.set(key, cachePage);
+      } else if (page.has_more) {
+        throw new Error('History provider returned a non-advancing cursor');
       }
-    } catch {}
-    finally { loadingMoreRef.current = false; setLoadingMore(false); }
-  }, [symbol, tf]);
+      const reachedLimit = allCandlesRef.current.length >= MAX_CACHED_BARS;
+      historyRef.current = {
+        nextBefore: allCandlesRef.current[0]?.time ?? page.next_before,
+        hasMore: !!page.has_more && fresh.length > 0 && !reachedLimit,
+      };
+      setChartError('');
+    } catch (error) {
+      if (error.name !== 'AbortError' && generation === requestGenerationRef.current) {
+        historyRef.current.hasMore = false;
+        setChartError(error.message || 'Unable to load older history');
+      }
+    } finally {
+      if (generation === requestGenerationRef.current) {
+        loadingMoreRef.current = false;
+        setLoadingMore(false);
+      }
+    }
+  }, [provider, symbol, tf]);
 
   useEffect(() => {
     if (!chartReady || !chartRef.current) return;
-    const handler = (range) => { if (range && range.from < 10) loadMoreCandles(); };
+    const handler = (range) => { if (range && range.from < 30) loadMoreCandles(); };
     chartRef.current.timeScale().subscribeVisibleLogicalRangeChange(handler);
     return () => {
       try { chartRef.current?.timeScale()?.unsubscribeVisibleLogicalRangeChange(handler); } catch {}
@@ -417,26 +715,41 @@ export default function Chart({ symbol, patterns, aiLevels }) {
 
   // ── WebSocket tick stream — push-based, as fast as MT5 delivers ─
   useEffect(() => {
-    if (!symbol) return;
+    if (!feedSymbol) return undefined;
     let ws = null;
     let reconnectTimer = null;
     let cancelled = false;
+    const generation = requestGenerationRef.current;
+    const expectedKey = candleKey(provider, symbol, tf);
 
     const connectWs = () => {
       if (cancelled) return;
-      try { ws = new WebSocket(`ws://127.0.0.1:8000/ws/ticks/${symbol}`); }
+      const socketPath = provider === 'oanda'
+        ? `/ws/market/oanda/${encodeURIComponent(feedSymbol)}`
+        : `/ws/ticks/${encodeURIComponent(feedSymbol)}`;
+      try { ws = new WebSocket(`ws://127.0.0.1:8000${socketPath}`); }
       catch { if (!cancelled) reconnectTimer = setTimeout(connectWs, 1000); return; }
       wsRef.current = ws;
 
-      ws.onopen = () => { connectedAtRef.current = Date.now(); };
+      ws.onopen = () => { connectedAtRef.current = Date.now(); setFeedConnected(true); };
 
       ws.onmessage = (e) => {
         try {
           const t = JSON.parse(e.data);
-          if (!t.bid || !t.ask) return;
+          if (cancelled || generation !== requestGenerationRef.current || datasetKeyRef.current !== expectedKey) return;
+          if (t.type === 'error') {
+            setChartError(t.detail || `${provider.toUpperCase()} price stream failed`);
+            return;
+          }
+          if (t.provider !== provider || !t.bid || !t.ask || t.symbol !== feedSymbol) return;
 
           const price   = (t.bid + t.ask) / 2;
-          const barTime = Math.floor(t.time / tfSecRef.current) * tfSecRef.current;
+          const barTime = barBucketTime(t.time, tf);
+          const reference = liveBarRef.current?.close ?? lastPriceRef.current;
+          if (reference && !compatiblePrices(price, reference)) {
+            setChartError(`Rejected incompatible live price for ${feedSymbol}`);
+            return;
+          }
           lastTickRef.current = Date.now();
 
           if (!marketOpenRef.current) { marketOpenRef.current = true; setMarketOpen(true); }
@@ -449,13 +762,21 @@ export default function Chart({ symbol, patterns, aiLevels }) {
                 : { time: barTime, open: price, high: price, low: price, close: price };
               liveBarRef.current = bar;
               seriesRef.current.update(bar);
+              const candles = allCandlesRef.current;
+              if (candles.length) {
+                const last = candles[candles.length - 1];
+                allCandlesRef.current = last.time === bar.time
+                  ? [...candles.slice(0, -1), bar]
+                  : bar.time > last.time ? [...candles, bar] : candles;
+              }
+              lastPriceRef.current = price;
             }
             ensurePriceLine(priceLineRef, seriesRef.current, price);
           }
         } catch {}
       };
 
-      ws.onclose  = () => { if (!cancelled) reconnectTimer = setTimeout(connectWs, 1000); };
+      ws.onclose  = () => { setFeedConnected(false); if (!cancelled) reconnectTimer = setTimeout(connectWs, 1000); };
       ws.onerror  = () => ws.close();
     };
 
@@ -483,7 +804,7 @@ export default function Chart({ symbol, patterns, aiLevels }) {
       clearInterval(watchdog);
       try { ws?.close(); } catch {}
     };
-  }, [symbol]);
+  }, [feedSymbol, provider, symbol, tf]);
 
   // ── Market-closed detector ────────────────────────────────────
   useEffect(() => {
@@ -496,7 +817,7 @@ export default function Chart({ symbol, patterns, aiLevels }) {
     return () => clearInterval(id);
   }, []);
 
-  // ── MT5 connection status — so a stalled feed can say WHY ──────
+  // ── Provider connection status — so a stalled feed can say WHY ─
   // Ticks going quiet is ambiguous on its own: it could be a genuinely
   // closed market (benign) or MT5/the broker actually dropping (a real
   // problem). Polling /health lets the badge tell those apart instead of
@@ -504,9 +825,13 @@ export default function Chart({ symbol, patterns, aiLevels }) {
   useEffect(() => {
     let live = true;
     const poll = () => {
-      fetch(`${API}/health`)
+      const url = provider === 'oanda' ? `${API}/settings/market/oanda` : `${API}/health`;
+      fetch(url)
         .then(r => r.ok ? r.json() : null)
-        .then(d => { if (live && d) setMt5Connected(!!d.mt5_connected); })
+        .then(d => {
+          if (!live || !d) return;
+          setFeedConnected(provider === 'oanda' ? !!d.configured : !!d.mt5_connected);
+        })
         .catch(() => {});
     };
     poll();
@@ -528,6 +853,131 @@ export default function Chart({ symbol, patterns, aiLevels }) {
     zoneRef.current.setZones([]);
   }, [patterns, tf]);
 
+  // ── Floating drawing palette ─────────────────────────────────
+  const clampPalettePosition = useCallback((position) => {
+    const area = chartAreaRef.current;
+    const palette = paletteRef.current;
+    if (!area || !palette) return position;
+    const maxX = Math.max(8, area.clientWidth - palette.offsetWidth - 8);
+    const maxY = Math.max(8, area.clientHeight - palette.offsetHeight - 8);
+    return {
+      x: Math.min(Math.max(8, position.x), maxX),
+      y: Math.min(Math.max(8, position.y), maxY),
+    };
+  }, [provider]);
+
+  const resetPalettePosition = useCallback(() => {
+    const next = clampPalettePosition({ x: 16, y: 16 });
+    setPalettePosition(next);
+    localStorage.setItem('qc_chart_tool_position', JSON.stringify(next));
+  }, [clampPalettePosition]);
+
+  const handlePalettePointerDown = useCallback((event) => {
+    if (event.button !== 0) return;
+    event.preventDefault();
+    event.stopPropagation();
+    paletteDragRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      origin: palettePosition,
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  }, [palettePosition]);
+
+  useEffect(() => {
+    const move = (event) => {
+      const drag = paletteDragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      setPalettePosition(clampPalettePosition({
+        x: drag.origin.x + event.clientX - drag.startX,
+        y: drag.origin.y + event.clientY - drag.startY,
+      }));
+    };
+    const finish = (event) => {
+      const drag = paletteDragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      paletteDragRef.current = null;
+      setPalettePosition(current => {
+        const next = clampPalettePosition(current);
+        localStorage.setItem('qc_chart_tool_position', JSON.stringify(next));
+        return next;
+      });
+    };
+    window.addEventListener('pointermove', move);
+    window.addEventListener('pointerup', finish);
+    window.addEventListener('pointercancel', finish);
+    return () => {
+      window.removeEventListener('pointermove', move);
+      window.removeEventListener('pointerup', finish);
+      window.removeEventListener('pointercancel', finish);
+    };
+  }, [clampPalettePosition]);
+
+  useEffect(() => {
+    if (!chartAreaRef.current) return undefined;
+    const observer = new ResizeObserver(() => {
+      setPalettePosition(current => clampPalettePosition(current));
+    });
+    observer.observe(chartAreaRef.current);
+    setPalettePosition(current => clampPalettePosition(current));
+    return () => observer.disconnect();
+  }, [chartReady, clampPalettePosition]);
+
+  useEffect(() => {
+    const onFullscreen = () => setIsFullscreen(document.fullscreenElement === chartAreaRef.current?.parentElement);
+    document.addEventListener('fullscreenchange', onFullscreen);
+    return () => document.removeEventListener('fullscreenchange', onFullscreen);
+  }, []);
+
+  const toggleFullscreen = useCallback(async () => {
+    const workspace = chartAreaRef.current?.parentElement;
+    if (!workspace) return;
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      else await workspace.requestFullscreen();
+    } catch {}
+  }, []);
+
+  const saveChartImage = useCallback(() => {
+    if (!chartRef.current || !overlayRef.current) return;
+    try {
+      const chartCanvas = chartRef.current.takeScreenshot();
+      const output = document.createElement('canvas');
+      output.width = chartCanvas.width;
+      output.height = chartCanvas.height;
+      const context = output.getContext('2d');
+      context.drawImage(chartCanvas, 0, 0);
+      context.drawImage(overlayRef.current, 0, 0, output.width, output.height);
+      const link = document.createElement('a');
+      link.download = `${provider}-${symbol}-${tf}-${new Date().toISOString().replace(/[:.]/g, '-')}.png`;
+      link.href = output.toDataURL('image/png');
+      link.click();
+    } catch {}
+  }, [provider, symbol, tf]);
+
+  useEffect(() => {
+    const onKeyDown = (event) => {
+      const target = event.target;
+      if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target?.isContentEditable) return;
+      const command = event.ctrlKey || event.metaKey;
+      if (command && event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) redoDrawing(); else undoDrawing();
+      } else if (command && event.key.toLowerCase() === 'y') {
+        event.preventDefault();
+        redoDrawing();
+      } else if (event.key === 'Escape') {
+        activeRef.current = null;
+        mouseStartRef.current = null;
+        setActive(null);
+        setTool('cursor');
+      }
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [redoDrawing, undoDrawing]);
+
   // ── Mouse events for drawing ──────────────────────────────────
   const getChartCoords = useCallback((clientX, clientY) => {
     if (!overlayRef.current || !chartRef.current || !seriesRef.current) return null;
@@ -548,14 +998,14 @@ export default function Chart({ symbol, patterns, aiLevels }) {
     mouseStartRef.current = pt;
 
     if (t === 'hline') {
-      setDrawings(prev => [...prev, { id: uid(), type:'hline', price: pt.price, color: drawColor(), width: drawWidth() }]);
+      commitDrawings(prev => [...prev, { id: uid(), type:'hline', price: pt.price, color: drawColor(), width: drawWidth() }]);
       mouseStartRef.current = null;
     } else {
       const draft = { id:'active', type:t, p1:{ time:pt.time, price:pt.price }, p2:{ time:pt.time, price:pt.price }, color:drawColor(), width:drawWidth() };
       activeRef.current = draft;
       setActive(draft);
     }
-  }, [getChartCoords]);
+  }, [commitDrawings, getChartCoords]);
 
   const handleMouseMove = useCallback((e) => {
     if (!mouseStartRef.current || !activeRef.current) return;
@@ -572,96 +1022,125 @@ export default function Chart({ symbol, patterns, aiLevels }) {
     const active = activeRef.current;
     if (active) {
       const same = active.p1.time === active.p2.time && active.p1.price === active.p2.price;
-      if (!same) setDrawings(prev => [...prev, { ...active, id: uid() }]);
+      if (!same) commitDrawings(prev => [...prev, { ...active, id: uid() }]);
     }
     activeRef.current = null;
     setActive(null);
     mouseStartRef.current = null;
-  }, []);
+  }, [commitDrawings]);
 
   const handleClick = useCallback((e) => {
     if (toolRef.current !== 'eraser') return;
     const pt = getChartCoords(e.clientX, e.clientY);
     if (!pt) return;
-    setDrawings(prev => {
+    commitDrawings(prev => {
       const idx = prev.findIndex(d => isHit(d, pt.x, pt.y, chartRef.current, seriesRef.current));
       if (idx < 0) return prev;
       const next = [...prev]; next.splice(idx, 1); return next;
     });
-  }, [getChartCoords]);
+  }, [commitDrawings, getChartCoords]);
 
   const cursorStyle = { cursor: tool === 'cursor' ? 'default' : tool === 'eraser' ? 'cell' : 'crosshair' };
-  const statusLabel = marketOpen ? 'LIVE' : !mt5Connected ? 'MT5 DISCONNECTED' : 'MARKET CLOSED';
+  const statusLabel = provider === 'simulated'
+    ? 'SIMULATED'
+    : marketOpen && feedConnected
+    ? `${provider.toUpperCase()} LIVE`
+    : !feedConnected
+    ? `${provider.toUpperCase()} DISCONNECTED`
+    : 'MARKET CLOSED';
 
   return (
     <>
-      <div className="h-10 shrink-0 glass-panel module-glow flex items-center gap-sm px-sm relative z-10">
-        <div className="flex items-center gap-1">
-          {TFS.map(t => (
+      <div className="qc-chart-commandbar">
+        <MarketSourcePicker
+          provider={provider}
+          symbol={symbol}
+          providers={providers}
+          executionProvider={executionProvider}
+          onChangeMarket={onChangeMarket}
+          onOpenSettings={onOpenMarketSettings}
+        />
+
+        <div className="qc-chart-command-separator" />
+
+        <div className="qc-chart-timeframes" aria-label="Chart timeframe">
+          {TFS.map(item => (
             <button
-              key={t}
-              onClick={() => setTf(t)}
-              className={
-                'px-2 py-1 text-[10px] font-bold uppercase tracking-wider border transition-all ' +
-                (tf === t
-                  ? 'text-primary-fixed bg-primary-fixed/10 border-primary-fixed/30 glow-text-primary shadow-[0_0_12px_rgba(195,244,0,0.3)]'
-                  : 'text-on-surface-variant hover:text-primary hover:bg-white/5 border-transparent')
-              }
+              key={item}
+              type="button"
+              onClick={() => setTf(item)}
+              className={'qc-chart-timeframe ' + (tf === item ? 'is-active' : '')}
+              title={item}
+              aria-pressed={tf === item}
             >
-              {t}
+              {TF_LABELS[item]}
             </button>
           ))}
+          <button className="qc-chart-icon-button is-muted" type="button" title="More timeframes" disabled>
+            <ChartIcon name="chevron" size={15} />
+          </button>
         </div>
 
-        <div className="w-px h-5 bg-white/10 shrink-0" />
+        <div className="qc-chart-command-separator" />
 
-        <div className="flex items-center gap-1">
-          {TOOLS.map(({ id, label, icon }) => (
-            <button
-              key={id}
-              title={label}
-              onClick={() => setTool(id)}
-              className={
-                'w-6 h-6 flex items-center justify-center text-[13px] font-bold border transition-all ' +
-                (tool === id
-                  ? 'text-primary-fixed bg-primary-fixed/10 border-primary-fixed/30'
-                  : 'text-on-surface-variant hover:text-primary hover:bg-white/5 border-transparent')
-              }
-            >
-              {icon}
-            </button>
-          ))}
-          {drawings.length > 0 && (
-            <button
-              title="Clear all drawings"
-              onClick={() => setDrawings([])}
-              className="w-6 h-6 flex items-center justify-center text-[13px] text-error hover:bg-error/10 transition-colors"
-            >
-              ✕
-            </button>
-          )}
-        </div>
+        <button className="qc-chart-icon-button is-active" type="button" title="Candlestick chart" aria-label="Candlestick chart">
+          <ChartIcon name="candle" size={19} />
+        </button>
+        <button className="qc-chart-action is-planned" type="button" title="Indicator manager — next analysis milestone" disabled>
+          <ChartIcon name="indicators" size={18} />
+          <span>Indicators</span>
+        </button>
 
-        {loading && <span className="font-label-caps text-[10px] text-on-surface-variant">LOADING…</span>}
-        {loadingMore && <span className="font-label-caps text-[10px] text-on-surface-variant">◂ LOADING HISTORY…</span>}
+        <div className="qc-chart-command-separator" />
 
-        <div className="ml-auto flex items-center gap-sm min-w-0">
-          <span className="font-label-caps text-[10px] hidden md:inline truncate">
-            {aiLevels?.length > 0
-              ? <span className="text-secondary">◈ SAGE LEVELS ACTIVE</span>
-              : <span className="text-on-surface-variant">RUN SAGE ANALYSIS TO MARK KEY LEVELS</span>}
-          </span>
-          <div className="flex items-center gap-xs px-sm py-xs border border-white/20 rounded-full bg-white/5 shrink-0">
-            <span className={'w-2 h-2 rounded-full ' + (marketOpen ? 'bg-primary-fixed shadow-[0_0_12px_rgba(195,244,0,0.9)] animate-pulse' : 'bg-error')} />
-            <span className={'font-label-caps text-[10px] uppercase font-bold ' + (marketOpen ? 'text-primary-fixed' : 'text-error')}>
-              {statusLabel}
-            </span>
-          </div>
-        </div>
+        <button className="qc-chart-action" type="button" title="Open alerts" onClick={onOpenAlerts} disabled={!onOpenAlerts}>
+          <ChartIcon name="alert" size={18} />
+          <span>Alert</span>
+        </button>
+        <button className="qc-chart-action is-planned" type="button" title="Market replay — planned" disabled>
+          <ChartIcon name="replay" size={18} />
+          <span>Replay</span>
+        </button>
+
+        <div className="qc-chart-command-separator" />
+
+        <button className="qc-chart-icon-button" type="button" title="Undo drawing (Ctrl+Z)" onClick={undoDrawing} disabled={!canUndo}>
+          <ChartIcon name="undo" size={17} />
+        </button>
+        <button className="qc-chart-icon-button" type="button" title="Redo drawing (Ctrl+Shift+Z)" onClick={redoDrawing} disabled={!canRedo}>
+          <ChartIcon name="redo" size={17} />
+        </button>
+
+        <div className="qc-chart-command-spacer" />
+
+        {(loading || loadingMore) && (
+          <span className="qc-chart-loading"><span className="qc-chart-spinner" />{loadingMore ? 'History' : 'Loading'}</span>
+        )}
+        {chartError && (
+          <span className="qc-chart-data-error" title={chartError}>Data: {chartError}</span>
+        )}
+        {aiLevels?.length > 0 && <span className="qc-chart-sage-state" title="Sage levels are visible">SAGE</span>}
+        <span className={'qc-chart-live-state ' + (provider === 'simulated' ? 'is-simulated' : marketOpen && feedConnected ? 'is-live' : 'is-offline')} title={statusLabel}>
+          <span />{statusLabel}
+        </span>
+        <button className="qc-chart-icon-button" type="button" title="Save chart image" onClick={saveChartImage}>
+          <ChartIcon name="camera" size={18} />
+        </button>
+        <button className="qc-chart-icon-button" type="button" title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen chart'} onClick={toggleFullscreen}>
+          <ChartIcon name="fullscreen" size={18} />
+        </button>
       </div>
 
-      <div className="relative flex-1 min-h-0">
+      <div ref={chartAreaRef} className="qc-chart-stage relative flex-1 min-h-0">
         <div ref={containerRef} className="absolute inset-0" />
+        {chartError && allCandlesRef.current.length === 0 && (
+          <div className="absolute inset-0 z-[1] flex items-center justify-center pointer-events-none">
+            <div className="qc-chart-empty-error">
+              <span>Market data unavailable</span>
+              <small>{chartError}</small>
+            </div>
+          </div>
+        )}
         <canvas
           ref={overlayRef}
           className="absolute inset-0 z-[2]"
@@ -672,6 +1151,50 @@ export default function Chart({ symbol, patterns, aiLevels }) {
           onClick={handleClick}
           onMouseLeave={handleMouseUp}
         />
+
+        <div
+          ref={paletteRef}
+          className={'qc-floating-tools ' + (paletteDragRef.current ? 'is-dragging' : '')}
+          style={{ transform: `translate3d(${palettePosition.x}px, ${palettePosition.y}px, 0)` }}
+          role="toolbar"
+          aria-label="Drawing tools"
+        >
+          <button
+            type="button"
+            className="qc-tool-grip"
+            title="Drag toolbar · double-click to reset"
+            aria-label="Move drawing toolbar"
+            onPointerDown={handlePalettePointerDown}
+            onDoubleClick={resetPalettePosition}
+          >
+            <span /><span /><span /><span /><span /><span />
+          </button>
+          <div className="qc-tool-separator" />
+          {TOOLS.map(item => (
+            <button
+              key={item.id}
+              type="button"
+              className={'qc-floating-tool-button ' + (tool === item.id ? 'is-active' : '')}
+              title={item.label}
+              aria-label={item.label}
+              aria-pressed={tool === item.id}
+              onClick={(event) => { event.stopPropagation(); setTool(item.id); }}
+            >
+              <ChartIcon name={item.icon} size={20} />
+            </button>
+          ))}
+          <div className="qc-tool-separator" />
+          <button
+            type="button"
+            className="qc-floating-tool-button is-danger"
+            title="Clear all drawings"
+            aria-label="Clear all drawings"
+            disabled={drawings.length === 0}
+            onClick={(event) => { event.stopPropagation(); commitDrawings([]); }}
+          >
+            <ChartIcon name="trash" size={19} />
+          </button>
+        </div>
       </div>
     </>
   );

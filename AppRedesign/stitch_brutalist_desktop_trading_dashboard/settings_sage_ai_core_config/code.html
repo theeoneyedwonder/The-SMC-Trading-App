@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Sage AI Core Config | QUANT_CORE</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&amp;family=JetBrains+Mono:wght@700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {secondary: "#dcb8ff", "on-primary-fixed-variant": "#3c4d00", "on-tertiary-fixed": "#410003", "surface-tint": "#abd600", tertiary: "#ffffff", "surface-container-high": "#2a2a2a", "secondary-fixed-dim": "#dcb8ff", "on-secondary-fixed-variant": "#6700b5", "on-error-container": "#ffdad6", "on-surface": "#e5e2e1", "inverse-on-surface": "#313030", "outline-variant": "#444933", "on-primary-fixed": "#161e00", "on-primary": "#283500", "primary-container": "#c3f400", background: "#131313", "tertiary-container": "#ffdad6", "surface-container": "#201f1f", "on-surface-variant": "#c4c9ac", error: "#ffb4ab", "inverse-surface": "#e5e2e1", "surface-dim": "#131313", "tertiary-fixed-dim": "#ffb3ad", primary: "#ffffff", "on-error": "#690005", "on-tertiary-fixed-variant": "#930010", "inverse-primary": "#506600", "on-background": "#e5e2e1", "surface-variant": "#353534", "surface-container-highest": "#353534", "secondary-fixed": "#efdbff", "on-tertiary-container": "#c90e1e", surface: "#131313", "on-secondary-container": "#dcb7ff", "tertiary-fixed": "#ffdad6", "on-secondary": "#480081", "surface-container-lowest": "#0e0e0e", "secondary-container": "#7701d0", "on-tertiary": "#680008", "on-primary-container": "#556d00", "surface-container-low": "#1c1b1b", outline: "#8e9379", "primary-fixed-dim": "#abd600", "error-container": "#93000a", "surface-bright": "#3a3939", "primary-fixed": "#c3f400", "on-secondary-fixed": "#2c0051"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {xl: "32px", md: "16px", "margin-mobile": "16px", gutter: "16px", xs: "4px", sm: "8px", lg: "24px", "margin-desktop": "24px", unit: "4px"}, fontFamily: {"headline-lg-mobile": ["JetBrains Mono"], "label-caps": ["JetBrains Mono"], "stat-lg": ["JetBrains Mono"], "body-bold": ["Inter"], "body-base": ["Inter"], "headline-md": ["JetBrains Mono"], "display-lg": ["JetBrains Mono"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"headline-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "800"}], "label-caps": ["11px", {lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700"}], "stat-lg": ["24px", {lineHeight: "30px", fontWeight: "800"}], "body-bold": ["14px", {lineHeight: "20px", fontWeight: "700"}], "body-base": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-md": ["20px", {lineHeight: "28px", letterSpacing: "0", fontWeight: "700"}], "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "800"}]}}}};</script>
+<style>
+        body { background-color: theme('colors.background'); color: theme('colors.on-background'); overflow: hidden; height: 100vh; }
+        .brutalist-border { border: 2px solid theme('colors.surface-highest'); }
+        .brutalist-shadow { box-shadow: 3px 3px 0px 0px #000000; }
+        .brutalist-shadow-accent { box-shadow: 3px 3px 0px 0px theme('colors.secondary'); }
+        .glass-panel { background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(14px); }
+        .sage-glow { box-shadow: 0 0 15px theme('colors.secondary-container'); }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 24px;
+            background: theme('colors.secondary');
+            cursor: pointer;
+            border: 2px solid #000;
+        }
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 24px;
+            background: theme('colors.secondary');
+            cursor: pointer;
+            border: 2px solid #000;
+        }
+        
+        /* Modal Animation */
+        #confirmation-modal.hidden { display: none; }
+        #confirmation-modal:not(.hidden) { display: flex; animation: fadeIn 0.2s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    </style>
+</head>
+<body class="flex flex-col md:flex-row h-screen font-body-base antialiased selection:bg-secondary selection:text-on-secondary-fixed">
+<!-- SideNavBar (Web Only) -->
+<nav class="hidden md:flex flex-col z-[60] bg-surface-container-lowest border-r-2 border-outline-variant shadow-[4px_0px_0px_0px_rgba(0,0,0,1)] docked left-0 h-full w-[280px]">
+<div class="p-lg border-b-2 border-outline-variant flex items-center gap-md">
+<div class="w-10 h-10 bg-surface-variant flex items-center justify-center font-display-lg text-primary">Q</div>
+<div>
+<div class="font-headline-md text-headline-md font-bold text-primary tracking-tighter">QUANT_CORE</div>
+<div class="font-label-caps text-label-caps text-on-surface-variant">v1.0.0-PRO</div>
+</div>
+</div>
+<div class="flex-1 overflow-y-auto py-md">
+<div class="px-md mb-xs font-label-caps text-label-caps text-on-surface-variant">MAIN</div>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span class="font-label-caps text-label-caps">Terminal</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="font-label-caps text-label-caps">Analytics</span>
+</a>
+<div class="px-md mt-md mb-xs font-label-caps text-label-caps text-secondary">AI CORE</div>
+<!-- ACTIVE NAV ITEM -->
+<a class="flex items-center gap-md bg-secondary-container/15 text-secondary border-l-4 border-secondary px-md py-sm hover:bg-surface-container-highest transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-label-caps text-label-caps font-bold">Sage AI</span>
+</a>
+<div class="px-md mt-md mb-xs font-label-caps text-label-caps text-on-surface-variant">ACCOUNT</div>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-caps text-label-caps">History</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+</div>
+<div class="p-md border-t-2 border-outline-variant">
+<button class="w-full bg-primary-container text-on-primary-container font-label-caps text-label-caps font-bold py-sm border-2 border-black brutalist-shadow hover:-translate-y-[2px] hover:-translate-x-[2px] hover:shadow-[5px_5px_0px_0px_#000] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none transition-all">
+                EXECUTE
+            </button>
+<div class="mt-md flex justify-between">
+<a class="flex items-center gap-xs text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]" data-icon="help">help</span>
+<span class="font-label-caps text-[9px]">Support</span>
+</a>
+<a class="flex items-center gap-xs text-on-surface-variant hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-[16px]" data-icon="sensors">sensors</span>
+<span class="font-label-caps text-[9px]">Status</span>
+</a>
+</div>
+</div>
+</nav>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col h-full overflow-hidden bg-background relative">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-lg h-[48px] z-50 bg-surface/70 backdrop-blur-xl border-b-2 border-outline-variant docked full-width top-0">
+<!-- Mobile Menu Toggle (Hidden on Desktop) -->
+<button class="md:hidden text-on-surface hover:text-primary transition-colors mr-sm">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="flex items-center gap-lg overflow-x-auto hide-scrollbar">
+<a class="text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors px-sm py-xs whitespace-nowrap active:translate-x-0.5 active:translate-y-0.5 transition-transform text-[13px]" href="#">BTC/USDT</a>
+<a class="text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors px-sm py-xs whitespace-nowrap active:translate-x-0.5 active:translate-y-0.5 transition-transform text-[13px]" href="#">ETH/USDT</a>
+<a class="text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors px-sm py-xs whitespace-nowrap active:translate-x-0.5 active:translate-y-0.5 transition-transform text-[13px]" href="#">SOL/USDT</a>
+<div class="w-px h-4 bg-outline-variant mx-xs"></div>
+<a class="text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors px-sm py-xs whitespace-nowrap active:translate-x-0.5 active:translate-y-0.5 transition-transform text-[13px]" href="#">1M</a>
+<a class="text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors px-sm py-xs whitespace-nowrap active:translate-x-0.5 active:translate-y-0.5 transition-transform text-[13px]" href="#">5M</a>
+<a class="text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors px-sm py-xs whitespace-nowrap active:translate-x-0.5 active:translate-y-0.5 transition-transform text-[13px]" href="#">15M</a>
+<a class="text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors px-sm py-xs whitespace-nowrap active:translate-x-0.5 active:translate-y-0.5 transition-transform text-[13px]" href="#">1H</a>
+</div>
+<div class="flex items-center gap-sm ml-auto text-primary-fixed dark:text-primary-fixed-dim">
+<button class="hover:bg-surface-container-high p-xs rounded transition-colors active:translate-x-0.5 active:translate-y-0.5"><span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span></button>
+<button class="hover:bg-surface-container-high p-xs rounded transition-colors active:translate-x-0.5 active:translate-y-0.5 relative"><span class="material-symbols-outlined" data-icon="notifications">notifications</span><div class="absolute top-1 right-1 w-2 h-2 bg-secondary rounded-full"></div></button>
+<button class="hover:bg-surface-container-high p-xs rounded transition-colors active:translate-x-0.5 active:translate-y-0.5"><span class="material-symbols-outlined" data-icon="account_circle">account_circle</span></button>
+</div>
+</header>
+<!-- Page Content Canvas -->
+<div class="flex-1 overflow-y-auto p-gutter md:p-margin-desktop bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-surface-variant/20 via-background to-background">
+<!-- Page Header -->
+<div class="mb-lg flex justify-between items-end border-b-2 border-outline-variant pb-sm">
+<div>
+<h1 class="font-display-lg text-display-lg text-primary flex items-center gap-sm">
+<span class="material-symbols-outlined text-secondary" data-icon="auto_awesome" data-weight="fill">auto_awesome</span>
+                        SAGE_AI_CORE
+                    </h1>
+<p class="font-label-caps text-label-caps text-secondary mt-xs tracking-widest">NEURAL EXECUTION ENGINE CONFIGURATION</p>
+</div>
+<div class="text-right">
+<span class="font-stat-lg text-stat-lg text-secondary">v2.4.1</span>
+<div class="flex items-center gap-xs justify-end mt-1">
+<div class="w-2 h-2 bg-surface-tint rounded-full animate-pulse"></div>
+<span class="font-label-caps text-[9px] text-surface-tint">SYSTEM ONLINE</span>
+</div>
+</div>
+</div>
+<!-- Dashboard Grid -->
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter md:gap-margin-desktop">
+<!-- Left Column (Main Config) -->
+<div class="col-span-1 lg:col-span-8 flex flex-col gap-gutter md:gap-margin-desktop">
+<!-- Confidence Threshold -->
+<div class="bg-surface-container p-md border-2 border-secondary brutalist-shadow-accent relative overflow-hidden group">
+<div class="absolute -right-10 -top-10 text-secondary/5 group-hover:text-secondary/10 transition-colors pointer-events-none">
+<span class="material-symbols-outlined text-[150px]" data-icon="tune">tune</span>
+</div>
+<div class="flex justify-between items-start mb-md relative z-10">
+<div>
+<h2 class="font-headline-md text-headline-md text-primary">CONFIDENCE THRESHOLD</h2>
+<p class="text-on-surface-variant font-body-base mt-1 max-w-lg">Minimum AI conviction required to signal a trade opportunity. Higher values reduce false positives but miss marginal entries.</p>
+</div>
+<div class="bg-surface p-xs border-2 border-outline-variant font-stat-lg text-stat-lg text-secondary w-20 text-center" id="confidence-display">
+                                85%
+                            </div>
+</div>
+<div class="mt-lg relative z-10">
+<input class="w-full h-2 bg-surface border-2 border-outline-variant appearance-none outline-none" id="confidence-slider" max="99" min="50" type="range" value="85"/>
+<div class="flex justify-between mt-sm font-label-caps text-label-caps text-on-surface-variant">
+<span>50% (AGGRESSIVE)</span>
+<span>75% (BALANCED)</span>
+<span class="text-secondary">99% (CONSERVATIVE)</span>
+</div>
+</div>
+</div>
+<!-- Data Sources -->
+<div class="glass-panel p-md border-2 border-outline-variant brutalist-shadow">
+<h2 class="font-headline-md text-headline-md text-primary mb-sm">DATA_INGESTION_SOURCES</h2>
+<p class="text-on-surface-variant font-body-base mb-md">Select streams for Sage AI model weighting.</p>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-sm">
+<!-- Source 1 -->
+<label class="flex items-center gap-sm p-sm bg-surface-container-low border-2 border-secondary cursor-pointer hover:bg-surface-container transition-colors brutalist-shadow">
+<input checked="" class="form-checkbox h-5 w-5 text-secondary border-2 border-outline-variant rounded-none bg-surface focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-body-bold text-primary">Order Book Depth</span>
+<span class="font-label-caps text-[9px] text-surface-tint">WEIGHT: HIGH</span>
+</div>
+</label>
+<!-- Source 2 -->
+<label class="flex items-center gap-sm p-sm bg-surface-container-low border-2 border-secondary cursor-pointer hover:bg-surface-container transition-colors brutalist-shadow">
+<input checked="" class="form-checkbox h-5 w-5 text-secondary border-2 border-outline-variant rounded-none bg-surface focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-body-bold text-primary">Whale Tracking</span>
+<span class="font-label-caps text-[9px] text-secondary">WEIGHT: MEDIUM</span>
+</div>
+</label>
+<!-- Source 3 -->
+<label class="flex items-center gap-sm p-sm bg-surface-container-low border-2 border-outline-variant cursor-pointer hover:bg-surface-container transition-colors opacity-80">
+<input class="form-checkbox h-5 w-5 text-secondary border-2 border-outline-variant rounded-none bg-surface focus:ring-0 focus:ring-offset-0" type="checkbox"/>
+<div class="flex flex-col">
+<span class="font-body-bold text-on-surface">Social Sentiment</span>
+<span class="font-label-caps text-[9px] text-on-surface-variant">WEIGHT: LOW</span>
+</div>
+</label>
+</div>
+</div>
+</div>
+<!-- Right Column (Execution & Persona) -->
+<div class="col-span-1 lg:col-span-4 flex flex-col gap-gutter md:gap-margin-desktop">
+<!-- Auto-Execution Toggle -->
+<div class="bg-surface-container-highest p-md border-2 border-outline-variant brutalist-shadow flex flex-col items-center text-center justify-center py-xl relative overflow-hidden">
+<!-- Warning stripes background -->
+<div class="absolute inset-0 opacity-10 pointer-events-none" style="background-image: repeating-linear-gradient(45deg, transparent, transparent 10px, #ffb4ab 10px, #ffb4ab 20px);"></div>
+<span class="material-symbols-outlined text-[48px] text-error mb-sm relative z-10" data-icon="warning">warning</span>
+<h2 class="font-headline-md text-headline-md text-primary relative z-10">AUTO-EXECUTION</h2>
+<p class="font-label-caps text-[10px] text-error mt-1 mb-md relative z-10 max-w-[80%]">ALLOWS SAGE AI TO PLACE MARKET ORDERS WITHOUT MANUAL CONFIRMATION</p>
+<button class="relative z-10 mt-sm bg-surface text-error font-body-bold py-sm px-lg border-2 border-error brutalist-shadow hover:-translate-y-[2px] hover:-translate-x-[2px] hover:bg-error/10 hover:shadow-[5px_5px_0px_0px_theme('colors.error')] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none transition-all flex items-center gap-sm" id="btn-toggle-auto">
+<span class="material-symbols-outlined text-[18px]" data-icon="power_settings_new">power_settings_new</span>
+                            ENABLE AUTO-TRADE
+                        </button>
+</div>
+<!-- Sage Personality -->
+<div class="bg-surface-container p-md border-2 border-outline-variant brutalist-shadow flex-1">
+<h2 class="font-headline-md text-headline-md text-primary mb-md flex items-center gap-sm">
+<span class="material-symbols-outlined" data-icon="psychology">psychology</span>
+                            SAGE_PERSONA
+                        </h2>
+<div class="flex flex-col gap-sm">
+<!-- Persona Option 1 -->
+<div class="relative">
+<input checked="" class="peer sr-only" id="persona-analytic" name="persona" type="radio"/>
+<label class="flex flex-col p-sm border-2 border-outline-variant bg-surface cursor-pointer peer-checked:border-secondary peer-checked:bg-secondary-container/10 transition-all" for="persona-analytic">
+<div class="flex justify-between items-center w-full">
+<span class="font-body-bold text-primary">Analytical (Default)</span>
+<span class="material-symbols-outlined text-secondary opacity-0 peer-checked:opacity-100" data-icon="check_circle">check_circle</span>
+</div>
+<span class="font-label-caps text-[10px] text-on-surface-variant mt-1">Focuses on structural breaks &amp; volume profile.</span>
+</label>
+</div>
+<!-- Persona Option 2 -->
+<div class="relative">
+<input class="peer sr-only" id="persona-aggressive" name="persona" type="radio"/>
+<label class="flex flex-col p-sm border-2 border-outline-variant bg-surface cursor-pointer peer-checked:border-error peer-checked:bg-error/10 transition-all" for="persona-aggressive">
+<div class="flex justify-between items-center w-full">
+<span class="font-body-bold text-primary">Aggressive</span>
+<span class="material-symbols-outlined text-error opacity-0 peer-checked:opacity-100" data-icon="local_fire_department">local_fire_department</span>
+</div>
+<span class="font-label-caps text-[10px] text-on-surface-variant mt-1">Front-runs momentum shifts. High slippage tolerance.</span>
+</label>
+</div>
+<!-- Persona Option 3 -->
+<div class="relative">
+<input class="peer sr-only" id="persona-conservative" name="persona" type="radio"/>
+<label class="flex flex-col p-sm border-2 border-outline-variant bg-surface cursor-pointer peer-checked:border-surface-tint peer-checked:bg-surface-tint/10 transition-all" for="persona-conservative">
+<div class="flex justify-between items-center w-full">
+<span class="font-body-bold text-primary">Conservative</span>
+<span class="material-symbols-outlined text-surface-tint opacity-0 peer-checked:opacity-100" data-icon="shield">shield</span>
+</div>
+<span class="font-label-caps text-[10px] text-on-surface-variant mt-1">Requires multi-timeframe alignment.</span>
+</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Save Action Row -->
+<div class="mt-xl pt-md border-t-2 border-outline-variant flex justify-end">
+<button class="bg-secondary text-on-secondary font-label-caps text-label-caps font-bold py-sm px-xl border-2 border-black brutalist-shadow hover:-translate-y-[2px] hover:-translate-x-[2px] hover:shadow-[5px_5px_0px_0px_#000] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none transition-all">
+                    DEPOY CONFIGURATION
+                </button>
+</div>
+</div>
+</main>
+<!-- Confirmation Modal Overlay -->
+<div class="hidden fixed inset-0 z-[100] bg-background/90 backdrop-blur-sm items-center justify-center p-md" id="confirmation-modal">
+<div class="bg-surface-container border-2 border-error p-xl max-w-md w-full brutalist-shadow shadow-[8px_8px_0px_0px_theme('colors.error')] relative">
+<!-- Modal Header -->
+<div class="flex items-center gap-md mb-md border-b-2 border-outline-variant pb-sm">
+<span class="material-symbols-outlined text-[32px] text-error" data-icon="dangerous">dangerous</span>
+<h3 class="font-headline-md text-headline-md text-primary">DANGER: AUTO-EXECUTION</h3>
+</div>
+<!-- Modal Body -->
+<p class="font-body-base text-on-surface mb-md">
+                You are about to grant Sage AI full autonomy to deploy capital directly to the order book without human verification.
+            </p>
+<div class="bg-surface-container-lowest p-sm border-l-4 border-error mb-lg">
+<p class="font-label-caps text-[10px] text-error leading-relaxed">
+                    THIS ACTION MAY RESULT IN SIGNIFICANT FINANCIAL LOSS DURING BLACK SWAN EVENTS. QUANT_CORE ASSUMES NO LIABILITY FOR ALGORITHMIC SLIPPAGE.
+                </p>
+</div>
+<!-- Input Confirmation -->
+<div class="mb-lg">
+<label class="font-label-caps text-[10px] text-on-surface-variant block mb-xs">TYPE 'I ACCEPT THE RISK' TO PROCEED</label>
+<input class="w-full bg-surface border-2 border-outline-variant focus:border-error focus:ring-0 text-primary font-body-bold px-sm py-xs outline-none uppercase" placeholder="..." type="text"/>
+</div>
+<!-- Modal Actions -->
+<div class="flex gap-md justify-end">
+<button class="px-md py-sm border-2 border-outline-variant text-on-surface hover:bg-surface transition-colors font-body-bold active:translate-y-[1px]" id="btn-cancel-modal">
+                    CANCEL
+                </button>
+<button class="px-md py-sm bg-error text-on-error border-2 border-black font-body-bold brutalist-shadow hover:-translate-y-[1px] hover:-translate-x-[1px] hover:shadow-[3px_3px_0px_0px_#000] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none transition-all">
+                    AUTHORIZE AI
+                </button>
+</div>
+</div>
+</div>
+<!-- Interactive Scripts -->
+<script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const slider = document.getElementById('confidence-slider');
+            const display = document.getElementById('confidence-display');
+            
+            // Slider logic
+            slider.addEventListener('input', (e) => {
+                display.textContent = e.target.value + '%';
+                // Adjust border color based on aggression
+                if(e.target.value < 65) {
+                    display.className = 'bg-surface p-xs border-2 font-stat-lg text-stat-lg w-20 text-center border-error text-error';
+                } else if (e.target.value > 85) {
+                    display.className = 'bg-surface p-xs border-2 font-stat-lg text-stat-lg w-20 text-center border-secondary text-secondary';
+                } else {
+                    display.className = 'bg-surface p-xs border-2 font-stat-lg text-stat-lg w-20 text-center border-surface-tint text-surface-tint';
+                }
+            });
+
+            // Modal logic
+            const btnToggle = document.getElementById('btn-toggle-auto');
+            const modal = document.getElementById('confirmation-modal');
+            const btnCancel = document.getElementById('btn-cancel-modal');
+
+            btnToggle.addEventListener('click', () => {
+                modal.classList.remove('hidden');
+            });
+
+            btnCancel.addEventListener('click', () => {
+                modal.classList.add('hidden');
+            });
+            
+            // Close modal on click outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        });
+    </script>
+</body></html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Economic Calendar | QUANT_CORE v1.0</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"on-tertiary-fixed": "#410003", "on-secondary": "#480081", "on-primary": "#283500", error: "#ffb4ab", "on-secondary-container": "#dcb7ff", primary: "#ffffff", surface: "#131313", "on-background": "#e5e2e1", "surface-tint": "#abd600", "surface-container-low": "#1c1b1b", "error-container": "#93000a", tertiary: "#ffffff", "secondary-container": "#7701d0", "outline-variant": "#444933", "on-tertiary-fixed-variant": "#930010", "on-tertiary-container": "#c90e1e", "on-error-container": "#ffdad6", "tertiary-container": "#ffdad6", "surface-dim": "#131313", "on-secondary-fixed": "#2c0051", "on-error": "#690005", outline: "#8e9379", background: "#131313", "on-primary-fixed": "#161e00", "inverse-on-surface": "#313030", "tertiary-fixed": "#ffdad6", "surface-container-high": "#2a2a2a", "inverse-primary": "#506600", secondary: "#dcb8ff", "primary-fixed": "#c3f400", "on-secondary-fixed-variant": "#6700b5", "primary-fixed-dim": "#abd600", "inverse-surface": "#e5e2e1", "primary-container": "#c3f400", "surface-container-lowest": "#0e0e0e", "secondary-fixed-dim": "#dcb8ff", "on-surface-variant": "#c4c9ac", "surface-container-highest": "#353534", "secondary-fixed": "#efdbff", "surface-variant": "#353534", "tertiary-fixed-dim": "#ffb3ad", "on-primary-fixed-variant": "#3c4d00", "on-primary-container": "#556d00", "on-tertiary": "#680008", "surface-bright": "#3a3939", "on-surface": "#e5e2e1", "surface-container": "#201f1f"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {"margin-desktop": "24px", lg: "24px", xl: "32px", xs: "4px", gutter: "16px", unit: "4px", md: "16px", sm: "8px", "margin-mobile": "16px"}, fontFamily: {"headline-lg-mobile": ["JetBrains Mono"], "body-bold": ["Inter"], "stat-lg": ["JetBrains Mono"], "label-caps": ["JetBrains Mono"], "body-base": ["Inter"], "headline-md": ["JetBrains Mono"], "display-lg": ["JetBrains Mono"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"headline-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "800"}], "body-bold": ["14px", {lineHeight: "20px", fontWeight: "700"}], "stat-lg": ["24px", {lineHeight: "30px", fontWeight: "800"}], "label-caps": ["11px", {lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700"}], "body-base": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-md": ["20px", {lineHeight: "28px", letterSpacing: "0", fontWeight: "700"}], "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "800"}]}}}};</script>
+<style>
+        body { margin: 0; overflow: hidden; height: 100vh; }
+        .glass-panel {
+            background: rgba(20, 20, 20, 0.7);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+        }
+        .hard-shadow { box-shadow: 4px 4px 0px 0px #000000; }
+        .hard-shadow-active:active { box-shadow: 1px 1px 0px 0px #000000; transform: translate(3px, 3px); }
+        .hard-shadow-neon { box-shadow: 4px 4px 0px 0px #c3f400; }
+        
+        /* Custom Scrollbar for brutalist aesthetic */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0D0D0D; border-left: 2px solid #353534; }
+        ::-webkit-scrollbar-thumb { background: #353534; border: 2px solid #0D0D0D; }
+        ::-webkit-scrollbar-thumb:hover { background: #c3f400; }
+    </style>
+</head>
+<body class="bg-surface text-on-surface font-body-base antialiased flex">
+<!-- SideNavBar (Shared Component) -->
+<nav class="fixed left-0 top-0 h-full flex flex-col z-[60] bg-surface-container-lowest border-r-2 border-outline-variant shadow-[4px_0px_0px_0px_rgba(0,0,0,1)] docked left-0 h-full w-[280px] hidden md:flex">
+<div class="p-lg border-b-2 border-outline-variant">
+<h1 class="font-headline-md text-headline-md font-bold text-primary">QUANT_CORE</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-xs">v1.0.0-PRO</p>
+</div>
+<div class="flex-1 overflow-y-auto py-md flex flex-col gap-sm">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="{{DATA:SCREEN:SCREEN_14}}">
+<span class="material-symbols-outlined" data-icon="terminal">terminal</span>
+<span class="font-label-caps text-label-caps">Terminal</span>
+</a>
+<a class="flex items-center gap-md bg-secondary-container/15 text-secondary border-l-4 border-secondary px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="{{DATA:SCREEN:SCREEN_24}}">
+<span class="material-symbols-outlined" data-icon="insights">insights</span>
+<span class="font-label-caps text-label-caps">Analytics</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="{{DATA:SCREEN:SCREEN_2}}">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+<span class="font-label-caps text-label-caps">Sage AI</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="{{DATA:SCREEN:SCREEN_26}}">
+<span class="material-symbols-outlined" data-icon="history">history</span>
+<span class="font-label-caps text-label-caps">History</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="{{DATA:SCREEN:SCREEN_16}}">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-label-caps text-label-caps">Settings</span>
+</a>
+</div>
+<div class="p-md border-t-2 border-outline-variant flex flex-col gap-sm">
+<button class="w-full bg-primary-container text-on-primary-container font-label-caps text-label-caps py-sm border-2 border-black hard-shadow hard-shadow-active transition-transform">
+                EXECUTE
+            </button>
+</div>
+<div class="border-t-2 border-outline-variant py-sm">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all" href="#">
+<span class="material-symbols-outlined" data-icon="sensors">sensors</span>
+<span class="font-label-caps text-label-caps">Status</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<main class="flex-1 flex flex-col md:ml-[280px] h-full overflow-hidden bg-background">
+<!-- TopNavBar (Shared Component) -->
+<header class="flex justify-between items-center w-full px-lg h-[48px] z-50 bg-surface/70 backdrop-blur-xl docked full-width top-0 border-b-2 border-outline-variant flat no shadows">
+<div class="flex items-center gap-md">
+<!-- Mobile Menu Trigger (hidden on md) -->
+<button class="md:hidden text-primary-fixed dark:text-primary-fixed-dim">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<div class="font-display-lg text-display-lg font-black text-primary-fixed dark:text-primary-fixed-dim tracking-tighter md:hidden">QC</div>
+<nav class="hidden md:flex gap-md h-full">
+<a class="flex items-center h-full text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors px-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">BTC/USDT</a>
+<a class="flex items-center h-full text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors px-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">ETH/USDT</a>
+<a class="flex items-center h-full text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors px-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">SOL/USDT</a>
+<div class="w-[2px] h-full bg-outline-variant mx-sm"></div>
+<a class="flex items-center h-full text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors px-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">1M</a>
+<a class="flex items-center h-full text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors px-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">5M</a>
+<a class="flex items-center h-full text-on-surface-variant font-medium hover:bg-surface-container-high transition-colors px-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">15M</a>
+<a class="flex items-center h-full text-primary-fixed font-bold border-b-2 border-primary-fixed px-sm active:translate-x-0.5 active:translate-y-0.5 transition-transform" href="#">1H</a>
+</nav>
+</div>
+<div class="flex items-center gap-sm">
+<button class="text-primary-fixed dark:text-primary-fixed-dim p-sm hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined" data-icon="account_balance_wallet">account_balance_wallet</span>
+</button>
+<button class="text-primary-fixed dark:text-primary-fixed-dim p-sm hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</button>
+<button class="text-primary-fixed dark:text-primary-fixed-dim p-sm hover:bg-surface-container-high transition-colors">
+<span class="material-symbols-outlined" data-icon="account_circle">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="flex-1 overflow-y-auto p-lg md:p-xl flex flex-col gap-lg">
+<!-- Page Header -->
+<div class="flex flex-col md:flex-row justify-between items-start md:items-end border-b-2 border-surface-variant pb-md">
+<div>
+<h2 class="font-stat-lg text-stat-lg text-primary uppercase tracking-tighter">Economic Calendar</h2>
+<p class="font-body-base text-on-surface-variant mt-xs">High-impact macroeconomic event tracker.</p>
+</div>
+<!-- Filter Tabs -->
+<div class="flex gap-xs mt-md md:mt-0 bg-surface-container-low p-xs border-2 border-outline-variant hard-shadow">
+<button class="px-md py-xs font-label-caps text-label-caps bg-secondary-container/20 text-secondary border-b-2 border-secondary">Today</button>
+<button class="px-md py-xs font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors">Tomorrow</button>
+<button class="px-md py-xs font-label-caps text-label-caps text-on-surface-variant hover:text-primary transition-colors">This Week</button>
+</div>
+</div>
+<!-- Calendar Table Module -->
+<div class="glass-panel border-2 border-outline-variant hard-shadow flex-1 flex flex-col overflow-hidden">
+<!-- Table Header -->
+<div class="grid grid-cols-12 gap-sm p-sm border-b-2 border-outline-variant bg-surface-container-highest font-label-caps text-label-caps text-on-surface-variant">
+<div class="col-span-2 md:col-span-1">Time</div>
+<div class="col-span-2 md:col-span-1 text-center">Impact</div>
+<div class="col-span-8 md:col-span-4">Event</div>
+<div class="col-span-4 md:col-span-2 text-right hidden md:block">Actual</div>
+<div class="col-span-4 md:col-span-2 text-right hidden md:block">Forecast</div>
+<div class="col-span-4 md:col-span-2 text-right hidden md:block">Previous</div>
+</div>
+<!-- Table Body -->
+<div class="flex-1 overflow-y-auto">
+<!-- Row: High Impact (Past) -->
+<div class="grid grid-cols-12 gap-sm p-sm border-b-2 border-surface-variant items-center hover:bg-surface-container-high transition-colors">
+<div class="col-span-2 md:col-span-1 font-label-caps text-on-surface">08:30</div>
+<div class="col-span-2 md:col-span-1 flex justify-center">
+<div class="w-3 h-3 bg-error border-2 border-error-container hard-shadow-neon" title="High Impact"></div>
+</div>
+<div class="col-span-8 md:col-span-4 font-body-bold text-primary truncate">Core CPI (MoM) (Oct)</div>
+<div class="col-span-4 md:col-span-2 text-right font-headline-md text-headline-md text-error hidden md:block">0.3%</div>
+<div class="col-span-4 md:col-span-2 text-right font-headline-md text-headline-md text-on-surface-variant hidden md:block">0.3%</div>
+<div class="col-span-4 md:col-span-2 text-right font-headline-md text-headline-md text-on-surface-variant hidden md:block">0.3%</div>
+</div>
+<!-- Row: Med Impact (Upcoming) -->
+<div class="grid grid-cols-12 gap-sm p-sm border-b-2 border-surface-variant items-center hover:bg-surface-container-high transition-colors bg-secondary-container/5 border-l-4 border-l-secondary">
+<div class="col-span-2 md:col-span-1 font-label-caps text-on-surface">14:00</div>
+<div class="col-span-2 md:col-span-1 flex justify-center">
+<div class="w-3 h-3 bg-secondary border-2 border-secondary-container hard-shadow" title="Medium Impact"></div>
+</div>
+<div class="col-span-8 md:col-span-4 font-body-bold text-primary truncate">FOMC Member Waller Speaks</div>
+<div class="col-span-4 md:col-span-2 text-right font-headline-md text-headline-md text-on-surface-variant hidden md:block">--</div>
+<div class="col-span-4 md:col-span-2 text-right font-headline-md text-headline-md text-on-surface-variant hidden md:block">--</div>
+<div class="col-span-4 md:col-span-2 text-right font-headline-md text-headline-md text-on-surface-variant hidden md:block">--</div>
+</div>
+<!-- Row: Low Impact -->
+<div class="grid grid-cols-12 gap-sm p-sm border-b-2 border-surface-variant items-center hover:bg-surface-container-high transition-colors opacity-70">
+<div class="col-span-2 md:col-span-1 font-label-caps text-on-surface">15:30</div>
+<div class="col-span-2 md:col-span-1 flex justify-center">
+<div class="w-3 h-3 bg-surface-tint border-2 border-outline-variant" title="Low Impact"></div>
+</div>
+<div class="col-span-8 md:col-span-4 font-body-bold text-primary truncate">Crude Oil Inventories</div>
+<div class="col-span-4 md:col-span-2 text-right font-headline-md text-headline-md text-on-surface-variant hidden md:block">--</div>
+<div class="col-span-4 md:col-span-2 text-right font-headline-md text-headline-md text-on-surface-variant hidden md:block">-0.5M</div>
+<div class="col-span-4 md:col-span-2 text-right font-headline-md text-headline-md text-on-surface-variant hidden md:block">2.1M</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</body></html>
