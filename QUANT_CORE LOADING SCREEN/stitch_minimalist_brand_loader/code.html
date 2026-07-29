@@ -1,0 +1,175 @@
+<!DOCTYPE html><html lang="en" class="dark" style=""><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=block" rel="stylesheet"><link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin=""><link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;600;700&amp;family=JetBrains+Mono:wght@500&amp;display=swap" rel="stylesheet"><script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script><script id="tailwind-config">try{
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "outline-variant": "#444933",
+                      "primary-fixed-dim": "#abd600",
+                      "on-primary": "#283500",
+                      "surface-container-lowest": "#0e0e0e",
+                      "surface-container-highest": "#353534",
+                      "outline": "#8e9379",
+                      "primary-fixed": "#c3f400",
+                      "secondary-fixed-dim": "#c8c6c5",
+                      "on-secondary-fixed-variant": "#474746",
+                      "tertiary-fixed-dim": "#97cfe2",
+                      "on-tertiary": "#003642",
+                      "error-container": "#93000a",
+                      "surface-container-high": "#2a2a2a",
+                      "on-background": "#e5e2e1",
+                      "on-secondary-container": "#b7b5b4",
+                      "on-surface": "#e5e2e1",
+                      "on-tertiary-container": "#336b7d",
+                      "background": "#131313",
+                      "inverse-on-surface": "#313030",
+                      "surface-tint": "#abd600",
+                      "pure-white": "#ffffff",
+                      "tertiary": "#ffffff",
+                      "charcoal-surface": "#1a1a1a",
+                      "subtle-gray": "#888888",
+                      "on-primary-fixed": "#161f00",
+                      "surface": "#131313",
+                      "surface-variant": "#353534",
+                      "secondary": "#c8c6c5",
+                      "on-error-container": "#ffdad6",
+                      "on-primary-container": "#556d00",
+                      "primary": "#ffffff",
+                      "surface-dim": "#131313",
+                      "on-secondary": "#313030",
+                      "inverse-surface": "#e5e2e1",
+                      "on-primary-fixed-variant": "#3c4d00",
+                      "neon-lime": "#c3f400",
+                      "secondary-container": "#474746",
+                      "inverse-primary": "#506600",
+                      "primary-container": "#c3f400",
+                      "surface-bright": "#3a3939",
+                      "on-tertiary-fixed": "#001f27",
+                      "on-surface-variant": "#c4c9ad",
+                      "on-secondary-fixed": "#1c1b1b",
+                      "secondary-fixed": "#e5e2e1",
+                      "tertiary-fixed": "#b3ebff",
+                      "on-tertiary-fixed-variant": "#094d5e",
+                      "surface-container-low": "#1c1b1b",
+                      "error": "#ffb4ab",
+                      "on-error": "#690005",
+                      "tertiary-container": "#b3ebff",
+                      "surface-container": "#201f1f"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "spacing": {
+                      "gutter-desktop": "24px",
+                      "unit": "4px",
+                      "margin-mobile": "16px",
+                      "margin-desktop": "48px",
+                      "container-max-width": "1280px"
+              },
+              "fontFamily": {
+                      "display-lg": [
+                              "Geist"
+                      ],
+                      "label-mono": [
+                              "JetBrains Mono"
+                      ],
+                      "body-sm": [
+                              "Geist"
+                      ],
+                      "body-md": [
+                              "Geist"
+                      ],
+                      "headline-lg-mobile": [
+                              "Geist"
+                      ],
+                      "headline-lg": [
+                              "Geist"
+                      ]
+              },
+              "fontSize": {
+                      "display-lg": [
+                              "64px",
+                              {
+                                      "lineHeight": "72px",
+                                      "letterSpacing": "-0.04em",
+                                      "fontWeight": "700"
+                              }
+                      ],
+                      "label-mono": [
+                              "12px",
+                              {
+                                      "lineHeight": "16px",
+                                      "letterSpacing": "0.05em",
+                                      "fontWeight": "500"
+                              }
+                      ],
+                      "body-sm": [
+                              "14px",
+                              {
+                                      "lineHeight": "20px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "body-md": [
+                              "16px",
+                              {
+                                      "lineHeight": "24px",
+                                      "letterSpacing": "0em",
+                                      "fontWeight": "400"
+                              }
+                      ],
+                      "headline-lg-mobile": [
+                              "24px",
+                              {
+                                      "lineHeight": "32px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ],
+                      "headline-lg": [
+                              "32px",
+                              {
+                                      "lineHeight": "40px",
+                                      "letterSpacing": "-0.02em",
+                                      "fontWeight": "600"
+                              }
+                      ]
+              }
+      },
+          },
+        }
+      }catch(_e){}</script><meta charset="utf-8"></head><body class="bg-charcoal-surface text-on-surface h-screen w-screen flex flex-col justify-center items-center overflow-hidden font-body-md antialiased selection:bg-neon-lime selection:text-charcoal-surface">
+<!-- Main Content Canvas (No Nav Shell for transactional/loading screen) -->
+<main class="flex flex-col items-center justify-center relative z-10 w-full max-w-sm px-margin-mobile text-center">
+<!-- Animated Logo -->
+<!-- STITCH_SVG_START:ANIMATION_3 class="w-32 h-32 mb-8 drop-shadow-[0_0_15px_rgba(195,244,0,0.3)] transition-transform duration-700 ease-out hover:scale-105" --><div class="w-32 h-32 mb-8 drop-shadow-[0_0_15px_rgba(195,244,0,0.3)] transition-transform duration-700 ease-out hover:scale-105" id="animated-svg-ANIMATION_3" style="display:block;"><svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+<defs>
+<style>
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); opacity: 1; }
+        50% { transform: scale(1.05); opacity: 0.8; }
+      }
+      .logo-pulse {
+        animation: pulse 3s ease-in-out infinite;
+        transform-origin: center;
+      }
+    </style>
+</defs>
+<rect fill="none" height="32" width="32"></rect>
+<g class="logo-pulse">
+<rect fill="#c3f400" height="10" width="20" x="6" y="16"></rect>
+<rect fill="none" height="20" stroke="#c3f400" stroke-width="2.6" width="20" x="6" y="6"></rect>
+</g>
+</svg></div><!-- STITCH_SVG_END:ANIMATION_3 -->
+<!-- Brand Name (Optional, but adds to the identity) -->
+<h1 class="font-display-lg text-display-lg text-pure-white tracking-tight mb-2">QUANT_CORE</h1>
+<!-- Tagline -->
+<p class="font-body-md text-body-md text-subtle-gray mb-12 pulse-text tracking-wide uppercase text-sm">
+            The SMC TRADING APP</p>
+<!-- Loading Indicator -->
+<div class="relative flex justify-center items-center">
+</div></main></body></html>

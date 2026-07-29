@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Asset Screener Config - QUANT_CORE v1.0</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&amp;family=Inter:wght@400;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {secondary: "#dcb8ff", "on-primary-fixed-variant": "#3c4d00", "on-tertiary-fixed": "#410003", "surface-tint": "#abd600", tertiary: "#ffffff", "surface-container-high": "#2a2a2a", "secondary-fixed-dim": "#dcb8ff", "on-secondary-fixed-variant": "#6700b5", "on-error-container": "#ffdad6", "on-surface": "#e5e2e1", "inverse-on-surface": "#313030", "outline-variant": "#444933", "on-primary-fixed": "#161e00", "on-primary": "#283500", "primary-container": "#c3f400", background: "#131313", "tertiary-container": "#ffdad6", "surface-container": "#201f1f", "on-surface-variant": "#c4c9ac", error: "#ffb4ab", "inverse-surface": "#e5e2e1", "surface-dim": "#131313", "tertiary-fixed-dim": "#ffb3ad", primary: "#ffffff", "on-error": "#690005", "on-tertiary-fixed-variant": "#930010", "inverse-primary": "#506600", "on-background": "#e5e2e1", "surface-variant": "#353534", "surface-container-highest": "#353534", "secondary-fixed": "#efdbff", "on-tertiary-container": "#c90e1e", surface: "#131313", "on-secondary-container": "#dcb7ff", "tertiary-fixed": "#ffdad6", "on-secondary": "#480081", "surface-container-lowest": "#0e0e0e", "secondary-container": "#7701d0", "on-tertiary": "#680008", "on-primary-container": "#556d00", "surface-container-low": "#1c1b1b", outline: "#8e9379", "primary-fixed-dim": "#abd600", "error-container": "#93000a", "surface-bright": "#3a3939", "primary-fixed": "#c3f400", "on-secondary-fixed": "#2c0051"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {xl: "32px", md: "16px", "margin-mobile": "16px", gutter: "16px", xs: "4px", sm: "8px", lg: "24px", "margin-desktop": "24px", unit: "4px"}, fontFamily: {"headline-lg-mobile": ["JetBrains Mono"], "label-caps": ["JetBrains Mono"], "stat-lg": ["JetBrains Mono"], "body-bold": ["Inter"], "body-base": ["Inter"], "headline-md": ["JetBrains Mono"], "display-lg": ["JetBrains Mono"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"headline-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "800"}], "label-caps": ["11px", {lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700"}], "stat-lg": ["24px", {lineHeight: "30px", fontWeight: "800"}], "body-bold": ["14px", {lineHeight: "20px", fontWeight: "700"}], "body-base": ["14px", {lineHeight: "20px", fontWeight: "400"}], "headline-md": ["20px", {lineHeight: "28px", letterSpacing: "0", fontWeight: "700"}], "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "800"}]}}}};</script>
+<style>
+        body { margin: 0; overflow: hidden; }
+        /* Custom scrollbar for deep tech feel */
+        ::-webkit-scrollbar { width: 4px; height: 4px; }
+        ::-webkit-scrollbar-track { background: #0e0e0e; }
+        ::-webkit-scrollbar-thumb { background: #353534; }
+        ::-webkit-scrollbar-thumb:hover { background: #8e9379; }
+        
+        /* Hard shadows for the brutalist theme */
+        .hard-shadow { box-shadow: 3px 3px 0px 0px #000000; }
+        .hard-shadow-accent { box-shadow: 3px 3px 0px 0px #c3f400; }
+        .hard-shadow-violet { box-shadow: 3px 3px 0px 0px #7701d0; }
+        
+        /* Glassmorphism utility */
+        .glass-panel { background: rgba(20, 20, 20, 0.7); backdrop-filter: blur(14px); }
+        
+        /* Range slider styling */
+        input[type=range] {
+            -webkit-appearance: none;
+            width: 100%;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 16px;
+            width: 16px;
+            background: #c3f400;
+            cursor: pointer;
+            border: 2px solid #131313;
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: #353534;
+        }
+        
+        /* Checkbox styling */
+        .tech-checkbox {
+            appearance: none;
+            background-color: #141414;
+            margin: 0;
+            font: inherit;
+            color: currentColor;
+            width: 1.15em;
+            height: 1.15em;
+            border: 2px solid #444933;
+            display: grid;
+            place-content: center;
+        }
+        .tech-checkbox::before {
+            content: "";
+            width: 0.65em;
+            height: 0.65em;
+            transform: scale(0);
+            transition: 120ms transform ease-in-out;
+            box-shadow: inset 1em 1em #c3f400;
+        }
+        .tech-checkbox:checked::before {
+            transform: scale(1);
+        }
+        .tech-checkbox:focus {
+            outline: 2px solid #c3f400;
+            outline-offset: max(2px, 0.15em);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-background h-screen flex overflow-hidden">
+<!-- SideNavBar -->
+<nav class="hidden md:flex flex-col docked left-0 h-full w-[280px] bg-surface-container-lowest border-r-2 border-outline-variant shadow-[4px_0px_0px_0px_rgba(0,0,0,1)] z-[60] fixed top-0 left-0">
+<!-- Header -->
+<div class="flex items-center gap-md px-lg py-lg border-b-2 border-outline-variant mb-md">
+<div class="w-10 h-10 bg-surface-variant flex items-center justify-center border-2 border-outline-variant">
+<span class="material-symbols-outlined text-primary-fixed" style="font-variation-settings: 'FILL' 1;">terminal</span>
+</div>
+<div>
+<h1 class="font-headline-md text-headline-md font-bold text-primary tracking-tighter">QUANT_CORE</h1>
+<p class="font-label-caps text-label-caps text-on-surface-variant">v1.0.0-PRO</p>
+</div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 overflow-y-auto py-sm flex flex-col gap-xs">
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined">terminal</span>
+<span class="font-body-bold text-body-bold">Terminal</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined">insights</span>
+<span class="font-body-bold text-body-bold">Analytics</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined text-secondary">auto_awesome</span>
+<span class="font-body-bold text-body-bold text-secondary">Sage AI</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined">history</span>
+<span class="font-body-bold text-body-bold">History</span>
+</a>
+<!-- Active State -->
+<a class="flex items-center gap-md bg-secondary-container/15 text-secondary border-l-4 border-secondary px-md py-sm hover:bg-surface-container-highest hover:text-primary transition-all active:scale-95 duration-75" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-body-bold text-body-bold">Settings</span>
+</a>
+</div>
+<!-- CTA -->
+<div class="px-md py-lg border-t-2 border-outline-variant">
+<button class="w-full bg-primary-fixed text-on-primary-fixed font-label-caps text-label-caps py-sm border-2 border-on-primary-fixed hard-shadow hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all">EXECUTE</button>
+</div>
+<!-- Footer Links -->
+<div class="flex flex-col gap-xs px-md py-sm pb-lg">
+<a class="flex items-center gap-md text-on-surface-variant px-sm py-xs hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">help</span>
+<span class="font-label-caps text-label-caps">Support</span>
+</a>
+<a class="flex items-center gap-md text-on-surface-variant px-sm py-xs hover:text-primary transition-colors" href="#">
+<span class="material-symbols-outlined text-sm">sensors</span>
+<span class="font-label-caps text-label-caps">Status</span>
+</a>
+</div>
+</nav>
+<!-- Main Content Canvas -->
+<div class="flex-1 flex flex-col md:ml-[280px] h-screen overflow-hidden">
+<!-- TopNavBar -->
+<header class="flex justify-between items-center w-full px-lg h-[48px] z-50 bg-surface/70 backdrop-blur-xl border-b-2 border-outline-variant flex-shrink-0">
+<!-- Left: Ticker Search/Links -->
+<div class="flex items-center gap-md overflow-x-auto no-scrollbar">
+<div class="flex items-center gap-xs text-on-surface-variant font-medium">
+<span class="material-symbols-outlined text-sm">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-sm w-24 p-0 font-body-base text-body-base text-primary placeholder-on-surface-variant outline-none" placeholder="Ticker..." type="text"/>
+</div>
+<div class="h-4 w-px bg-outline-variant mx-sm"></div>
+<div class="flex items-center gap-md">
+<a class="font-body-bold text-body-bold text-on-surface-variant hover:bg-surface-container-high transition-colors px-xs py-xs" href="#">BTC/USDT</a>
+<a class="font-body-bold text-body-bold text-on-surface-variant hover:bg-surface-container-high transition-colors px-xs py-xs" href="#">ETH/USDT</a>
+<a class="font-body-bold text-body-bold text-on-surface-variant hover:bg-surface-container-high transition-colors px-xs py-xs" href="#">SOL/USDT</a>
+</div>
+</div>
+<!-- Right: Actions -->
+<div class="flex items-center gap-md flex-shrink-0 ml-auto">
+<button class="text-primary-fixed dark:text-primary-fixed-dim hover:bg-surface-container-high transition-colors p-xs rounded-none active:translate-x-0.5 active:translate-y-0.5 transition-transform">
+<span class="material-symbols-outlined">account_balance_wallet</span>
+</button>
+<button class="text-primary-fixed dark:text-primary-fixed-dim hover:bg-surface-container-high transition-colors p-xs rounded-none active:translate-x-0.5 active:translate-y-0.5 transition-transform">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="text-primary-fixed dark:text-primary-fixed-dim hover:bg-surface-container-high transition-colors p-xs rounded-none active:translate-x-0.5 active:translate-y-0.5 transition-transform">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<!-- Main Dashboard Area -->
+<main class="flex-1 overflow-y-auto p-gutter md:p-margin-desktop bg-surface-dim relative">
+<div class="flex items-center justify-between mb-lg">
+<div>
+<h2 class="font-display-lg text-display-lg text-primary">Asset Screener Config</h2>
+<p class="font-body-base text-body-base text-on-surface-variant mt-xs">Configure Smart Money Concepts (SMC) detection parameters.</p>
+</div>
+<button class="bg-primary-container text-on-primary-container font-label-caps text-label-caps px-lg py-sm border-2 border-on-primary-fixed hard-shadow-accent hover:translate-x-[-2px] hover:translate-y-[-2px] active:translate-x-[1px] active:translate-y-[1px] active:shadow-none transition-all flex items-center gap-xs">
+<span class="material-symbols-outlined text-[16px]">save</span>
+                    APPLY CONFIG
+                </button>
+</div>
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
+<!-- Left Column: Sensitivity & Core Params -->
+<div class="lg:col-span-8 flex flex-col gap-gutter">
+<!-- Sensitivity Panel -->
+<div class="bg-surface-container-low border-2 border-outline-variant p-md relative overflow-hidden">
+<!-- Decorative corner -->
+<div class="absolute top-0 right-0 w-8 h-8 border-l-2 border-b-2 border-outline-variant bg-surface-container flex items-center justify-center">
+<span class="material-symbols-outlined text-[14px] text-on-surface-variant">tune</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-secondary border-b-2 border-outline-variant pb-xs mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-secondary">radar</span>
+                            Signal Detection Sensitivity
+                        </h3>
+<div class="space-y-lg">
+<!-- FVG Config -->
+<div>
+<div class="flex justify-between items-end mb-sm">
+<div>
+<label class="font-body-bold text-body-bold text-primary">Fair Value Gap (FVG)</label>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-1">Minimum pip displacement to qualify</p>
+</div>
+<span class="font-stat-lg text-stat-lg text-primary-fixed">15 pips</span>
+</div>
+<input class="w-full" max="50" min="5" type="range" value="15"/>
+<div class="flex justify-between font-label-caps text-label-caps text-on-surface-variant mt-1">
+<span class="">Sensitive (5)</span>
+<span class="">Strict (50)</span>
+</div>
+</div>
+<!-- Order Block Config -->
+<div>
+<div class="flex justify-between items-end mb-sm">
+<div>
+<label class="font-body-bold text-body-bold text-primary">Order Blocks (OB)</label>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-1">Volume threshold multiplier</p>
+</div>
+<span class="font-stat-lg text-stat-lg text-secondary">2.5x</span>
+</div>
+<input class="w-full" max="5" min="1" step="0.1" type="range" value="2.5"/>
+<div class="flex justify-between font-label-caps text-label-caps text-on-surface-variant mt-1">
+<span class="">Base Vol (1x)</span>
+<span class="">High Vol (5x)</span>
+</div>
+</div>
+<!-- Liquidity Zones Config -->
+<div>
+<div class="flex justify-between items-end mb-sm">
+<div>
+<label class="font-body-bold text-body-bold text-primary">Liquidity Zones (BSL/SSL)</label>
+<p class="font-label-caps text-label-caps text-on-surface-variant mt-1">Consecutive touches required</p>
+</div>
+<span class="font-stat-lg text-stat-lg text-tertiary">3</span>
+</div>
+<div class="flex gap-sm">
+<button class="flex-1 py-xs border-2 border-outline-variant bg-surface hover:bg-surface-variant font-body-bold text-body-bold transition-colors">1</button>
+<button class="flex-1 py-xs border-2 border-outline-variant bg-surface hover:bg-surface-variant font-body-bold text-body-bold transition-colors">2</button>
+<button class="flex-1 py-xs border-2 border-primary-fixed bg-primary-fixed/10 text-primary-fixed font-body-bold text-body-bold transition-colors">3</button>
+<button class="flex-1 py-xs border-2 border-outline-variant bg-surface hover:bg-surface-variant font-body-bold text-body-bold transition-colors">4+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- AI Sage Integration Panel -->
+<div class="glass-panel border-2 border-secondary p-md relative hard-shadow-violet">
+<div class="absolute top-0 right-0 p-xs bg-secondary">
+<span class="material-symbols-outlined text-on-secondary" style="font-variation-settings: 'FILL' 1;">auto_awesome</span>
+</div>
+<h3 class="font-headline-md text-headline-md text-primary mb-sm">Sage AI Confluence</h3>
+<p class="font-body-base text-body-base text-on-surface-variant mb-md">Require AI sentiment validation before flagging SMC setups in screener.</p>
+<div class="flex items-center gap-md">
+<label class="relative inline-flex items-center cursor-pointer">
+<input checked="" class="sr-only peer" type="checkbox" value=""/>
+<div class="w-11 h-6 bg-surface-container-high peer-focus:outline-none border-2 border-outline-variant peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-primary after:border-outline-variant after:border after:h-[16px] after:w-[16px] after:transition-all peer-checked:bg-secondary"></div>
+</label>
+<span class="font-body-bold text-body-bold text-secondary">Enforce Confluence</span>
+</div>
+</div>
+</div>
+<!-- Right Column: Markets & Timeframes -->
+<div class="lg:col-span-4 flex flex-col gap-gutter">
+<!-- Execution Config -->
+<div class="bg-surface-container-low border-2 border-outline-variant p-md">
+<h3 class="font-headline-md text-headline-md text-primary border-b-2 border-outline-variant pb-xs mb-md flex items-center gap-xs">
+<span class="material-symbols-outlined text-primary-fixed">sync</span>
+                            Screener Engine
+                        </h3>
+<label class="font-body-bold text-body-bold text-on-surface-variant block mb-xs">Refresh Frequency</label>
+<div class="relative w-full border-2 border-outline-variant bg-surface focus-within:border-primary-fixed transition-colors">
+<select class="w-full bg-transparent border-none text-primary font-body-base text-body-base py-sm pl-sm pr-lg appearance-none focus:ring-0">
+<option class="bg-surface text-primary" value="realtime">Real-time (Tick data)</option>
+<option class="bg-surface text-primary" value="1s">1 Second</option>
+<option class="bg-surface text-primary" value="5s">5 Seconds</option>
+<option class="bg-surface text-primary" selected="" value="on_close">On Candle Close</option>
+</select>
+<div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none text-on-surface-variant">
+<span class="material-symbols-outlined text-[20px]">arrow_drop_down</span>
+</div>
+</div>
+</div>
+<!-- Active Markets -->
+<div class="bg-surface-container-low border-2 border-outline-variant p-md">
+<h3 class="font-headline-md text-headline-md text-primary border-b-2 border-outline-variant pb-xs mb-md">Active Markets</h3>
+<div class="flex flex-col gap-sm">
+<label class="flex items-center gap-sm cursor-pointer group">
+<input checked="" class="tech-checkbox" type="checkbox"/>
+<span class="font-body-base text-body-base text-on-surface group-hover:text-primary transition-colors">Crypto (Binance Futures)</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group">
+<input checked="" class="tech-checkbox" type="checkbox"/>
+<span class="font-body-base text-body-base text-on-surface group-hover:text-primary transition-colors">Forex (OANDA)</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group">
+<input class="tech-checkbox" type="checkbox"/>
+<span class="font-body-base text-body-base text-on-surface group-hover:text-primary transition-colors">Indices (CME)</span>
+</label>
+<label class="flex items-center gap-sm cursor-pointer group">
+<input class="tech-checkbox" type="checkbox"/>
+<span class="font-body-base text-body-base text-on-surface group-hover:text-primary transition-colors">Equities (NASDAQ)</span>
+</label>
+</div>
+</div>
+<!-- Timeframes -->
+<div class="bg-surface-container-low border-2 border-outline-variant p-md">
+<h3 class="font-headline-md text-headline-md text-primary border-b-2 border-outline-variant pb-xs mb-md">Timeframe Intervals</h3>
+<div class="grid grid-cols-3 gap-xs">
+<label class="flex items-center justify-center border-2 border-outline-variant p-xs cursor-pointer hover:bg-surface-variant transition-colors bg-surface relative">
+<input class="sr-only peer" type="checkbox"/>
+<span class="font-label-caps text-label-caps peer-checked:text-primary-fixed peer-checked:font-bold">1M</span>
+<div class="absolute inset-0 border-2 border-transparent peer-checked:border-primary-fixed pointer-events-none"></div>
+</label>
+<label class="flex items-center justify-center border-2 border-outline-variant p-xs cursor-pointer hover:bg-surface-variant transition-colors bg-surface relative">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<span class="font-label-caps text-label-caps peer-checked:text-primary-fixed peer-checked:font-bold">5M</span>
+<div class="absolute inset-0 border-2 border-transparent peer-checked:border-primary-fixed pointer-events-none"></div>
+</label>
+<label class="flex items-center justify-center border-2 border-outline-variant p-xs cursor-pointer hover:bg-surface-variant transition-colors bg-surface relative">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<span class="font-label-caps text-label-caps peer-checked:text-primary-fixed peer-checked:font-bold">15M</span>
+<div class="absolute inset-0 border-2 border-transparent peer-checked:border-primary-fixed pointer-events-none"></div>
+</label>
+<label class="flex items-center justify-center border-2 border-outline-variant p-xs cursor-pointer hover:bg-surface-variant transition-colors bg-surface relative">
+<input class="sr-only peer" type="checkbox"/>
+<span class="font-label-caps text-label-caps peer-checked:text-primary-fixed peer-checked:font-bold">1H</span>
+<div class="absolute inset-0 border-2 border-transparent peer-checked:border-primary-fixed pointer-events-none"></div>
+</label>
+<label class="flex items-center justify-center border-2 border-outline-variant p-xs cursor-pointer hover:bg-surface-variant transition-colors bg-surface relative">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<span class="font-label-caps text-label-caps peer-checked:text-primary-fixed peer-checked:font-bold">4H</span>
+<div class="absolute inset-0 border-2 border-transparent peer-checked:border-primary-fixed pointer-events-none"></div>
+</label>
+<label class="flex items-center justify-center border-2 border-outline-variant p-xs cursor-pointer hover:bg-surface-variant transition-colors bg-surface relative">
+<input checked="" class="sr-only peer" type="checkbox"/>
+<span class="font-label-caps text-label-caps peer-checked:text-primary-fixed peer-checked:font-bold">1D</span>
+<div class="absolute inset-0 border-2 border-transparent peer-checked:border-primary-fixed pointer-events-none"></div>
+</label>
+</div>
+</div>
+</div>
+</div>
+<!-- Bottom spacer for scrolling -->
+<div class="h-xl"></div>
+</main>
+</div>
+</body></html>

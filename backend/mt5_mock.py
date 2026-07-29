@@ -9,8 +9,10 @@ line of connection-handling / pattern-detection / data-shaping logic run
 completely unmodified against it. Nothing here is used in production
 Windows builds; it's opt-in via the SMC_MOCK env var.
 """
+import hashlib
+import math
 import time
-import random
+from datetime import datetime, timezone
 from types import SimpleNamespace
 
 import numpy as np
@@ -18,6 +20,7 @@ import numpy as np
 # ── Constants (values just need to be internally consistent) ───
 TIMEFRAME_M1, TIMEFRAME_M5, TIMEFRAME_M15, TIMEFRAME_M30 = 1, 5, 15, 30
 TIMEFRAME_H1, TIMEFRAME_H4, TIMEFRAME_D1 = 60, 240, 1440
+TIMEFRAME_W1, TIMEFRAME_MN1 = 10080, 43200
 
 ORDER_TYPE_BUY, ORDER_TYPE_SELL = 0, 1
 ORDER_FILLING_FOK, ORDER_FILLING_IOC, ORDER_FILLING_RETURN = 0, 1, 2
@@ -49,64 +52,116 @@ _account = SimpleNamespace(
 _positions: list = []
 _next_ticket = 1000
 
-# Per-(symbol, timeframe_minutes) bar cache: list of dicts, oldest→newest.
-_bars: dict[tuple[str, int], list[dict]] = {}
-
-
-def _seed_price(symbol: str) -> float:
-    return _SEED_PRICE.get(symbol, 100.0)
+def _canonical_symbol(symbol: str) -> str | None:
+    if symbol in _SEED_PRICE:
+        return symbol
+    folded = symbol.casefold()
+    exact = [name for name in _SEED_PRICE if name.casefold() == folded]
+    if len(exact) == 1:
+        return exact[0]
+    bare = folded.rstrip("m")
+    aliases = [name for name in _SEED_PRICE if name.casefold().rstrip("m") == bare]
+    return aliases[0] if len(aliases) == 1 else None
 
 
 def _digits(symbol: str) -> int:
-    return _DIGITS.get(symbol, 5)
+    canonical = _canonical_symbol(symbol)
+    return _DIGITS.get(canonical, 5)
 
 
-def _step(price: float, symbol: str) -> float:
-    vol = price * 0.0006  # ~0.06% per bar — gentle, visible drift
-    return max(price + random.gauss(0, vol), price * 0.5)
+def _unit_noise(symbol: str, index: int, layer: int) -> float:
+    payload = f"{symbol}:{index}:{layer}".encode("utf-8")
+    raw = int.from_bytes(hashlib.blake2b(payload, digest_size=8).digest(), "big")
+    return (raw / ((1 << 64) - 1)) * 2.0 - 1.0
 
 
-def _ensure_bars(symbol: str, minutes: int, count: int):
-    """Seed or extend the bar cache for (symbol, minutes) up to `count` bars,
-    generating new bars as wall-clock time passes so the series feels live
-    without ever regenerating history that's already been shown."""
-    key = (symbol, minutes)
-    series = _bars.setdefault(key, [])
-    period = minutes * 60
-    now_bucket = int(time.time()) // period * period
+def _smooth_noise(symbol: str, timestamp: float, step: int, layer: int) -> float:
+    position = timestamp / step
+    left = math.floor(position)
+    mix = position - left
+    # Smoothstep avoids sharp corners at grid boundaries.
+    mix = mix * mix * (3.0 - 2.0 * mix)
+    a = _unit_noise(symbol, left, layer)
+    b = _unit_noise(symbol, left + 1, layer)
+    return a + (b - a) * mix
 
-    if not series:
-        price = _seed_price(symbol)
-        start = now_bucket - (count - 1) * period
-        for i in range(count):
-            t = start + i * period
-            o = price
-            price = _step(price, symbol)
-            h = max(o, price) + abs(random.gauss(0, price * 0.0002))
-            l = min(o, price) - abs(random.gauss(0, price * 0.0002))
-            series.append({'time': t, 'open': o, 'high': h, 'low': l, 'close': price,
-                            'tick_volume': random.randint(50, 500)})
-        return
 
-    last_t = series[-1]['time']
-    price = series[-1]['close']
-    t = last_t + period
-    while t <= now_bucket:
-        o = price
-        price = _step(price, symbol)
-        h = max(o, price) + abs(random.gauss(0, price * 0.0002))
-        l = min(o, price) - abs(random.gauss(0, price * 0.0002))
-        series.append({'time': t, 'open': o, 'high': h, 'low': l, 'close': price,
-                        'tick_volume': random.randint(50, 500)})
-        t += period
-    # Cap memory — keep a healthy buffer beyond what's ever requested.
-    if len(series) > count * 3:
-        del series[: len(series) - count * 3]
+def _price_at(symbol: str, timestamp: float) -> float:
+    """One deterministic continuous stream shared by every timeframe."""
+    canonical = _canonical_symbol(symbol)
+    if canonical is None:
+        return 0.0
+    base = _SEED_PRICE[canonical]
+    days = (timestamp - 1704067200) / 86400.0  # 2024-01-01 UTC anchor
+    phase = (_unit_noise(canonical, 0, 99) + 1.0) * math.pi
+    log_move = (
+        0.000025 * days
+        + 0.025 * math.sin(days / 17.0 + phase)
+        + 0.012 * math.sin(days / 4.7 + phase * 0.37)
+        + 0.010 * _smooth_noise(canonical, timestamp, 86400, 1)
+        + 0.0035 * _smooth_noise(canonical, timestamp, 3600, 2)
+        + 0.0008 * _smooth_noise(canonical, timestamp, 300, 3)
+    )
+    return base * math.exp(log_move)
+
+
+def _bucket_start(timestamp: int, timeframe: int) -> int:
+    if timeframe == TIMEFRAME_W1:
+        monday_epoch = 4 * 86400  # 1970-01-05 00:00 UTC
+        return ((timestamp - monday_epoch) // (7 * 86400)) * (7 * 86400) + monday_epoch
+    if timeframe == TIMEFRAME_MN1:
+        value = datetime.fromtimestamp(timestamp, tz=timezone.utc)
+        return int(datetime(value.year, value.month, 1, tzinfo=timezone.utc).timestamp())
+    period = timeframe * 60
+    return timestamp // period * period
+
+
+def _shift_bucket(start: int, timeframe: int, amount: int) -> int:
+    if timeframe != TIMEFRAME_MN1:
+        return start + amount * timeframe * 60
+    value = datetime.fromtimestamp(start, tz=timezone.utc)
+    month_index = value.year * 12 + value.month - 1 + amount
+    year, month_zero = divmod(month_index, 12)
+    return int(datetime(year, month_zero + 1, 1, tzinfo=timezone.utc).timestamp())
+
+
+def _bar(symbol: str, minutes: int, start: int, now: int | None = None) -> dict:
+    natural_end = _shift_bucket(start, minutes, 1)
+    end = min(natural_end, now) if now is not None else natural_end
+    end = max(start, end)
+    samples = 5 if minutes <= 5 else 9 if minutes <= 240 else 17 if minutes <= 10080 else 33
+    points = [
+        _price_at(symbol, start + (end - start) * i / (samples - 1))
+        for i in range(samples)
+    ]
+    opening, closing = points[0], points[-1]
+    wick = opening * (0.00004 + 0.00002 * abs(_unit_noise(symbol, start, minutes)))
+    volume_base = max(20, int(80 * math.sqrt(max(minutes, 1))))
+    volume = int(volume_base * (1.0 + abs(_unit_noise(symbol, start, 7))))
+    return {
+        "time": start,
+        "open": opening,
+        "high": max(points) + wick,
+        "low": max(0.0000001, min(points) - wick),
+        "close": closing,
+        "tick_volume": volume,
+    }
+
+
+def _rates(symbol: str, timeframe: int, newest_bucket: int, count: int, now: int | None = None):
+    canonical = _canonical_symbol(symbol)
+    if canonical is None or count <= 0:
+        return np.array([], dtype=_RATES_DTYPE)
+    starts = [_shift_bucket(newest_bucket, timeframe, offset) for offset in range(-(count - 1), 1)]
+    bars = [_bar(canonical, timeframe, start, now) for start in starts]
+    return np.array(
+        [(b["time"], b["open"], b["high"], b["low"], b["close"], b["tick_volume"], 1, 0) for b in bars],
+        dtype=_RATES_DTYPE,
+    )
 
 
 def _current_price(symbol: str) -> float:
-    _ensure_bars(symbol, 1, 5)
-    return _bars[(symbol, 1)][-1]['close']
+    return _price_at(symbol, time.time())
 
 
 # ── Public fake mt5.* API ───────────────────────────────────────
@@ -147,10 +202,12 @@ def account_info():
 
 
 def symbol_select(symbol, enable=True) -> bool:
-    return True
+    return _canonical_symbol(symbol) is not None
 
 
 def symbol_info(symbol):
+    if _canonical_symbol(symbol) is None:
+        return None
     return SimpleNamespace(
         bid=_current_price(symbol), ask=_current_price(symbol) * 1.0002,
         digits=_digits(symbol), filling_mode=1,
@@ -158,6 +215,8 @@ def symbol_info(symbol):
 
 
 def symbol_info_tick(symbol):
+    if _canonical_symbol(symbol) is None:
+        return None
     price = _current_price(symbol)
     spread = price * 0.0002
     return SimpleNamespace(bid=price, ask=price + spread, time=int(time.time()))
@@ -168,17 +227,16 @@ def symbols_get():
 
 
 def copy_rates_from_pos(symbol, timeframe, start_pos, count):
-    _ensure_bars(symbol, timeframe, start_pos + count + 5)
-    series = _bars[(symbol, timeframe)]
-    end = len(series) - start_pos
-    start = max(end - count, 0)
-    window = series[start:end]
-    if not window:
-        return np.array([], dtype=_RATES_DTYPE)
-    return np.array(
-        [(b['time'], b['open'], b['high'], b['low'], b['close'], b['tick_volume'], 1, 0) for b in window],
-        dtype=_RATES_DTYPE,
-    )
+    now = int(time.time())
+    current_bucket = _bucket_start(now, timeframe)
+    newest = _shift_bucket(current_bucket, timeframe, -max(0, int(start_pos)))
+    return _rates(symbol, timeframe, newest, int(count), now=now)
+
+
+def copy_rates_from(symbol, timeframe, date_from, count):
+    timestamp = int(date_from.timestamp())
+    newest = _bucket_start(timestamp, timeframe)
+    return _rates(symbol, timeframe, newest, int(count))
 
 
 def positions_get(symbol=None):

@@ -23,15 +23,29 @@ const ITEMS = [
   { id: 'account',     label: 'Account',   icon: 'account_circle' },
 ];
 
-export default function SideRail({ page, setPage, account, connected, onSettingsClick, onLogout }) {
+export default function SideRail({
+  page, setPage, account, connected, onSettingsClick, onLogout,
+  compact = false, open = true, onClose,
+}) {
   const { mode, toggleMode } = useTheme();
+
+  const navigate = id => {
+    setPage(id);
+    if (compact) onClose?.();
+  };
 
   const initials = account?.name
     ? account.name.slice(0, 2).toUpperCase()
     : account?.login ? String(account.login).slice(-2) : 'MT';
 
   return (
-    <aside className="w-[280px] shrink-0 flex flex-col bg-surface-container-lowest border-r-2 border-outline-variant shadow-[4px_0px_0px_0px_rgba(0,0,0,1)] relative z-50">
+    <aside
+      className={
+        'side-rail w-[280px] shrink-0 flex flex-col bg-surface-container-lowest border-r-2 border-outline-variant shadow-[4px_0px_0px_0px_rgba(0,0,0,1)] ' +
+        (compact ? 'is-compact ' : '') + (open ? 'is-open' : 'is-collapsed')
+      }
+      aria-hidden={!open}
+    >
       {/* Header */}
       <div className="p-lg border-b-2 border-outline-variant flex items-center gap-md">
         <div className="w-10 h-10 bg-primary-fixed glow-primary flex items-center justify-center shrink-0 text-on-primary-fixed">
@@ -41,6 +55,11 @@ export default function SideRail({ page, setPage, account, connected, onSettings
           <h1 className="font-display-lg text-[20px] font-black text-primary-fixed glow-text-primary tracking-tighter leading-none">QUANT_CORE</h1>
           <p className="font-label-caps text-label-caps text-on-surface-variant tracking-widest mt-1">v0.2 // ACTIVE</p>
         </div>
+        {compact && (
+          <button className="side-rail-close" onClick={onClose} aria-label="Close navigation" title="Close navigation">
+            <Icon name="close" />
+          </button>
+        )}
       </div>
 
       {/* Nav */}
@@ -50,7 +69,7 @@ export default function SideRail({ page, setPage, account, connected, onSettings
           return (
             <button
               key={id}
-              onClick={() => setPage(id)}
+              onClick={() => navigate(id)}
               className={
                 'flex items-center gap-md px-md py-sm font-label-caps text-label-caps transition-all active:scale-95 duration-75 text-left ' +
                 (active
@@ -66,7 +85,7 @@ export default function SideRail({ page, setPage, account, connected, onSettings
 
         {/* Sage AI — violet accent (opens the companion) */}
         <button
-          onClick={() => setPage('sage')}
+          onClick={() => navigate('sage')}
           className={
             'flex items-center gap-md px-md py-sm font-label-caps text-label-caps transition-all active:scale-95 duration-75 text-left ' +
             (page === 'sage'
@@ -81,6 +100,11 @@ export default function SideRail({ page, setPage, account, connected, onSettings
 
       {/* Footer */}
       <div className="border-t-2 border-outline-variant flex flex-col">
+        <div className="p-sm border-b-2 border-outline-variant">
+          <button onClick={() => navigate('home')} className="qc-execute-btn w-full py-sm bg-primary-fixed text-on-primary-fixed border-2 border-black font-label-caps text-label-caps tracking-[0.18em] shadow-[3px_3px_0px_0px_#000]">
+            <Icon name="bolt" /> EXECUTE
+          </button>
+        </div>
         {/* Connection status */}
         <div className="flex items-center gap-sm px-md py-sm">
           <span className={`w-2 h-2 rounded-full ${connected ? 'bg-primary-fixed-dim shadow-[0_0_8px_#abd600]' : 'bg-error'}`} />
@@ -105,7 +129,7 @@ export default function SideRail({ page, setPage, account, connected, onSettings
         {/* Actions */}
         <div className="flex flex-col">
           <button
-            onClick={onSettingsClick}
+            onClick={() => { onSettingsClick(); if (compact) onClose?.(); }}
             className={
               'flex items-center gap-md px-md py-sm font-label-caps text-label-caps transition-all border-l-4 ' +
               (page === 'settings'

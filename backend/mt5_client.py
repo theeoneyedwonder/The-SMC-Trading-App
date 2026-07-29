@@ -196,7 +196,7 @@ def get_symbol_tick(symbol: str) -> dict:
         tick = mt5.symbol_info_tick(symbol)
     if tick is None:
         return {}
-    return {"bid": float(tick.bid), "ask": float(tick.ask), "time": int(tick.time)}
+    return {"symbol": symbol, "bid": float(tick.bid), "ask": float(tick.ask), "time": int(tick.time)}
 
 
 def get_quote(symbol: str) -> dict:

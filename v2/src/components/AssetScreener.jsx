@@ -55,7 +55,7 @@ export default function AssetScreener({ onSelectSymbol, onNavigateHome }) {
   };
 
   return (
-    <div className="flex-1 flex flex-col gap-md p-md overflow-hidden min-h-0">
+    <div className="qc-page qc-screener flex-1 flex flex-col gap-md p-md overflow-hidden min-h-0">
       {/* Header / Filters */}
       <div className="flex flex-col lg:flex-row gap-md justify-between items-start lg:items-center shrink-0 border-b-2 border-outline-variant pb-xs">
         <div>

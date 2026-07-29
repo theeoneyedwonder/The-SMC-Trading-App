@@ -40,6 +40,10 @@ def _write(data: dict):
     path = CONFIG_PATH or _DEV_SETTINGS
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, indent=2), encoding='utf-8')
+    try:
+        path.chmod(0o600)
+    except OSError:
+        pass
 
 # ─── Credentials ──────────────────────────────────────────────
 def get_mt5_credentials() -> tuple[int, str, str]:
@@ -68,6 +72,38 @@ def clear_mt5_credentials():
     """Wipe stored MT5 credentials (called on logout)."""
     cfg = _read()
     cfg['mt5'] = {'login': 0, 'password': '', 'server': ''}
+    _write(cfg)
+
+# ─── OANDA market-data credentials ─────────────────────────────
+def get_oanda_settings() -> dict:
+    raw = _read().get('oanda', {})
+    environment = raw.get('environment', 'practice')
+    if environment not in ('practice', 'live'):
+        environment = 'practice'
+    return {
+        'account_id': str(raw.get('account_id', '')).strip(),
+        'access_token': str(raw.get('access_token', '')).strip(),
+        'environment': environment,
+    }
+
+def oanda_is_configured() -> bool:
+    value = get_oanda_settings()
+    return bool(value['account_id'] and value['access_token'])
+
+def save_oanda_settings(account_id: str, access_token: str, environment: str = 'practice'):
+    if environment not in ('practice', 'live'):
+        raise ValueError('OANDA environment must be practice or live')
+    cfg = _read()
+    cfg['oanda'] = {
+        'account_id': account_id.strip(),
+        'access_token': access_token.strip(),
+        'environment': environment,
+    }
+    _write(cfg)
+
+def clear_oanda_settings():
+    cfg = _read()
+    cfg.pop('oanda', None)
     _write(cfg)
 
 # ─── Theme ────────────────────────────────────────────────────
@@ -195,9 +231,11 @@ TIMEFRAMES = {
     "H1"  : 60,
     "H4"  : 240,
     "D1"  : 1440,
+    "W1"  : 10080,
+    "MN1" : 43200,
 }
 
-CANDLE_LIMIT   = 200
+CANDLE_LIMIT   = 500
 SWING_LOOKBACK = 5
 EMA_PERIOD     = 200
 

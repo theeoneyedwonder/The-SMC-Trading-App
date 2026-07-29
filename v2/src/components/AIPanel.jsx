@@ -363,7 +363,7 @@ export default function AIPanel({ data, nudge, onClose, onAIAnalysis }) {
   const events      = recentSmcEvents(data?.patterns);
 
   return (
-    <div className="flex-1 h-full flex gap-md p-md overflow-hidden min-h-0">
+    <div className="qc-page qc-sage flex-1 h-full flex gap-md p-md overflow-hidden min-h-0">
 
       {/* ── LEFT: Sage Terminal ── */}
       <section className="flex-[2] flex flex-col glass-panel module-glow-secondary relative overflow-hidden min-w-0 border-secondary/30">

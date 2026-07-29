@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>BRUTALIST | Trading Terminal</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<style>.material-symbols-outlined {
+    font-variation-settings: "FILL" 0, "wght" 400, "GRAD" 0, "opsz" 24
+    }
+.glass-panel {
+    background: linear-gradient(145deg, rgba(42, 42, 42, 0.4) 0%, rgba(20, 20, 20, 0.7) 100%);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1), 0 8px 32px rgba(0, 0, 0, 0.5);
+    border-radius: 0.5rem;
+    position: relative;
+    }
+.glass-panel::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(to bottom right, rgba(195, 244, 0, 0.2), transparent, rgba(220, 184, 255, 0.1));
+    -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+}
+.glow-primary {
+    box-shadow: 0 0 25px rgba(195, 244, 0, 0.5), inset 0 0 10px rgba(195, 244, 0, 0.3);
+    }
+.glow-secondary {
+    box-shadow: 0 0 25px rgba(220, 184, 255, 0.5), inset 0 0 10px rgba(220, 184, 255, 0.3);
+    }
+.glow-text-primary {
+    text-shadow: 0 0 12px rgba(195, 244, 0, 0.8);
+    }
+.glow-text-secondary {
+    text-shadow: 0 0 12px rgba(220, 184, 255, 0.8);
+    }
+.brutalist-border {
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+::-webkit-scrollbar {
+    width: 6px
+    }
+::-webkit-scrollbar-track {
+    background: transparent
+    }
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px
+    }
+/* Custom Candle Colors */
+.candle-bull {
+    fill: #c3f400;
+    stroke: #c3f400;
+    filter: drop-shadow(0 0 4px rgba(195, 244, 0, 0.9));
+    }
+.candle-bear {
+    fill: #ffb4ab;
+    stroke: #ffb4ab;
+    filter: drop-shadow(0 0 4px rgba(255, 180, 171, 0.9));
+    }
+.candle-wick-bull {
+    stroke: #c3f400
+    }
+.candle-wick-bear {
+    stroke: #ffb4ab
+    }
+/* Watermark */
+.sage-watermark {
+    background-image: url(https://lh3.googleusercontent.com/aida-public/AB6AXuCoH8Lt7Z4yhrPleuMnRxcX6q10WVaopKyxf9OdMNXxjGn7vVPbu4YhikTSY7AF9LWOEwrK0xv8XgJKS2aXAdvkW1JPwERtnDx0aWS1fUZ5hhgyRm3o04FmyQZmIp-aylDuVTUi00ZaOvnc_Tp-w94Nbe3nASAYNBtGDmBfHVyi3E2fWylfisirUrE6AkO05oiMbH7KYKEOZncMqxTly2ehUMB5lja7ABY0whU_h5AO2wJhyuyZw2MdsWwjJxwG9HnLgDDim75FRbcs);
+    background-size: cover;
+    background-position: center;
+    background-blend-mode: overlay;
+    opacity: 0.1
+    }
+body {
+    background: radial-gradient(circle at 50% 50%, #1a1a24 0%, #08080a 100%);
+    background-attachment: fixed;
+}
+.module-glow {
+    position: relative;
+}
+.module-glow::after {
+    content: '';
+    position: absolute;
+    inset: -20px;
+    background: radial-gradient(circle at 50% 50%, rgba(195, 244, 0, 0.03) 0%, transparent 70%);
+    z-index: -1;
+    pointer-events: none;
+}
+.module-glow-secondary::after {
+    background: radial-gradient(circle at 50% 50%, rgba(220, 184, 255, 0.03) 0%, transparent 70%);
+}
+</style>
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"tertiary-container": "#ffdad6", "surface-container-low": "#1c1b1b", "surface-variant": "#353534", "secondary-fixed": "#efdbff", "on-primary-fixed": "#161e00", "on-background": "#e5e2e1", "secondary-fixed-dim": "#dcb8ff", "on-surface-variant": "#c4c9ac", "error-container": "#93000a", "on-tertiary-container": "#c90e1e", "on-secondary": "#480081", "surface-container-lowest": "#0e0e0e", primary: "#ffffff", "on-secondary-container": "#dcb7ff", "on-primary-container": "#556d00", "surface-dim": "#131313", outline: "#8e9379", "on-error": "#690005", "on-secondary-fixed": "#2c0051", "primary-container": "#c3f400", surface: "#131313", "inverse-surface": "#e5e2e1", "on-tertiary-fixed": "#410003", "surface-container-highest": "#353534", "on-secondary-fixed-variant": "#6700b5", "on-tertiary": "#680008", background: "#131313", secondary: "#dcb8ff", "primary-fixed": "#c3f400", tertiary: "#ffffff", "surface-container": "#201f1f", "tertiary-fixed": "#ffdad6", "surface-container-high": "#2a2a2a", "inverse-on-surface": "#313030", "secondary-container": "#7701d0", "primary-fixed-dim": "#abd600", "surface-tint": "#abd600", "inverse-primary": "#506600", "on-error-container": "#ffdad6", "on-surface": "#e5e2e1", "outline-variant": "#444933", "on-primary": "#283500", error: "#ffb4ab", "tertiary-fixed-dim": "#ffb3ad", "on-tertiary-fixed-variant": "#930010", "surface-bright": "#3a3939", "on-primary-fixed-variant": "#3c4d00"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {xl: "32px", unit: "4px", md: "16px", sm: "8px", xs: "4px", "margin-mobile": "16px", lg: "24px", gutter: "16px", "margin-desktop": "24px"}, fontFamily: {"headline-lg-mobile": ["Inter"], "display-lg": ["Inter"], "stat-lg": ["Inter"], "label-caps": ["Inter"], "body-base": ["Inter"], "body-bold": ["Inter"], "headline-md": ["Inter"], mono: ["JetBrains Mono"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"headline-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "800"}], "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "800"}], "stat-lg": ["24px", {lineHeight: "30px", fontWeight: "800"}], "label-caps": ["11px", {lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700"}], "body-base": ["12px", {lineHeight: "16px", fontWeight: "400"}], "body-bold": ["12px", {lineHeight: "16px", fontWeight: "700"}], "headline-md": ["16px", {lineHeight: "24px", letterSpacing: "0", fontWeight: "700"}]}}}};</script>
+</head>
+<body class="bg-background text-on-surface font-body-base overflow-hidden h-screen w-screen selection:bg-primary-fixed-dim selection:text-black">
+<!-- Global Layout Shell -->
+<div class="flex h-full w-full p-sm gap-sm max-w-[2560px] mx-auto">
+<!-- Left Sidebar: Slim Navigation -->
+<aside class="w-16 glass-panel module-glow flex flex-col items-center py-md shrink-0">
+<div class="mb-lg">
+<div class="w-8 h-8 bg-primary-fixed glow-primary flex items-center justify-center font-bold text-black text-xs rounded-lg">B</div>
+</div>
+<nav class="flex-1 w-full flex flex-col items-center gap-md">
+<button class="w-full h-12 flex items-center justify-center text-primary-fixed border-l-2 border-primary-fixed bg-white/5 relative group">
+<span class="material-symbols-outlined drop-shadow-[0_0_12px_rgba(195,244,0,0.9)]" data-icon="dashboard">dashboard</span>
+<span class="absolute left-14 glass-panel px-sm py-xs text-[10px] hidden group-hover:block z-50 whitespace-nowrap text-primary-fixed font-body-base">Dashboard</span>
+</button>
+<button class="w-full h-12 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors relative group">
+<span class="material-symbols-outlined" data-icon="show_chart">show_chart</span>
+<span class="absolute left-14 glass-panel px-sm py-xs text-[10px] hidden group-hover:block z-50 whitespace-nowrap font-body-base">Charts</span>
+</button>
+<button class="w-full h-12 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors relative group">
+<span class="material-symbols-outlined" data-icon="format_list_bulleted">format_list_bulleted</span>
+<span class="absolute left-14 glass-panel px-sm py-xs text-[10px] hidden group-hover:block z-50 whitespace-nowrap font-body-base">Positions</span>
+</button>
+<button class="w-full h-12 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors relative group">
+<span class="material-symbols-outlined" data-icon="receipt_long">receipt_long</span>
+<span class="absolute left-14 glass-panel px-sm py-xs text-[10px] hidden group-hover:block z-50 whitespace-nowrap font-body-base">Orders</span>
+</button>
+<button class="w-full h-12 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors relative group">
+<span class="material-symbols-outlined" data-icon="star">star</span>
+<span class="absolute left-14 glass-panel px-sm py-xs text-[10px] hidden group-hover:block z-50 whitespace-nowrap font-body-base">Watchlist</span>
+</button>
+<button class="w-full h-12 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors relative group">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+<span class="absolute left-14 glass-panel px-sm py-xs text-[10px] hidden group-hover:block z-50 whitespace-nowrap font-body-base">Analytics</span>
+</button>
+</nav>
+<div class="mt-auto w-full flex flex-col items-center gap-md border-t border-white/10 pt-md">
+<button class="w-full h-12 flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors relative group">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="absolute left-14 glass-panel px-sm py-xs text-[10px] hidden group-hover:block z-50 whitespace-nowrap font-body-base">Settings</span>
+</button>
+<div class="relative group w-full flex justify-center mt-sm cursor-pointer" onclick="toggleMenu('sage-panel')">
+<div class="w-10 h-10 rounded-full border border-secondary glow-secondary flex items-center justify-center bg-secondary/10">
+<span class="material-symbols-outlined text-secondary text-sm drop-shadow-[0_0_12px_rgba(220,184,255,0.9)]" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div class="absolute bottom-0 right-2 w-3 h-3 bg-primary-fixed rounded-full border-2 border-background shadow-[0_0_12px_rgba(195,244,0,0.9)]"></div>
+<span class="absolute left-14 bottom-0 glass-panel px-sm py-xs text-[10px] hidden group-hover:block z-50 whitespace-nowrap text-secondary font-body-base">SAGE AI<br/><span class="text-primary-fixed">ONLINE</span></span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 flex flex-col min-w-0 gap-sm flex-[4]">
+<!-- Top Header -->
+<header class="h-14 glass-panel module-glow flex items-center justify-between px-md shrink-0">
+<div class="flex items-center gap-lg">
+<!-- Asset Selector -->
+<div class="flex items-center gap-xs cursor-pointer hover:text-primary-fixed transition-colors pr-lg border-r border-white/10"><span class="text-[10px] text-on-surface-variant font-bold uppercase tracking-widest mr-xs">Asset</span><span class="font-headline-md font-bold text-primary">EURUSD</span><span class="material-symbols-outlined text-sm text-primary-fixed" data-icon="expand_more">expand_more</span></div>
+<!-- Timeframes -->
+<div class="flex items-center gap-sm font-body-base"><button class="text-on-surface-variant hover:text-primary text-[10px] px-2 py-1 rounded hover:bg-white/5 transition-all font-bold uppercase tracking-wider">1m</button><button class="text-on-surface-variant hover:text-primary text-[10px] px-2 py-1 rounded hover:bg-white/5 transition-all font-bold uppercase tracking-wider">5m</button><button class="text-on-surface-variant hover:text-primary text-[10px] px-2 py-1 rounded hover:bg-white/5 transition-all font-bold uppercase tracking-wider">15m</button><button class="text-primary-fixed bg-primary-fixed/10 border border-primary-fixed/30 glow-text-primary shadow-[0_0_12px_rgba(195,244,0,0.3)] text-[10px] px-2 py-1 rounded font-black uppercase tracking-wider">1h</button><button class="text-on-surface-variant hover:text-primary text-[10px] px-2 py-1 rounded hover:bg-white/5 transition-all font-bold uppercase tracking-wider">4h</button><button class="text-on-surface-variant hover:text-primary text-[10px] px-2 py-1 rounded hover:bg-white/5 transition-all font-bold uppercase tracking-wider">D</button><button class="text-on-surface-variant hover:text-primary text-[10px] px-2 py-1 rounded hover:bg-white/5 transition-all font-bold uppercase tracking-wider">W</button><span class="material-symbols-outlined text-on-surface-variant text-sm ml-xs cursor-pointer hover:text-white" data-icon="expand_more">expand_more</span></div>
+</div>
+<div class="flex items-center gap-lg">
+<!-- Tools -->
+<div class="flex items-center gap-md border-r border-white/10 pr-lg font-body-base">
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary text-xs">
+<span class="material-symbols-outlined text-sm" data-icon="candlestick_chart">candlestick_chart</span>
+</button>
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary text-xs">
+<span class="material-symbols-outlined text-sm" data-icon="show_chart">show_chart</span> Indicators
+                        </button>
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary text-xs">
+<span class="material-symbols-outlined text-sm" data-icon="alarm">alarm</span> Alert
+                        </button>
+<button class="flex items-center gap-xs text-on-surface-variant hover:text-primary text-xs">
+<span class="material-symbols-outlined text-sm" data-icon="replay">replay</span> Replay
+                        </button>
+</div>
+<!-- Status & Profile -->
+<div class="flex items-center gap-md">
+<div class="flex items-center gap-xs px-sm py-xs border border-white/20 rounded-full bg-white/5 shadow-[inset_0_0_10px_rgba(255,255,255,0.05)]">
+<span class="w-2 h-2 rounded-full bg-primary-fixed shadow-[0_0_12px_rgba(195,244,0,0.9)] animate-pulse"></span>
+<span class="text-[10px] text-primary-fixed uppercase font-bold font-body-base">Live</span>
+</div>
+<button class="text-on-surface-variant hover:text-primary relative">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+<span class="absolute top-0 right-0 w-2 h-2 bg-secondary rounded-full shadow-[0_0_12px_rgba(220,184,255,0.9)]"></span>
+</button>
+<div class="flex items-center gap-sm pl-md border-l border-white/10 cursor-pointer">
+<div class="w-8 h-8 rounded-full bg-secondary/20 border border-secondary glow-secondary flex items-center justify-center text-secondary font-bold text-xs">H</div>
+<div class="flex flex-col hidden sm:flex font-body-base">
+<span class="text-xs font-bold leading-tight text-white">HENRY</span>
+<span class="text-[10px] text-secondary leading-tight">PRO ACCOUNT</span>
+</div>
+</div>
+</div>
+</div>
+</header>
+<!-- Dashboard Grid -->
+<div class="flex-1 flex gap-sm min-h-0 overflow-hidden">
+<!-- Main Content Column -->
+<div class="flex-1 flex flex-col gap-sm min-w-0">
+<!-- Chart Area -->
+<section class="flex-1 glass-panel module-glow relative overflow-hidden flex flex-col bg-background/50 min-h-[500px]">
+<div class="absolute inset-0 flex items-center justify-center flex-col gap-sm">
+<span class="material-symbols-outlined text-white/20 text-4xl" data-icon="candlestick_chart">candlestick_chart</span>
+<span class="text-white/30 font-mono text-sm tracking-widest">TRADINGVIEW_WIDGET_CONTAINER</span>
+</div>
+</section>
+<!-- Bottom Widgets Row -->
+<div class="h-64 flex gap-sm shrink-0 grid grid-cols-4">
+<!-- Positions Widget -->
+<div class="glass-panel module-glow flex flex-col">
+<div class="p-sm border-b border-white/10 flex justify-between items-center shrink-0">
+<h3 class="text-xs font-bold uppercase tracking-widest font-headline-md">POSITIONS</h3>
+<span class="text-[10px] bg-white/10 px-2 py-0.5 rounded border border-white/10 font-body-base">2 OPEN</span>
+</div>
+<div class="flex-1 p-sm overflow-y-auto">
+<table class="w-full text-left text-xs font-body-base">
+<thead>
+<tr class="text-[10px] text-on-surface-variant uppercase border-b border-white/10">
+<th class="pb-xs font-normal">SYMBOL</th>
+<th class="pb-xs font-normal">TYPE</th>
+<th class="pb-xs font-normal text-right">VOLUME</th>
+<th class="pb-xs font-normal text-right">ENTRY</th>
+<th class="pb-xs font-normal text-right">P/L</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+<td class="py-sm">EURUSD</td>
+<td class="py-sm text-primary-fixed glow-text-primary">BUY</td>
+<td class="py-sm text-right font-mono">0.10</td>
+<td class="py-sm text-right font-mono">1.08500</td>
+<td class="py-sm text-right text-primary-fixed glow-text-primary font-mono">+89.20</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+<td class="py-sm">XAUUSD</td>
+<td class="py-sm text-error" style="text-shadow: 0 0 8px rgba(255, 180, 171, 0.5);">SELL</td>
+<td class="py-sm text-right font-mono">0.05</td>
+<td class="py-sm text-right font-mono">1950.50</td>
+<td class="py-sm text-right text-error font-mono" style="text-shadow: 0 0 8px rgba(255, 180, 171, 0.5);">-45.10</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-xs border-t border-white/10 text-center shrink-0">
+<button class="text-[10px] text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center gap-xs mx-auto font-body-base">
+                                    VIEW ALL POSITIONS <span class="material-symbols-outlined text-[10px]" data-icon="arrow_forward">arrow_forward</span>
+</button>
+</div>
+</div>
+<!-- Watchlist Widget -->
+<div class="flex-1 glass-panel module-glow flex flex-col">
+<div class="p-sm border-b border-white/10 flex justify-between items-center shrink-0">
+<h3 class="text-xs font-bold uppercase tracking-widest font-headline-md">SAVED PAIRS</h3>
+<button class="text-on-surface-variant hover:text-primary"><span class="material-symbols-outlined text-sm" data-icon="add">add</span></button>
+</div>
+<div class="flex-1 p-sm overflow-y-auto">
+<table class="w-full text-left text-xs font-body-base">
+<thead>
+<tr class="text-[10px] text-on-surface-variant uppercase border-b border-white/10">
+<th class="pb-xs font-normal">SYMBOL</th>
+<th class="pb-xs font-normal text-right">PRICE</th>
+<th class="pb-xs font-normal text-right">CHANGE</th>
+</tr>
+</thead>
+<tbody>
+<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+<td class="py-sm font-bold">EURUSD</td>
+<td class="py-sm text-right font-mono">1.08791</td>
+<td class="py-sm text-right text-primary-fixed glow-text-primary font-mono">+0.05%</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+<td class="py-sm font-bold">GBPUSD</td>
+<td class="py-sm text-right font-mono">1.26340</td>
+<td class="py-sm text-right text-primary-fixed glow-text-primary font-mono">+0.12%</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+<td class="py-sm font-bold">XAUUSD</td>
+<td class="py-sm text-right font-mono">1987.75</td>
+<td class="py-sm text-right text-error font-mono" style="text-shadow: 0 0 8px rgba(255, 180, 171, 0.5);">-0.18%</td>
+</tr>
+<tr class="border-b border-white/5 hover:bg-white/5 transition-colors">
+<td class="py-sm font-bold">US30</td>
+<td class="py-sm text-right font-mono">38987.0</td>
+<td class="py-sm text-right text-primary-fixed glow-text-primary font-mono">+0.23%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div class="p-xs border-t border-white/10 text-center shrink-0">
+<button class="text-[10px] text-on-surface-variant hover:text-primary transition-colors flex items-center justify-center gap-xs mx-auto font-body-base">VIEW ALL INSTRUMENTS <span class="material-symbols-outlined text-[10px]" data-icon="arrow_forward">arrow_forward</span></button>
+</div>
+</div>
+<!-- Sage AI Widget -->
+<div class="flex-1 glass-panel module-glow-secondary flex flex-col relative overflow-hidden border-secondary/30">
+<!-- Watermark Background -->
+<div class="absolute inset-0 sage-watermark pointer-events-none"></div>
+<div class="p-sm border-b border-secondary/20 flex justify-between items-center shrink-0 relative z-10 bg-transparent">
+<div class="flex items-center gap-xs">
+<h3 class="text-xs font-bold uppercase tracking-widest font-headline-md text-secondary glow-text-secondary">SAGE</h3>
+<span class="w-2 h-2 rounded-full bg-secondary shadow-[0_0_12px_rgba(220,184,255,0.9)] animate-pulse"></span>
+</div>
+</div>
+<div class="flex-1 p-sm flex flex-col justify-center items-center text-center gap-md relative z-10">
+<div class="w-8 h-8 rounded-full border border-secondary glow-secondary flex items-center justify-center bg-secondary/20 shrink-0 shadow-[inset_0_0_10px_rgba(220,184,255,0.3)]">
+<span class="material-symbols-outlined text-secondary text-sm drop-shadow-[0_0_12px_rgba(220,184,255,0.9)]" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<p class="text-[11px] text-on-surface leading-relaxed max-w-[200px] font-body-base">
+                                    Price is respecting the H1 demand zone. Looking for bullish confirmation on lower timeframe.
+                                </p>
+<p class="text-[10px] text-on-surface-variant font-body-base">
+                                    Watch for BOS on the 15m.
+                                </p>
+</div>
+<div class="p-sm shrink-0 relative z-10">
+<button class="w-full py-xs border border-primary-fixed text-primary-fixed text-xs font-bold hover:bg-primary-fixed/20 transition-colors flex items-center justify-center gap-xs rounded glow-primary glow-text-primary font-body-base bg-primary-fixed/5 backdrop-blur-md">
+<span class="material-symbols-outlined text-sm" data-icon="troubleshoot">troubleshoot</span> ANALYZE MARKET
+                                </button>
+</div>
+</div>
+<!-- News Widget -->
+<div class="flex-1 glass-panel module-glow flex flex-col">
+<div class="p-sm border-b border-white/10 flex justify-between items-center shrink-0">
+<h3 class="text-xs font-bold uppercase tracking-widest font-headline-md">NEWS</h3>
+<button class="text-[10px] text-on-surface-variant hover:text-primary flex items-center gap-1 font-body-base">VIEW ALL <span class="material-symbols-outlined text-[10px]" data-icon="arrow_forward">arrow_forward</span></button>
+</div>
+<div class="flex-1 p-sm overflow-y-auto space-y-sm">
+<div class="flex gap-sm items-start cursor-pointer group">
+<span class="text-[10px] text-on-surface-variant w-10 shrink-0 pt-[2px] font-mono">08:30</span>
+<p class="text-[11px] group-hover:text-secondary transition-colors flex-1 font-body-base">USD CPI Data In Line with Expectations</p>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary/50 group-hover:bg-secondary group-hover:shadow-[0_0_8px_rgba(220,184,255,0.9)] mt-[6px] transition-all"></span>
+</div>
+<div class="flex gap-sm items-start cursor-pointer group">
+<span class="text-[10px] text-on-surface-variant w-10 shrink-0 pt-[2px] font-mono">07:45</span>
+<p class="text-[11px] group-hover:text-secondary transition-colors flex-1 font-body-base">ECB Member Speaks on Inflation</p>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary/50 group-hover:bg-secondary group-hover:shadow-[0_0_8px_rgba(220,184,255,0.9)] mt-[6px] transition-all"></span>
+</div>
+<div class="flex gap-sm items-start cursor-pointer group">
+<span class="text-[10px] text-on-surface-variant w-10 shrink-0 pt-[2px] font-mono">07:30</span>
+<p class="text-[11px] group-hover:text-secondary transition-colors flex-1 font-body-base">US Jobless Claims Slightly Lower</p>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary/50 group-hover:bg-secondary group-hover:shadow-[0_0_8px_rgba(220,184,255,0.9)] mt-[6px] transition-all"></span>
+</div>
+<div class="flex gap-sm items-start cursor-pointer group">
+<span class="text-[10px] text-on-surface-variant w-10 shrink-0 pt-[2px] font-mono">06:15</span>
+<p class="text-[11px] group-hover:text-secondary transition-colors flex-1 font-body-base">FOMC Minutes Show Split Vote</p>
+<span class="w-1.5 h-1.5 rounded-full bg-secondary/50 group-hover:bg-secondary group-hover:shadow-[0_0_8px_rgba(220,184,255,0.9)] mt-[6px] transition-all"></span>
+</div>
+</div>
+</div>
+</div>
+</div>
+<!-- Right Side Panel -->
+<aside class="w-72 flex flex-col gap-sm shrink-0 h-full max-w-md">
+<!-- Brutalist Header Title -->
+<div class="glass-panel module-glow p-sm shrink-0">
+<h1 class="text-lg font-black uppercase tracking-tighter flex items-center gap-sm font-headline-md">BRUTALIST <span class="material-symbols-outlined text-secondary text-sm drop-shadow-[0_0_8px_rgba(220,184,255,0.9)]" data-icon="star">star</span></h1>
+<p class="text-[10px] text-on-surface-variant mt-xs leading-tight font-body-base">Thick borders, hard offset shadows, one loud accent. Punchy and memorable — stands out hard.</p>
+</div>
+<!-- Order Execution Panel -->
+<div class="flex-1 glass-panel module-glow flex flex-col overflow-y-auto">
+<!-- Balance Card -->
+<div class="p-sm shrink-0">
+<div class="bg-gradient-to-br from-white/10 to-transparent border border-white/20 p-md rounded-lg mb-sm relative overflow-hidden group cursor-pointer backdrop-blur-md shadow-[inset_0_0_20px_rgba(255,255,255,0.05)]">
+<div class="text-[10px] font-bold uppercase mb-xs font-body-base text-white/70">BALANCE</div>
+<div class="text-2xl font-black tracking-tighter font-mono text-white">10,000.00</div>
+<!-- Decorative chart in background -->
+<div class="absolute bottom-0 right-0 left-0 h-8 flex items-end gap-[2px] opacity-40 px-2 pb-1 transition-opacity">
+<div class="flex-1 bg-primary-fixed shadow-[0_0_12px_rgba(195,244,0,0.8)] h-[40%]"></div>
+<div class="flex-1 bg-primary-fixed shadow-[0_0_12px_rgba(195,244,0,0.8)] h-[70%]"></div>
+<div class="flex-1 bg-primary-fixed shadow-[0_0_12px_rgba(195,244,0,0.8)] h-[50%]"></div>
+<div class="flex-1 bg-primary-fixed shadow-[0_0_12px_rgba(195,244,0,0.8)] h-[90%]"></div>
+<div class="flex-1 bg-primary-fixed shadow-[0_0_12px_rgba(195,244,0,0.8)] h-[100%]"></div>
+</div>
+</div>
+</div>
+<!-- Buy/Sell Buttons -->
+<div class="flex gap-sm px-sm pb-md border-b border-white/10 shrink-0">
+<button class="flex-1 h-12 bg-white/5 border border-white/20 text-white font-bold tracking-wider hover:bg-error/20 hover:border-error hover:text-error hover:shadow-[0_0_20px_rgba(255,180,171,0.6)] transition-all text-sm flex items-center justify-center rounded font-body-base backdrop-blur-sm">SELL</button>
+<button class="flex-1 h-12 bg-primary-fixed border border-primary-fixed text-black font-bold tracking-wider hover:brightness-110 transition-all text-sm flex items-center justify-center rounded glow-primary shadow-[0_0_25px_rgba(195,244,0,0.8)] font-body-base">BUY</button>
+</div>
+<!-- Inputs -->
+<div class="p-sm space-y-md shrink-0 font-body-base">
+<div class="flex items-center justify-between">
+<label class="text-xs text-on-surface-variant uppercase">VOLUME</label>
+<div class="flex items-center bg-white/5 border border-white/10 rounded w-32 backdrop-blur-sm">
+<input class="w-full bg-transparent border-none text-right text-xs p-xs focus:ring-0 text-white outline-none font-mono" step="0.01" type="number" value="0.10"/>
+<div class="flex flex-col border-l border-white/10 w-6 shrink-0">
+<button class="h-4 border-b border-white/10 flex items-center justify-center text-on-surface-variant hover:text-white bg-transparent hover:bg-white/10 text-[10px] leading-none pb-[2px]">+</button>
+<button class="h-4 flex items-center justify-center text-on-surface-variant hover:text-white bg-transparent hover:bg-white/10 text-[10px] leading-none pb-[2px]">-</button>
+</div>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<label class="text-xs text-on-surface-variant uppercase">RISK</label>
+<div class="flex items-center bg-white/5 border border-white/10 rounded w-32 relative backdrop-blur-sm">
+<input class="w-full bg-transparent border-none text-right text-xs p-xs pr-6 focus:ring-0 text-white outline-none font-mono" step="0.1" type="number" value="1.00"/>
+<span class="absolute right-2 text-xs text-on-surface-variant font-mono">%</span>
+</div>
+</div>
+<div class="flex items-center justify-between">
+<label class="text-xs text-on-surface-variant uppercase">STOP LOSS</label>
+<input class="w-32 bg-white/5 border border-white/10 rounded text-right text-xs p-xs focus:ring-0 text-white outline-none focus:border-primary-fixed focus:shadow-[0_0_12px_rgba(195,244,0,0.6)] transition-all font-mono backdrop-blur-sm" step="0.00001" type="number" value="1.08000"/>
+</div>
+<div class="flex items-center justify-between">
+<label class="text-xs text-on-surface-variant uppercase">TAKE PROFIT</label>
+<input class="w-32 bg-white/5 border border-white/10 rounded text-right text-xs p-xs focus:ring-0 text-white outline-none focus:border-primary-fixed focus:shadow-[0_0_12px_rgba(195,244,0,0.6)] transition-all font-mono backdrop-blur-sm" step="0.00001" type="number" value="1.10000"/>
+</div>
+</div>
+<div class="px-sm pb-sm mt-auto shrink-0">
+<button class="w-full h-12 bg-primary-fixed border border-primary-fixed text-black font-bold tracking-wider hover:brightness-110 transition-all text-sm flex items-center justify-center rounded glow-primary shadow-[0_0_25px_rgba(195,244,0,0.8)] font-body-base">PLACE ORDER</button>
+</div>
+<!-- Account Summary Stats -->
+<div class="p-sm border-t border-white/10 grid grid-cols-2 gap-sm bg-white/5 shrink-0 font-body-base backdrop-blur-md">
+<div>
+<div class="text-[10px] text-on-surface-variant uppercase mb-xs">DAILY P/L</div>
+<div class="text-primary-fixed font-bold text-sm glow-text-primary font-mono">+250.75 <span class="text-[10px] font-normal text-on-surface-variant font-body-base">(2.50%)</span></div>
+</div>
+<div class="text-right">
+<div class="text-[10px] text-on-surface-variant uppercase mb-xs">OPEN RISK</div>
+<div class="text-white font-bold text-sm font-mono">1.25%</div>
+</div>
+</div>
+</div>
+<!-- Market Summary Widget -->
+<div class="h-48 glass-panel module-glow flex flex-col shrink-0">
+<div class="p-sm border-b border-white/10 shrink-0">
+<h3 class="text-xs font-bold uppercase tracking-widest font-headline-md">MARKET SUMMARY</h3>
+</div>
+<div class="flex-1 p-sm flex items-center gap-md">
+<!-- Donut Chart Mock -->
+<div class="w-20 h-20 rounded-full border-4 border-white/5 relative shrink-0 shadow-[inset_0_0_15px_rgba(0,0,0,0.8)]">
+<!-- Green segment -->
+<svg class="absolute inset-0 w-full h-full -rotate-90">
+<circle cx="50%" cy="50%" fill="none" r="45%" stroke="#c3f400" stroke-dasharray="140 283" stroke-dashoffset="0" stroke-width="8" style="filter: drop-shadow(0 0 6px rgba(195,244,0,0.9));"></circle>
+</svg>
+<!-- Purple segment -->
+<svg class="absolute inset-0 w-full h-full -rotate-90">
+<circle cx="50%" cy="50%" fill="none" r="45%" stroke="#dcb8ff" stroke-dasharray="60 283" stroke-dashoffset="-140" stroke-width="8" style="filter: drop-shadow(0 0 6px rgba(220,184,255,0.9));"></circle>
+</svg>
+</div>
+<!-- Legend -->
+<div class="flex-1 space-y-xs font-body-base">
+<div class="flex items-center justify-between text-[10px]">
+<div class="flex items-center gap-xs"><span class="w-2 h-2 bg-primary-fixed rounded-sm shadow-[0_0_8px_rgba(195,244,0,0.9)]"></span> BULLISH</div>
+<span class="text-on-surface-variant font-mono">58%</span>
+</div>
+<div class="flex items-center justify-between text-[10px]">
+<div class="flex items-center gap-xs"><span class="w-2 h-2 bg-secondary rounded-sm shadow-[0_0_8px_rgba(220,184,255,0.9)]"></span> BEARISH</div>
+<span class="text-on-surface-variant font-mono">24%</span>
+</div>
+<div class="flex items-center justify-between text-[10px]">
+<div class="flex items-center gap-xs"><span class="w-2 h-2 bg-white/20 rounded-sm"></span> NEUTRAL</div>
+<span class="text-on-surface-variant font-mono">18%</span>
+</div>
+</div>
+</div>
+<div class="p-xs border-t border-white/10 flex justify-between items-center shrink-0 bg-white/5 font-body-base backdrop-blur-md">
+<div class="flex flex-col">
+<span class="text-[8px] text-on-surface-variant uppercase">MARKET SENTIMENT</span>
+<span class="text-primary-fixed text-xs font-bold uppercase glow-text-primary">BULLISH</span>
+</div>
+<span class="material-symbols-outlined text-primary-fixed text-sm drop-shadow-[0_0_8px_rgba(195,244,0,0.9)]" data-icon="trending_up">trending_up</span>
+</div>
+</div>
+</aside>
+</div>
+</main>
+</div>
+<!-- SAGE AI DRAWER OVERLAY (Hidden by default) -->
+<div class="hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-md flex justify-end" id="sage-panel">
+<div class="w-full max-w-md h-full glass-panel border-r-0 flex flex-col shadow-[0_0_50px_rgba(220,184,255,0.2)] relative">
+<button class="absolute top-md right-md text-on-surface-variant hover:text-white z-50" onclick="toggleMenu('sage-panel')"><span class="material-symbols-outlined" data-icon="close">close</span></button>
+<div class="p-md border-b border-white/10 bg-white/5 flex items-center gap-sm shrink-0 pr-12 backdrop-blur-md">
+<div class="w-10 h-10 border border-secondary glow-secondary rounded-full flex items-center justify-center bg-secondary/20 shadow-[inset_0_0_10px_rgba(220,184,255,0.3)]">
+<span class="material-symbols-outlined text-secondary text-lg drop-shadow-[0_0_12px_rgba(220,184,255,0.9)]" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div>
+<h2 class="font-headline-md font-bold uppercase text-secondary glow-text-secondary">Sage Analyst</h2>
+<p class="text-[10px] text-on-surface-variant font-body-base">SMART MONEY CONCEPTS</p>
+</div>
+</div>
+<!-- Background Image Area like in Reference -->
+<div class="flex-1 relative overflow-y-auto bg-black flex flex-col justify-end p-md">
+<!-- Large Watermark Image -->
+<div class="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1620641788421-7a1c342ea42e?auto=format&amp;fit=crop&amp;q=80&amp;w=1000&amp;ixlib=rb-4.0.3')] bg-cover bg-center opacity-20 pointer-events-none mix-blend-screen"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-black via-black/50 to-transparent pointer-events-none"></div>
+<!-- Chat Bubbles -->
+<div class="relative z-10 w-full space-y-md">
+<!-- Sage Message -->
+<div class="flex items-start gap-sm">
+<div class="w-8 h-8 rounded-full border border-secondary glow-secondary bg-black/50 flex items-center justify-center shrink-0 shadow-[inset_0_0_10px_rgba(220,184,255,0.3)]">
+<span class="material-symbols-outlined text-secondary text-xs drop-shadow-[0_0_8px_rgba(220,184,255,0.9)]" data-icon="auto_awesome">auto_awesome</span>
+</div>
+<div class="bg-white/10 backdrop-blur-xl border border-white/20 rounded-lg p-sm w-full shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
+<p class="text-xs text-white leading-relaxed font-body-base">Just flagged a bullish break of structure on H1 for XAUUSD — price closed through <span class="font-mono text-primary-fixed glow-text-primary">2405.21</span>. Worth a look?</p>
+</div>
+</div>
+</div>
+</div>
+<div class="p-md border-t border-white/10 bg-black/50 shrink-0 backdrop-blur-md">
+<div class="flex gap-sm h-12">
+<button class="w-12 bg-white/5 border border-white/20 rounded flex items-center justify-center hover:bg-white/10 transition-colors text-on-surface-variant hover:text-white shrink-0 shadow-[inset_0_0_10px_rgba(255,255,255,0.05)]"><span class="material-symbols-outlined text-sm" data-icon="add">add</span></button>
+<input class="flex-1 bg-white/5 border border-white/20 rounded px-sm text-xs font-body-base focus:outline-none focus:border-secondary focus:shadow-[0_0_15px_rgba(220,184,255,0.4)] transition-all text-white placeholder-on-surface-variant shadow-[inset_0_0_10px_rgba(255,255,255,0.05)]" placeholder="Ask about market structure, your trades..." type="text"/>
+<button class="w-12 bg-secondary border border-secondary rounded flex items-center justify-center hover:brightness-110 transition-colors text-black shrink-0 glow-secondary shadow-[0_0_20px_rgba(220,184,255,0.6)]"><span class="material-symbols-outlined text-sm" data-icon="send">send</span></button>
+</div>
+</div>
+</div>
+</div>
+<script>
+        function toggleMenu(id) {
+            const menu = document.getElementById(id);
+            if (menu.classList.contains('hidden')) {
+                menu.classList.remove('hidden');
+            } else {
+                menu.classList.add('hidden');
+            }
+        }
+
+        // Close on ESC key
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                ['sage-panel'].forEach(id => {
+                    const el = document.getElementById(id);
+                    if(el) el.classList.add('hidden');
+                });
+            }
+        });
+    </script>
+</body></html>

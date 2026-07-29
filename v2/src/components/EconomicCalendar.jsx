@@ -57,7 +57,7 @@ export default function EconomicCalendar({ onOpenSettings }) {
   const rows = highImpactOnly ? events.filter(e => e.impact === 'high') : events;
 
   return (
-    <div className="flex-1 flex flex-col gap-lg p-lg overflow-hidden min-h-0">
+    <div className="qc-page qc-calendar flex-1 flex flex-col gap-lg p-lg overflow-hidden min-h-0">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-end border-b-2 border-outline-variant pb-md shrink-0 gap-sm">
         <div>
           <h1 className="font-display-lg text-[32px] font-black text-primary uppercase glow-text-primary tracking-tighter">Economic Calendar</h1>

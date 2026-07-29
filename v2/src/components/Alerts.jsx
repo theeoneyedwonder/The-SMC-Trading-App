@@ -139,7 +139,7 @@ export default function Alerts() {
   const triggeredToday = alerts.filter(a => a.triggered).length;
 
   return (
-    <div className="flex-1 flex flex-col md:flex-row gap-md p-md overflow-hidden min-h-0">
+    <div className="qc-page qc-alerts flex-1 flex flex-col md:flex-row gap-md p-md overflow-hidden min-h-0">
       {/* Log panel */}
       <section className="flex-1 flex flex-col bg-surface-container-low border-2 border-outline-variant min-h-0">
         <div className="px-md py-sm border-b-2 border-outline-variant flex justify-between items-center bg-surface-container-highest shrink-0">

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>QUANT_CORE v1.0 - Trade History</title>
+<!-- Fonts & Icons -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Tailwind Config injected from Style Guidance -->
+<script id="tailwind-config">tailwind.config = {darkMode: "class", theme: {extend: {colors: {"on-primary-container": "#556d00", surface: "#131313", "error-container": "#93000a", outline: "#8e9379", "surface-bright": "#3a3939", "tertiary-container": "#ffdad6", "primary-fixed": "#c3f400", "surface-container-lowest": "#0e0e0e", "on-secondary-fixed": "#2c0051", "on-secondary": "#480081", "on-background": "#e5e2e1", "secondary-container": "#7701d0", "primary-container": "#c3f400", "surface-container-low": "#1c1b1b", background: "#131313", "surface-tint": "#abd600", "on-tertiary-container": "#c90e1e", "on-primary-fixed-variant": "#3c4d00", primary: "#ffffff", "inverse-primary": "#506600", "inverse-surface": "#e5e2e1", "surface-variant": "#353534", "on-tertiary-fixed": "#410003", "on-secondary-container": "#dcb7ff", "on-primary-fixed": "#161e00", "on-tertiary-fixed-variant": "#930010", "on-tertiary": "#680008", "surface-container-highest": "#353534", "tertiary-fixed-dim": "#ffb3ad", "outline-variant": "#444933", error: "#ffb4ab", "surface-container-high": "#2a2a2a", tertiary: "#ffffff", secondary: "#dcb8ff", "on-surface": "#e5e2e1", "on-primary": "#283500", "secondary-fixed-dim": "#dcb8ff", "on-error": "#690005", "secondary-fixed": "#efdbff", "on-surface-variant": "#c4c9ac", "on-error-container": "#ffdad6", "tertiary-fixed": "#ffdad6", "on-secondary-fixed-variant": "#6700b5", "inverse-on-surface": "#313030", "surface-dim": "#131313", "surface-container": "#201f1f", "primary-fixed-dim": "#abd600"}, borderRadius: {DEFAULT: "0.25rem", lg: "0.5rem", xl: "0.75rem", full: "9999px"}, spacing: {xl: "32px", unit: "4px", "margin-mobile": "16px", xs: "4px", md: "16px", sm: "8px", lg: "24px", gutter: "16px", "margin-desktop": "24px"}, fontFamily: {"body-bold": ["Inter"], "stat-lg": ["JetBrains Mono"], "headline-md": ["JetBrains Mono"], "display-lg": ["JetBrains Mono"], "headline-lg-mobile": ["JetBrains Mono"], "body-base": ["Inter"], "label-caps": ["JetBrains Mono"], headline: ["Inter"], display: ["Inter"], body: ["Inter"], label: ["Inter"]}, fontSize: {"body-bold": ["14px", {lineHeight: "20px", fontWeight: "700"}], "stat-lg": ["24px", {lineHeight: "30px", fontWeight: "800"}], "headline-md": ["20px", {lineHeight: "28px", letterSpacing: "0", fontWeight: "700"}], "display-lg": ["32px", {lineHeight: "40px", letterSpacing: "-0.01em", fontWeight: "800"}], "headline-lg-mobile": ["24px", {lineHeight: "32px", fontWeight: "800"}], "body-base": ["14px", {lineHeight: "20px", fontWeight: "400"}], "label-caps": ["11px", {lineHeight: "14px", letterSpacing: "0.05em", fontWeight: "700"}]}}}};</script>
+<style>
+        /* Hide scrollbar for cleaner brutalist look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #131313;
+            border-left: 2px solid #444933;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #353534;
+            border: 2px solid #131313;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #abd600;
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body-base text-body-base h-screen w-full overflow-hidden flex selection:bg-primary-fixed-dim selection:text-on-primary-fixed">
+<!-- ==================== SIDE NAVBAR ==================== -->
+<nav class="fixed left-0 top-0 w-[280px] h-full border-r-2 border-outline-variant bg-surface dark:bg-surface z-50 flex flex-col justify-between">
+<!-- Header / Logo -->
+<div class="px-md py-lg border-b-2 border-outline-variant">
+<div class="font-display-lg text-display-lg font-black text-primary-fixed-dim tracking-tighter uppercase">
+                QUANT_CORE
+            </div>
+<div class="font-label-caps text-label-caps text-on-surface-variant mt-unit tracking-widest">
+                v1.0.4 // SYSTEM ACTIVE
+            </div>
+</div>
+<!-- Navigation Links -->
+<div class="flex-1 py-md flex flex-col">
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-100" href="{{DATA:SCREEN:SCREEN_14}}">
+<span class="material-symbols-outlined" data-icon="query_stats">query_stats</span>
+                Terminal
+            </a>
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-100" href="{{DATA:SCREEN:SCREEN_24}}">
+<span class="material-symbols-outlined" data-icon="analytics">analytics</span>
+                Analytics
+            </a>
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-100" href="{{DATA:SCREEN:SCREEN_2}}">
+<span class="material-symbols-outlined" data-icon="auto_awesome">auto_awesome</span>
+                Sage AI
+            </a>
+<!-- ACTIVE NAV ITEM: History -->
+<a class="flex items-center gap-sm px-md py-sm border-l-4 border-primary-fixed-dim bg-surface-container-highest text-primary-fixed-dim hover:bg-surface-container-high transition-colors duration-100 relative overflow-hidden" href="{{DATA:SCREEN:SCREEN_26}}">
+<div class="absolute inset-0 bg-primary-fixed-dim opacity-[0.03]"></div>
+<span class="material-symbols-outlined" data-icon="receipt_long" style="font-variation-settings: 'FILL' 1;">receipt_long</span>
+                History
+            </a>
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-100" href="{{DATA:SCREEN:SCREEN_16}}">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+                Settings
+            </a>
+</div>
+<!-- Footer / User Info -->
+<div class="border-t-2 border-outline-variant">
+<a class="flex items-center gap-sm px-md py-sm text-on-surface-variant hover:text-primary hover:bg-surface-container-high transition-colors duration-100 border-b-2 border-outline-variant" href="#">
+<span class="material-symbols-outlined" data-icon="help">help</span>
+                Support
+            </a>
+<div class="p-md flex items-center justify-between bg-surface-container-lowest">
+<div class="flex items-center gap-sm">
+<div class="w-8 h-8 bg-surface-variant border-2 border-outline-variant rounded-none flex items-center justify-center overflow-hidden">
+<span class="material-symbols-outlined text-on-surface-variant text-sm">person</span>
+</div>
+<div class="flex flex-col">
+<span class="font-body-bold text-body-bold text-primary-fixed-dim">TRADER_01</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant">PRO_ACCOUNT</span>
+</div>
+</div>
+<button class="bg-surface-container border-2 border-outline-variant px-sm py-xs font-label-caps text-label-caps text-primary hover:bg-surface-variant transition-colors shadow-[2px_2px_0px_#000000] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none">
+                    UPGRADE
+                </button>
+</div>
+</div>
+</nav>
+<!-- ==================== TOP NAVBAR ==================== -->
+<header class="fixed top-0 right-0 left-[280px] z-40 flex items-center justify-between px-md h-12 border-b-2 border-outline-variant bg-surface-container dark:bg-surface-container font-label-caps text-label-caps">
+<!-- Search Bar (Left) -->
+<div class="flex items-center gap-sm h-full border-r-2 border-outline-variant pr-md text-on-surface-variant">
+<span class="material-symbols-outlined text-lg" data-icon="search">search</span>
+<input class="bg-transparent border-none focus:ring-0 text-primary-fixed-dim placeholder-on-surface-variant p-0 w-48 font-label-caps text-label-caps focus:outline-none" placeholder="SEARCH TICKER..." type="text"/>
+</div>
+<!-- Navigation Links (Center) -->
+<div class="flex items-center h-full gap-lg px-md overflow-x-auto flex-1">
+<a class="text-primary-fixed-dim border-b-2 border-primary-fixed-dim h-full flex items-center hover:text-primary-fixed transition-colors" href="#">BTC/USDT</a>
+<a class="text-on-surface-variant hover:text-primary-fixed transition-colors h-full flex items-center" href="#">ETH/USDT</a>
+<a class="text-on-surface-variant hover:text-primary-fixed transition-colors h-full flex items-center" href="#">SOL/USDT</a>
+<div class="w-px h-4 bg-outline-variant mx-sm"></div>
+<a class="text-on-surface-variant hover:text-primary-fixed transition-colors h-full flex items-center" href="#">1m</a>
+<a class="text-on-surface-variant hover:text-primary-fixed transition-colors h-full flex items-center" href="#">5m</a>
+<a class="text-on-surface-variant hover:text-primary-fixed transition-colors h-full flex items-center" href="#">15m</a>
+<a class="text-on-surface-variant hover:text-primary-fixed transition-colors h-full flex items-center" href="#">1H</a>
+<a class="text-on-surface-variant hover:text-primary-fixed transition-colors h-full flex items-center" href="#">4H</a>
+<a class="text-on-surface-variant hover:text-primary-fixed transition-colors h-full flex items-center" href="#">1D</a>
+</div>
+<!-- Trailing Actions (Right) -->
+<div class="flex items-center h-full gap-md pl-md border-l-2 border-outline-variant">
+<button class="text-primary-fixed-dim hover:text-primary transition-transform hover:-translate-y-[1px]">INDICATORS</button>
+<button class="text-on-surface-variant hover:text-primary transition-transform hover:-translate-y-[1px]">LAYOUTS</button>
+<div class="flex items-center gap-sm ml-sm">
+<button class="text-on-surface-variant hover:text-primary-fixed-dim transition-colors flex items-center justify-center w-8 h-8 border-2 border-outline-variant bg-surface hover:translate-y-[-1px] shadow-[2px_2px_0px_#000000] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none">
+<span class="material-symbols-outlined text-sm" data-icon="notifications">notifications</span>
+</button>
+<button class="text-on-surface-variant hover:text-primary-fixed-dim transition-colors flex items-center justify-center w-8 h-8 border-2 border-outline-variant bg-surface hover:translate-y-[-1px] shadow-[2px_2px_0px_#000000] active:translate-y-[1px] active:translate-x-[1px] active:shadow-none">
+<span class="material-symbols-outlined text-sm" data-icon="account_balance_wallet">account_balance_wallet</span>
+</button>
+</div>
+</div>
+</header>
+<!-- ==================== MAIN CONTENT CANVASS ==================== -->
+<main class="flex-1 ml-[280px] mt-12 h-[calc(100vh-48px)] p-md bg-background flex flex-col gap-md relative z-10">
+<!-- Background Ambient Element (Subtle) -->
+<div class="absolute top-0 right-0 w-[600px] h-[600px] bg-primary-fixed-dim opacity-[0.02] blur-[120px] pointer-events-none rounded-full"></div>
+<!-- Section Header & Controls -->
+<div class="flex flex-col gap-sm shrink-0">
+<h1 class="font-display-lg text-display-lg text-primary uppercase border-b-2 border-outline-variant pb-xs w-max pr-lg">Positions &amp; History</h1>
+<div class="flex items-center justify-between mt-sm">
+<!-- Tabs -->
+<div class="flex gap-md font-label-caps text-label-caps border-b-2 border-outline-variant flex-1">
+<button class="py-sm px-xs text-primary-fixed-dim border-b-2 border-primary-fixed-dim -mb-[2px] transition-colors">
+                        OPEN POSITIONS (3)
+                    </button>
+<button class="py-sm px-xs text-on-surface-variant hover:text-primary transition-colors">
+                        CLOSED HISTORY
+                    </button>
+</div>
+<!-- Filters -->
+<div class="flex items-center gap-sm ml-md">
+<div class="flex items-center bg-surface-container border-2 border-outline-variant px-sm py-xs focus-within:border-primary-fixed-dim transition-colors shadow-[2px_2px_0px_#000000]">
+<span class="material-symbols-outlined text-on-surface-variant text-sm mr-xs" data-icon="filter_list">filter_list</span>
+<input class="bg-transparent border-none text-body-base font-body-base text-primary focus:ring-0 p-0 w-32 placeholder-on-surface-variant outline-none" placeholder="FILTER SYMBOL..." type="text"/>
+</div>
+<button class="bg-surface border-2 border-outline-variant text-on-surface-variant px-sm py-xs font-label-caps text-label-caps hover:text-primary hover:border-primary transition-colors shadow-[2px_2px_0px_#000000] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm" data-icon="calendar_today">calendar_today</span>
+                        7D
+                    </button>
+</div>
+</div>
+</div>
+<!-- Brutalist Data Table -->
+<div class="flex-1 flex flex-col bg-surface-container border-2 border-outline-variant shadow-[4px_4px_0px_#000000] overflow-hidden relative">
+<!-- Table Header -->
+<div class="grid grid-cols-7 gap-md px-md py-sm bg-surface-container-highest border-b-2 border-outline-variant font-label-caps text-label-caps text-on-surface-variant sticky top-0 z-10 uppercase tracking-widest">
+<div class="col-span-1">Symbol / Pair</div>
+<div class="col-span-1">Type</div>
+<div class="col-span-1 text-right">Entry Price</div>
+<div class="col-span-1 text-right">TP / SL</div>
+<div class="col-span-1 text-right">Risk/Reward</div>
+<div class="col-span-1 text-right">Unrealized P/L</div>
+<div class="col-span-1 text-right pr-sm">Status</div>
+</div>
+<!-- Table Body (Scrollable) -->
+<div class="flex-1 overflow-y-auto font-headline-md text-headline-md">
+<!-- ROW 1 (Active, Profit) -->
+<div class="grid grid-cols-7 gap-md px-md py-md border-b-2 border-outline-variant border-l-4 border-l-primary-fixed-dim bg-surface-container hover:bg-surface-container-high transition-colors items-center group">
+<div class="col-span-1 flex flex-col">
+<span class="text-primary font-bold">BTC/USDT</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-xs">PERP // 10x</span>
+</div>
+<div class="col-span-1 flex items-center gap-xs text-primary-fixed-dim">
+<span class="material-symbols-outlined text-sm" data-icon="north_east">north_east</span>
+                        SMC BUY
+                    </div>
+<div class="col-span-1 text-right text-on-surface">
+                        64,210.50
+                    </div>
+<div class="col-span-1 text-right flex flex-col items-end">
+<span class="text-primary-fixed-dim">68,000.0</span>
+<span class="text-error font-label-caps text-label-caps mt-xs">62,500.0</span>
+</div>
+<div class="col-span-1 text-right text-on-surface-variant">
+                        1 : 2.5
+                    </div>
+<div class="col-span-1 text-right text-primary-fixed-dim flex flex-col items-end">
+                        +$1,450.00
+                        <span class="font-label-caps text-label-caps mt-xs">+2.25%</span>
+</div>
+<div class="col-span-1 flex items-center justify-end pr-sm gap-sm">
+<div class="w-2 h-2 rounded-none bg-primary-fixed-dim shadow-[0_0_8px_#abd600]"></div>
+<span class="font-label-caps text-label-caps text-primary-fixed-dim">LIVE</span>
+</div>
+</div>
+<!-- ROW 2 (Active, Loss) -->
+<div class="grid grid-cols-7 gap-md px-md py-md border-b-2 border-outline-variant border-l-4 border-l-transparent bg-surface hover:bg-surface-container-high transition-colors items-center">
+<div class="col-span-1 flex flex-col">
+<span class="text-primary font-bold">ETH/USDT</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-xs">PERP // 5x</span>
+</div>
+<div class="col-span-1 flex items-center gap-xs text-error">
+<span class="material-symbols-outlined text-sm" data-icon="south_west">south_west</span>
+                        SMC SELL
+                    </div>
+<div class="col-span-1 text-right text-on-surface">
+                        3,450.25
+                    </div>
+<div class="col-span-1 text-right flex flex-col items-end">
+<span class="text-primary-fixed-dim">3,200.0</span>
+<span class="text-error font-label-caps text-label-caps mt-xs">3,550.0</span>
+</div>
+<div class="col-span-1 text-right text-on-surface-variant">
+                        1 : 3.1
+                    </div>
+<div class="col-span-1 text-right text-error flex flex-col items-end">
+                        -$215.50
+                        <span class="font-label-caps text-label-caps mt-xs">-1.15%</span>
+</div>
+<div class="col-span-1 flex items-center justify-end pr-sm gap-sm">
+<div class="w-2 h-2 rounded-none bg-error shadow-[0_0_8px_#ffb4ab]"></div>
+<span class="font-label-caps text-label-caps text-error">LIVE</span>
+</div>
+</div>
+<!-- ROW 3 (Active, Near Breakeven) -->
+<div class="grid grid-cols-7 gap-md px-md py-md border-b-2 border-outline-variant border-l-4 border-l-transparent bg-surface-container hover:bg-surface-container-high transition-colors items-center">
+<div class="col-span-1 flex flex-col">
+<span class="text-primary font-bold">SOL/USDT</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant mt-xs">SPOT // 1x</span>
+</div>
+<div class="col-span-1 flex items-center gap-xs text-primary-fixed-dim">
+<span class="material-symbols-outlined text-sm" data-icon="north_east">north_east</span>
+                        SMC BUY
+                    </div>
+<div class="col-span-1 text-right text-on-surface">
+                        145.80
+                    </div>
+<div class="col-span-1 text-right flex flex-col items-end">
+<span class="text-primary-fixed-dim">180.0</span>
+<span class="text-error font-label-caps text-label-caps mt-xs">130.0</span>
+</div>
+<div class="col-span-1 text-right text-on-surface-variant">
+                        1 : 1.8
+                    </div>
+<div class="col-span-1 text-right text-on-surface-variant flex flex-col items-end">
+                        +$12.40
+                        <span class="font-label-caps text-label-caps mt-xs">+0.08%</span>
+</div>
+<div class="col-span-1 flex items-center justify-end pr-sm gap-sm">
+<div class="w-2 h-2 rounded-none bg-on-surface-variant"></div>
+<span class="font-label-caps text-label-caps text-on-surface-variant">LIVE</span>
+</div>
+</div>
+</div>
+<!-- Table Footer / Action Bar -->
+<div class="p-sm bg-surface border-t-2 border-outline-variant flex justify-between items-center z-10">
+<span class="font-label-caps text-label-caps text-on-surface-variant">
+                    SHOWING 3 OF 3 OPEN POSITIONS
+                </span>
+<button class="bg-error border-2 border-outline-variant text-background px-md py-xs font-label-caps text-label-caps hover:bg-on-error-container transition-colors shadow-[3px_3px_0px_#000000] active:translate-y-[2px] active:translate-x-[2px] active:shadow-none flex items-center gap-xs">
+<span class="material-symbols-outlined text-sm" data-icon="close">close</span>
+                    CLOSE ALL POSITIONS
+                </button>
+</div>
+</div>
+</main>
+</body></html>
